@@ -71,6 +71,8 @@
 
 **验收**：正向与拒绝测试均通过；没有完整播放设备时只声明目录与读取通过。QEMU 结果不提升为实机支持。首轮客户端覆盖 macOS 与 Emby；Windows 11 保留为待补测项，不阻塞该范围内的候选发布。macOS 或 smbclient 的成功不作为 Windows 11 策略兼容证据。
 
+**状态（2026-11-08）**：隔离重建与本地冒烟完成，记录见 [S2 隔离回归](../s2-isolated-regression.md)。已达成：以前缀 `/userdisk/data/samba-s2/root` 的干净重建（configure/build/install 全部 `rc=0`，41 MiB）、`testparm` 通过、`127.0.0.1:1445` 单实例运行、访客允许/拒绝、只读拒写、写入回读散列一致、4 路并发读取、SMB1/SMB2/SMB3 协商可用。未达成：设备侧部署未执行（真实设备写操作待授权）、macOS 与 Emby 客户端矩阵未跑、强制签名/加密策略未测、内核 2.6.36 与长稳未验证；`mutexes requested but not available` 作为未关闭风险记录。S2 尚未关闭。
+
 ## S3：小米 MAC 策略适配
 
 **依赖**：S0 明确行为，S1 提供目标 API，S2 提供安全回归基础。
