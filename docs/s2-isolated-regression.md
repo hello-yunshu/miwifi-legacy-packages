@@ -1,6 +1,6 @@
 # S2 隔离回归（在设备上跑新实例，不碰原厂）
 
-状态：隔离构建与本地冒烟已完成；设备侧部署未执行（属真实设备写操作，待授权）
+状态：隔离构建、本地冒烟、实机一次性验证均已完成；实机验证后已按回滚步骤删除运行根并核对原厂状态（见第 5、6 节）。未覆盖项列在第 7 节，未提升为通过。
 
 约束回顾：
 
@@ -189,28 +189,108 @@ PIDDIR      /userdisk/data/samba-s2/root/var/run
 
 | 项 | 原因 |
 | --- | --- |
-| 设备侧部署 `/userdisk/data/samba-s2` | 属真实设备写操作，需用户授权后执行 |
-| macOS Finder 挂载、中文文件名、重连、安全弹出 | 需设备侧实例与真机客户端 |
+| 设备侧部署 `/userdisk/data/samba-s2` | 已完成一次性实机验证，验证后运行根已删除（见第 5 节） |
+| macOS Finder 挂载、中文文件名、重连、安全弹出 | 需真机客户端，本轮未做 |
 | Emby 目录/存在检查/拖动/完整播放 | 需设备侧实例与真机客户端 |
 | 强制签名、强制加密与拒绝策略 | 本轮配置沿用原厂 `smb encrypt = no`，未做强制策略用例 |
 | SMB1 是否保留的产品结论 | 仅证明服务端仍能接受 SMB1，未做客户端矩阵，见 D-S2-09 |
 | 内核 2.6.36 下的锁、线程、sendfile、inotify | QEMU 使用宿主内核，属 S6 |
 | 长稳、CPU/内存、I/O、日志增长 | 未开始 |
 
-## 5. 设备侧待执行（需授权）
+## 5. 设备侧实机验证（已完成，现场已清理）
 
-以下步骤会向设备写入文件并启动新进程，按项目约定需用户明确授权后执行：
+### 5.1 部署
 
-1. `mkdir -p /userdisk/data/samba-s2/root` 及第 3 节列出的全部 `var/*` 目录。
-2. 上传安装树（41 MiB）与 `etc/smb.conf`。
-3. 以 `nohup` 启动 `smbd -F --no-process-group`，只监听 `192.168.3.2:1445`。
-4. 用 macOS 与 Emby 跑 4.2 中未覆盖的客户端用例，并补并发、断线重连、重启用例。
-5. 结束即按第 2 节回滚并核对原厂端口、二进制 MD5 与根分区用量。
+| 项 | 值 |
+| --- | --- |
+| 运行根 | `/userdisk/data/samba-s2`（安装树 `root/` 40.6 MiB，配置 `etc/smb.conf`，运行目录 `var/{lock,state,cache,private,log}`、`run/`） |
+| 分发包 | `samba-s2-root.tar.gz` 14,396,362 B，SHA-256 `0e2dc5b6a5291b9a12afb29349cbe908de043a6f61fc20f69bcc6cd100624ab1` |
+| 传输校验 | 设备侧 MD5 `e71870432fb302ca75f368bfa9c2bed6`，与宿主一致；解包后 4 个主程序 MD5 与构建机逐一相同 |
+| 启动方式 | `nohup ./run-smbd.sh &`，脚本内 `LD_LIBRARY_PATH=<root>/lib:<root>/lib/private`，`smbd -F -s etc/smb.conf` |
+| 监听 | `192.168.3.2:1445`（PID 10406，另起 `smbd-notifyd`/`smbd-cleanupd`） |
+| 原厂并存 | 139/445 仍由原厂 8471 持有，137/138 仍由原厂 8469 持有，未被抢占 |
 
-## 6. 复现要素
+`LD_LIBRARY_PATH` 必须同时包含 `lib` 与 `lib/private`，实测缺一不可：
 
-- 构建容器：`miwifi-s1`（`ubuntu:24.04`），挂载 SDK 工具链为 `/toolchain`、构建工作树为 `/work`；本次构建树 `/work/s2/samba-4.25.1`，安装树 `/work/prefix-s2`。
-- 构建脚本：`/work/s2-final.sh`（仓库外），日志 `/work/logs2/final-*.log`。
-- 本机回归脚本：`/work/run-smbd-s2.sh`（仓库外），日志 `/work/s2/var/log/`。
-- 以上脚本与安装树都在仓库外，仓库只保留本记录与散列。
+```text
+仅默认：       can't load library 'libsecrets3-private-samba.so'
+仅加 lib/private：can't load library 'libhogweed.so.6'
+两者都加：      testparm 正常
+```
+
+说明 uClibc 0.9.33.2 不会用主程序 `DT_RPATH` 去解析“依赖库的依赖”，因此部署脚本固定导出这两个目录（D-S2-12）。
+
+### 5.2 设备原生 libc 结论（对应约束 5）
+
+`/proc/10406/maps` 中来自系统目录的只有 6 个文件，其余 211 条映射全部指向新根：
+
+```text
+/lib/ld-uClibc-0.9.33.2.so
+/lib/libuClibc-0.9.33.2.so      <- MD5 e2164dfc067f356af2dec37acf36e9e6（设备定制版）
+/lib/libpthread-0.9.33.2.so
+/lib/libdl-0.9.33.2.so
+/lib/libcrypt-0.9.33.2.so
+/lib/libubacktrace-0.9.33.2.so
+```
+
+SDK sysroot 里的同版本 libc 是 `0c15e93496faa913c695ee9e09e0e384`，与设备上的 `e2164dfc…` 不同；实机运行使用的是设备自带那份。在“符号与会话层”“文件语义层”都跑通：TDB 打开与 passdb 转换、guest 会话建立、SMB2/SMB3 读写往返、NT ACL 查询、`getpwnam`/组解析都成功。没有出现因 libc 定制而崩溃或符号缺失的问题。
+
+已知差异与风险（未关闭）：
+
+- `db_open_ex: mutexes requested but not available` 在实机同样出现（level 0），与 QEMU 结论一致，见 D-S2-11。
+- `dos charset 'CP850' unavailable - using ASCII`：设备侧无 CP850 转换模块表，客户端侧提示后回落 ASCII。中文文件名本轮未测，不能据此判断 UTF-8 名称可用。
+
+### 5.3 用例结果
+
+| 用例 | 命令要点 | 结果 |
+| --- | --- | --- |
+| 配置解析 | `testparm -s etc/smb.conf`（设备原生 libc） | `Loaded services file OK.`，`ROLE_STANDALONE` |
+| 访客列目录 | `smbclient //192.168.3.2/iso -p 1445 -N -m SMB3 -c ls` | 成功 |
+| 上传/下载往返 | `put` 后 `get` 到本地 | 内容逐字节一致（`hello-from-s2`，14 B） |
+| 错误密码 | `-U baduser%wrongpass` | 按 `map to guest = Bad User` 回落访客，会话建立成功 |
+| 只读共享写入 | 追加 `[roshare] read only = yes` 后 `put` | `NT_STATUS_ACCESS_DENIED opening remote file \denied.txt` |
+| NT ACL 查询 | `smbcacls -N //127.0.0.1/iso local.txt`（环回实例） | 返回 `OWNER:S2ACL\root`、`ACL:Unix Group\root:ALLOWED/0x0/R` |
+| 外部域 SID 写入 | `smbcacls -a "ACL:S-1-5-21-1111…-1001:ALLOWED/0x0/R"` | `NT_STATUS_ACCESS_DENIED`（访客无权限，未进入 idmap 探测） |
+
+### 5.4 `libidmap-private-samba.so` 两个未解析符号的结论（对应约束 4）
+
+结论：**在 `--without-winbind` 的 smbd/nmbd 用例里调用不到**，属于“库被单独构建但没有使用者”的悬空引用，不是 idmap 路径会踩到的坑。依据分三层：
+
+1. 引用点与定义点
+   - 引用：`source3/winbindd/idmap.c:304` 的 `idmap_is_offline()` → `get_global_winbindd_state_offline()`；`source3/winbindd/idmap_tdb.c:86` 的 `convert_fn()` → `find_domain_from_name()`（老版 `winbindd_idmap.tdb` 升级路径）。
+   - 定义：`source3/winbindd/winbindd_cache.c` 与 `source3/winbindd/winbindd_util.c`，只在 winbindd 程序里；本次构建未产出 winbindd。
+2. 依赖关系
+   - 全树只有 5 个 `lib/idmap/*.so` 和 `libidmap` 自身 NEEDED `libidmap-private-samba.so`；`sbin/smbd`、`sbin/nmbd`、全部 `bin/*` 与公共库都不 NEEDED 它；smbd 也未导出这两个符号（`readelf --dyn-syms` 无匹配）。
+   - 调用 idmap 模块探测的唯一入口在 `idmap.c:399` 的 `smb_probe_module("idmap", …)`，而这段代码本身就在 libidmap 内，形成“先加载 libidmap 才能加载 idmap 模块”的闭环；smbd 没有加载 libidmap 的路径。
+3. 实机行为
+   - 普通文件 I/O 与 NT ACL 查询期间，`/proc/<pid>/maps` 中既无 `libidmap-private-samba.so` 也无 `lib/idmap/*.so`。
+   - 配置 `idmap config * : backend = rid` + `range = 100000-199999`，在 `log level = 10` 下查询 ACL：日志只出现 `source3/lib/idmap_cache.c`（gencache 层的 SID/uid 缓存），没有任何 `probe_module("idmap")`、`Failed to load module` 或 `undefined symbol` 记录；SID 解析走的是 passdb 本地 SAM 域（`lookup_global_sam_rid`）。
+
+未能单列证明的部分（如实标注）：用独立 `dlopen(RTLD_NOW)` 探针单独加载 `libidmap` 时，会先因缺少 smbd 提供的调试符号（`dbghdrclass`、`smb_panic` 等）失败，因此无法用“单独 dlopen”直接观察这两个符号的解析结果；上结论基于依赖关系、实际映射与 level 10 日志三条证据。若将来启用 winbindd 或让其它进程 `dlopen` `lib/idmap/*.so`（`lib/util/modules.c:41` 使用 `RTLD_NOW`），这两个符号会成为加载阻塞点，届时必须同时构建 winbindd。
+
+### 5.5 清理与回滚核对
+
+清理动作：`kill 10406 12331`（主实例与环回 ACL 实例）→ `rm -rf /userdisk/data/samba-s2`。
+
+| 核对项 | 清理后实测 |
+| --- | --- |
+| 新根 | `ls /userdisk/data/samba-s2` → `No such file or directory` |
+| 新实例进程 | 无 `samba-s2`/`smbd -F` 进程 |
+| TCP 139/445 | 仍为原厂 `8471/smbd` |
+| UDP 137/138 | 仍为原厂 `8469/nmbd` |
+| 原厂二进制 | `md5sum /usr/sbin/samba_multicall` = `5e422d3463f40b4405ef8325ce3603e8`（测试前后一致） |
+| 原厂配置 | `/etc/config/samba` 内容与 mtime（Oct 16 2018）不变，MD5 `244eb53e5019b95a408aebe49602561a` |
+| 根分区 | `rootfs 107.9M / 87.7M / 81%`，仍为只读 |
+| 外挂盘 | `/userdisk/data` 使用量回到 484.8G / 52% |
+
+新根内的 TDB 全部落在 `var/lock`、`var/state`、`var/private` 下（`smbXsrv_*.tdb`、`passdb.tdb`、`secrets.tdb`、`registry.tdb` 等 13 个），原厂 `/var/lock` 下 TDB 的时间戳未被改动。
+
+## 6. 复现要素与遗留现场
+
+- 构建容器 `miwifi-s1`（`ubuntu:24.04`），工具链 `/toolchain/arm-xiaomi-linux-uclibcgnueabi`。
+- 实机验证所用的构建树为 `/work/s2me/samba-4.25.1`，脚本 `/work/s2me/env.sh`、日志 `/work/s2me/{configure,build,install}.log`，安装树 `/work/prefix-s2`（均在仓库外）。
+- 与 4.1 的 `/work/s2` 构建等价：同一 tar、同一 5 个补丁、同一 configure 选项，仅工作目录不同；两次独立构建的 `smbd` MD5 均为 `514708cb32e6a4ea4ea440e74f2d2d09`，可复现。
+- 实机验证所用 4 个主程序（设备侧与构建机一致）：`smbd` 81,546 B / SHA-256 `2580dac4f5af06cc4089bfe696dd08f7659a7f824facb61c4ed97768d18a5e6d`，`nmbd` 253,126 B / `fed9fd102260df44eeeb38312058a99414bd19e0196e9852588c75e733eabf9e`，`smbclient` 140,459 B / `35b4312befccd71612800c1463e3a3f69ac31eb6ae63b10e4b65a5a5aa0df615`，`testparm` 43,299 B / `33b4e70e7b2de0fbd39f88c0c3776f1a0de60ffff67d768f65eaf2eba54fbe8a`。
+- 设备侧日志已取回宿主 `/tmp/s2-evidence/{log.smbd,log.s2acl}`（不在仓库内），设备上的运行根已随之删除，下一阶段需重新上传后才能复跑。
+- 设备当前无本项目任何残留文件或进程。
 
