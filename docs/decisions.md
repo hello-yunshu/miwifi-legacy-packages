@@ -25,3 +25,20 @@
 - D-S2-13 `libidmap-private-samba.so` 的两个未解析 winbind 符号按“调用不到”归档，不为此改源码、不补桩。处置是：不把 libidmap 及 `lib/idmap/*.so` 交付给 smbd 使用；若将来启用 winbindd 或需要 idmap 后端模块，必须在同一构建里同时产出 winbindd，否则 `lib/util/modules.c` 的 `RTLD_NOW` 会在加载时被这两个符号卡住。
 - D-S2-14 实机验证采取“一次性运行、当场回滚”：验证结束即停实例并 `rm -rf /userdisk/data/samba-s2`，不在设备上留后台服务、开机项或残留树。理由是新实例对局域网开放访客写权限，长期驻留超出本阶段授权范围；证据以日志摘录入文档、完整日志留在仓库外，需要复跑时重新上传即可。
 
+## S3（小米 MAC 策略适配）
+
+- D-S3-01 采用内部窄补丁，不用 VFS 模块或外部策略接口。VFS 能挂到 `connect_fn`，但共享枚举（srvsvc `NetShareEnumAll`、SMB1 RAP `NetShareEnum`）直接读 `lp_services()`，不经过 VFS，单用 VFS 会漏掉“枚举”入口；外部策略接口要为每次连接/枚举加 IPC，并新增失败模式，与原厂“进程内 helper”不同层。补丁落在 `share_sanity_checks()`、`init_srv_share_info_ctr()` 与两个 RAP 循环，覆盖全部入口。
+- D-S3-02 策略配置用环境变量（`XIAOMI_*`），不新增 loadparm 参数。理由：不扩 smb.conf 参数表、不改 `/etc/config/samba`，默认值直接对齐原厂路径；关闭/改路径只影响本进程，回滚简单。
+- D-S3-03 MAC 缓存只缓存 IP→MAC（默认 60s），列表每次判定都重读文件。这样“改列表”立即生效，不需要等缓存过期；缓存只挡住“同一 IP 的重复 trafficd/arping 查询”。
+- D-S3-04 列表比较用 `strcmp`（大小写敏感），MAC 统一转小写。原厂 `0x1ca140` 就是 `strcmp`，且 trafficd 输出大写、判定前转小写，所以列表写大写不会命中——照抄该行为，不用 `strequal` 的宽松匹配。
+- D-S3-05 MAC 解析失败按“未命中”处理：只允许 browseable 共享，绝不授予 non-browseable 整盘。实现里失败分支不缓存失败结果，下次连接会重试。
+- D-S3-06 `IPC$` 与 `snum < 0`（连接级）直接放行，对齐 `0x1cab08`。放行发生在列表/解析之前，避免枚举会话因取不到 MAC 被整体拒绝。
+- D-S3-07 trafficd/arping helper 可用 `XIAOMI_TRAFFICD_CMD=none`、`XIAOMI_ARP_INTERFACE=none` 关闭；默认开启。测试里用“关掉 ARP 回退”证明 MAC 确实来自 trafficd，而不是 `/proc/net/arp` 偶然命中。
+- D-S3-08 枚举过滤用 `xiaomi_mac_share_visible()` 原地替换 `lp_browseable()`，不新增第二层过滤。这样枚举与 tree connect 共用同一套判定，避免“枚举里看得到、连不上”或相反的分叉。
+- D-S3-09 测试实例临时开 `server signing = no`、`map to guest = Bad User`、本地 passdb 用户 `nobody`、`log level = 5`。这些只是为了让 macOS/`smbprotocol` 客户端能完成认证并留下判定日志，不写进产品配置建议；正式部署仍用 S2 的配置基线。
+- D-S3-10 设备部署复用 `/userdisk/data/samba-s2/root` 路径与 S2 的一次性回滚流程（D-S2-14），不新建第二套目录。部署包 14,513,779 B，解压后启动 1445，结束即删。
+- D-S3-11 macOS Finder/`mount_smbfs` 非 445 端口挂载标 BLOCKED，不作为 S3 通过条件。证据是：URL 端口形式能连到本实例并协商到 SMB3_11，但客户端在 session setup 后被重置/挂起；`smbutil view -p`、`mount_smbfs -p` 均无端口选项，原厂占 445 且本轮不允许停原厂。等价入口用 SMB2/3 客户端（设备 `smbclient` + macOS `smbprotocol`）验证。
+- D-S3-12 原厂撤销的实机对照标 BLOCKED：需要改写生产列表 `/tmp/loginMac.cfg` 或 `nonLoginMac.cfg`，超出本轮授权。改为代码级对照（原厂判定点同在 tree connect）+ 新实例实测“已连会话继续、新连接立即按新列表”。
+- D-S3-13 测试期一次清理脚本用 `sbin/smbd -D` 匹配进程，误匹配原厂 `/usr/sbin/smbd -D`，导致原厂 smbd 被监督进程重启（PID 集合变化，配置/二进制未变）。如实记入 S3 文档，后续启停只匹配 `samba-s2/root/etc/s` 路径，不再用宽匹配。
+
+
