@@ -1,0 +1,91 @@
+--- /dev/null
++++ b/lib/replace/system/sdk_spawn.h
+@@ -0,0 +1,66 @@
++#ifndef SAMBA_SDK_SPAWN_H
++#define SAMBA_SDK_SPAWN_H
++#include <features.h>
++#if !defined(__UCLIBC__) || __UCLIBC_MAJOR__ != 0 || __UCLIBC_MINOR__ > 9
++#include <spawn.h>
++#else
++#include <sys/types.h>
++#include <sys/wait.h>
++#include <sys/syscall.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <errno.h>
++/* SDK compatibility: only default attributes and no file actions are supported.
++ * The child uses async-signal-safe operations only. An error pipe distinguishes
++ * successful exec from fork success followed by exec failure. */
++static inline int samba_sdk_posix_spawn_simple(pid_t *pid, const char *path,
++ const void *actions, const void *attributes, char *const argv[], char *const envp[])
++{
++ int fds[2], error = 0; pid_t child; size_t used = 0; ssize_t n;
++ if (actions != NULL || attributes != NULL) return ENOTSUP;
++#if defined(__NR_pipe2) && defined(O_CLOEXEC)
++ if (syscall(__NR_pipe2, fds, O_CLOEXEC) == 0) goto pipe_ready;
++ if (errno != ENOSYS && errno != EINVAL) return errno;
++#endif
++ if (pipe(fds) == -1) return errno;
++ if (fcntl(fds[0], F_SETFD, FD_CLOEXEC) == -1 ||
++     fcntl(fds[1], F_SETFD, FD_CLOEXEC) == -1) {
++  error = errno; close(fds[0]); close(fds[1]); return error;
++ }
++pipe_ready:
++ child = fork();
++ if (child == -1) {
++  error = errno; close(fds[0]); close(fds[1]); return error;
++ }
++ if (child == 0) {
++  close(fds[0]);
++  execve(path, argv, envp);
++  error = errno;
++  while (used < sizeof(error)) {
++   n = write(fds[1], (const char *)&error + used, sizeof(error) - used);
++   if (n > 0) used += (size_t)n;
++   else if (n == -1 && errno == EINTR) continue;
++   else break;
++  }
++  _exit(127);
++ }
++ close(fds[1]);
++ while (used < sizeof(error)) {
++  n = read(fds[0], (char *)&error + used, sizeof(error) - used);
++  if (n > 0) used += (size_t)n;
++  else if (n == -1 && errno == EINTR) continue;
++  else if (n == -1) { error = errno; used = sizeof(error); break; }
++  else break;
++ }
++ close(fds[0]);
++ if (used != 0) {
++  if (used != sizeof(error)) error = EIO;
++  while (waitpid(child, NULL, 0) == -1 && errno == EINTR) {}
++  return error;
++ }
++ *pid = child;
++ return 0;
++}
++#define posix_spawn samba_sdk_posix_spawn_simple
++#endif
++#endif
+--- a/source3/rpc_client/local_np.c
++++ b/source3/rpc_client/local_np.c
+@@ -16,7 +16,7 @@
+  */
+ 
+ #include "source3/include/includes.h"
+-#include <spawn.h>
++#include "lib/replace/system/sdk_spawn.h"
+ #include "local_np.h"
+ #include "lib/async_req/async_sock.h"
+ #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
+--- a/source3/printing/queue_process.c
++++ b/source3/printing/queue_process.c
+@@ -21,7 +21,7 @@
+ */
+ 
+ #include "includes.h"
+-#include <spawn.h>
++#include "lib/replace/system/sdk_spawn.h"
+ #include "smbd/globals.h"
+ #include "include/messages.h"
+ #include "lib/util/util_process.h"
