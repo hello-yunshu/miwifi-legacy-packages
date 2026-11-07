@@ -1,0 +1,22 @@
+--- a/third_party/heimdal_build/et_compile_wrapper.sh
++++ b/third_party/heimdal_build/et_compile_wrapper.sh
+@@ -37,7 +37,7 @@
+ 	# files, which makes Heimdal's compile_et fail mysteriously when writing to them.
+ 	rm -f `basename "${FILE}" .et`.c
+ 	rm -f `basename "${FILE}" .et`.h
+-	"${CMD}" "${FILE}" >&2 || exit 1;
++	${SAMBA_CODEGEN_EXECUTOR} "${CMD}" "${FILE}" >&2 || exit 1;
+ 	cd "${CURDIR}"
+ 	TMP="${SOURCE}.$$"
+ 	mv "${SOURCE}" "${TMP}" && {
+--- a/third_party/heimdal_build/asn1_compile_wrapper.sh
++++ b/third_party/heimdal_build/asn1_compile_wrapper.sh
+@@ -49,7 +49,7 @@
+ }
+ 
+ cd ${DESTDIR} && {
+-	${ABS_BUILDDIR}/${CMD} ${OPTIONS} ${FILE} ${NAME} >&2 || exit 1;
++	${SAMBA_CODEGEN_EXECUTOR} ${ABS_BUILDDIR}/${CMD} ${OPTIONS} ${FILE} ${NAME} >&2 || exit 1;
+ 	cd ${CURDIR}
+ } || {
+ 	echo "${SELF}:cannot cd into '${BUILDDIR}'" >&2;

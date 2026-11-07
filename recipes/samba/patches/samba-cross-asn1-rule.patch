@@ -1,0 +1,19 @@
+--- a/third_party/heimdal_build/wscript_build
++++ b/third_party/heimdal_build/wscript_build
+@@ -66,7 +66,7 @@
+ 
+     asn1_rule = cd_rule + \
+         no_leak_check + \
+-        ' "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} ' \
++        ' ${SAMBA_CODEGEN_EXECUTOR} "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} ' \
+         + template_str \
+         + ' --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
+ 
+@@ -89,6 +89,7 @@
+             depends_on = deps,
+             name=name + '_ASN1')
+ 
++    t.env.SAMBA_CODEGEN_EXECUTOR = os.environ.get("SAMBA_CODEGEN_EXECUTOR", "")
+     t.env.ASN1NAME     = asn1name
+     t.env.ASN1OPTIONS  = options
+     t.env.BLDBIN       = os.path.normpath(os.path.join(bld.srcnode.abspath(bld.env), '..'))
