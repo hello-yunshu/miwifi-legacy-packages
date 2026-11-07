@@ -41,4 +41,22 @@
 - D-S3-12 原厂撤销的实机对照标 BLOCKED：需要改写生产列表 `/tmp/loginMac.cfg` 或 `nonLoginMac.cfg`，超出本轮授权。改为代码级对照（原厂判定点同在 tree connect）+ 新实例实测“已连会话继续、新连接立即按新列表”。
 - D-S3-13 测试期一次清理脚本用 `sbin/smbd -D` 匹配进程，误匹配原厂 `/usr/sbin/smbd -D`，导致原厂 smbd 被监督进程重启（PID 集合变化，配置/二进制未变）。如实记入 S3 文档，后续启停只匹配 `samba-s2/root/etc/s` 路径，不再用宽匹配。
 
+## S4（摄像机 readonly 适配）
+
+- D-S4-01 采用“只挂 `create_file`、删除上游 `readonly_connect`”的实现，不沿用 4.25.1 上游的 connect 语义。依据是原厂 `samba_multicall` 的 `vfs_fn_pointers` 表只有 `+0x50`（`create_file_fn`）非零，`connect_fn` 为空；上游在 connect 时置 `conn->read_only`，会让窗口内已有文件仍可读、新文件不可写，与实测原厂“窗口内纯读也 `ACCESS_DENIED`”不符。
+- D-S4-02 不复用旧 VFS ABI 的二进制模块，也不把原厂 `readonly.so` 拷进新树。旧模块按 4.0.21 的 `vfs_fn_pointers` 布局注册（`smb_register_vfs(30, ...)`），在新版 VFS 结构下偏移不成立；改为在新版 `vfs_readonly.c` 源码内复刻同一语义。
+- D-S4-03 `readonly:period` 的解析继续用 Samba 自带 `get_date()`（`date(1)` 语法），不自己写时间解析器。原厂就是 `get_date`，自写解析会在“畸形输入返回 -1 → 放行”这类边界上产生分叉；保留 `-1` 放行是与原厂一致的“失败开放”行为。
+- D-S4-04 默认值保持 `"today 0:0:0"` / `"tomorrow 0:0:0"`，即“未配置 period = 全天拒绝”。这是原厂的默认数组（`0x42ac44`），不是本项目的选择；也正因为如此，误配或漏配 `vfs object` 时表现为整共享不可访问，而不是静默放开。
+- D-S4-05 跨午夜不按“次日”特判，也不把 `today 06:00`→`tomorrow 02:00` 理解成“连续拒绝到次日 02:00”。原厂每次 open 都用“当天”重新求值：过零点后 `today 06:00` 又指向当天未来，`begin > now` 直接放行。因此该配置的实际拒绝段是每天 06:00–24:00，放行段是 00:00–06:00（共 6 小时），而不是“02:00–06:00 空档”。实测 01:30 放行、23:00 与 06:00 拒绝、05:59:59 放行，照此实现，不做“跨午夜自动加一天”的修正。
+- D-S4-06 端点按闭区间（`begin <= now && now <= end`），与反汇编一致；不改成左闭右开。实测 06:00:00 与 04:00:00 均拒绝、05:59:59 与 04:00:01 均放行。
+- D-S4-07 `conn->read_only` 为真时跳过钩子，交给核心的“共享只读”逻辑。原厂如此，实测 `read only = yes` + 活动窗口表现为“可读、不可写”，与窗口内普通共享的“全拒绝”不同；两者不能混为一谈。
+- D-S4-08 加一个仅测试用的 `XIAOMI_READONLY_NOW`（epoch 秒）覆盖时间源。设备是生产路由器，不能改系统时钟做边界跳跃；不设该变量时走 `time(NULL)`，产品路径不受影响。真时钟单独跑了一轮，避免“只有假时钟”的验证漏洞。
+- D-S4-09 原厂行为对照用“原厂二进制 + 独立第二实例（1446）”，不直接写生产相机共享。生产共享写入会产生真实文件、且 445 被原厂占用；第二实例用同一 `samba_multicall`、合成配置、独立 lock/pid/private/state/cache/ncalrpc，能拿到真实原厂代码路径又不触碰生产数据。测试共享设 `browseable = no` 是为了让 macOS 测试机通过原厂 `nonLoginMac.cfg` 策略，不修改生产 MAC 列表。
+- D-S4-10 新版实例测试时设 `XIAOMI_MAC_FILTER=0`，把 S3 的 MAC 策略与 S4 的 readonly 语义解耦。理由：两个策略叠加会让“拒绝”无法归因；S3 已单独验证 MAC 策略，S4 只需回答 readonly 行为。该开关只是 S3 补丁提供的环境变量，不改默认值。
+- D-S4-11 停止与清理只按 PID 文件（`kill $(cat var/run/smbd.pid)`）和精确目录（`/userdisk/data/samba-s2`、`/userdisk/data/s4vendor*`），不做任何 `pgrep -f smbd` / `pkill -f smbd` / 通配路径匹配。这是对 D-S3-13 事故的直接约束；本轮全程未出现原厂 PID 变化。
+- D-S4-12 端口判断按“监听套接字 + PID”核对，不用“进程名出现 smbd”判断。核对项固定为：TCP 139/445 归属原厂 `smbd`、UDP 137/138 归属 `nmbd`、1445/1446 无残留、`/tmp/run/smbd.pid` 内容与 mtime 未变。
+- D-S4-13 原厂隔离用“TDB mtime + 目录归属”双重核对，不只依赖配置里写了独立路径。本轮发现 `/tmp/lock/locking.tdb` 的 mtime 在测试期间变过一次，遂用第二次独立实例（`s4vendor2`）复测：前后 mtime 未变、实例自己 `lock/` 下生成了 `locking.tdb`/`brlock.tdb`/`serverid.tdb`，确认变化来自原厂自身相机访问流量，不是串写。
+- D-S4-14 S3 的三个 BLOCKED 在 S4 的处置：Finder/`mount_smbfs` 非 445 仍 BLOCKED，S4 不依赖（create 语义用 `smbprotocol` 在 1445 覆盖）；原厂撤销实机对照不适用于 S4（readonly 无撤销逻辑）；IPv6 与 SMB1 RAP 不适用于判定路径（`create_file` 协议无关，SMB1 已实测，RAP 浏览不经该钩子）。三项均未绕过，均写明理由。
+- D-S4-15 真实摄像机接入标 BLOCKED，不用“配置正确/`testparm` 通过”冒充。原因：无设备；摄像机通常固定 445，而本轮禁止停原厂。兼容性差异只记录到能实测的层面（SMB1/SMB2/SMB3.1.1 文件客户端、中文名、200/260 字节路径），摄像机固件的认证与路径拼接行为保持“未验证”。
+
 
