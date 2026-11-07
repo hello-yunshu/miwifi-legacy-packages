@@ -1,0 +1,181 @@
+--- a/source3/modules/vfs_readonly.c
++++ b/source3/modules/vfs_readonly.c
+@@ -25,21 +25,20 @@
+ #include "getdate.h"
+ 
+ /*
+-  This module performs a read-only limitation for specified share 
+-  (or all of them if it is loaded in a [global] section) based on period
+-  definition in smb.conf. You can stack this module multiple times under 
+-  different names to get multiple limit intervals.
+-
+-  The module uses get_date() function from coreutils' date utility to parse
+-  specified dates according to date(1) rules. Look into info page for date(1)
+-  to understand the syntax.
++  Time-period based access control, vendor-compatible variant.
+ 
+-  The module accepts one parameter: 
++  The stock upstream module only forces the share read-only at connect time
++  (connect_fn).  The 4.0.21 samba_multicall shipped on the router registers a
++  single hook, create_file_fn, and denies every open whose current time falls
++  inside the configured period (read, write, directory opens included).
++  See docs/s4-camera-readonly.md for the disassembly evidence and the
++  behaviour matrix measured against the vendor binary.
++
++  The module accepts one parameter, with the same syntax as upstream:
+ 
+   readonly: period = "begin date","end date"
+ 
+-  where "begin date" and "end date" are mandatory and should comply with date(1) 
+-  syntax for date strings.
++  where "begin date" and "end date" should comply with date(1) syntax.
+ 
+   Example:
+ 
+@@ -48,61 +47,99 @@
+   Default:
+ 
+   readonly: period = "today 0:0:0","tomorrow 0:0:0"
++*/
+ 
+-  The default covers whole day thus making the share readonly
++#define MODULE_NAME "readonly"
+ 
++/*
++ * Test-only seam: when XIAOMI_READONLY_NOW is set to epoch seconds the
++ * time window is evaluated against that instant instead of time(NULL).
++ * It is only used by the S4 test matrix and is never set in production.
+  */
+-
+-#define MODULE_NAME "readonly"
+-static int readonly_connect(vfs_handle_struct *handle, 
+-			    const char *service, 
+-			    const char *user)    
++static time_t readonly_current_time(void)
+ {
+-  const char *period_def[] = {"today 0:0:0", "tomorrow 0:0:0"};
+-
+-  const char **period = lp_parm_string_list(SNUM(handle->conn),
+-					     (handle->param ? handle->param : MODULE_NAME),
+-					     "period", period_def); 
+-  int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+-
+-  if (ret < 0) {
+-    return ret;
+-  }
+-
+-  if (period && period[0] && period[1]) {
+-    int i;
+-    time_t current_time = time(NULL);
+-    time_t begin_period = get_date(period[0], &current_time);
+-    time_t end_period   = get_date(period[1], &current_time);
+-
+-    if ((current_time >= begin_period) && (current_time <= end_period)) {
+-      connection_struct *conn = handle->conn;
+-
+-      handle->conn->read_only = True;
+-
+-      /* Wipe out the VUID cache. */
+-      for (i=0; i< VUID_CACHE_SIZE; i++) {
+-        struct vuid_cache_entry *ent = &conn->vuid_cache->array[i];
+-        ent->vuid = UID_FIELD_INVALID;
+-        TALLOC_FREE(ent->session_info);
+-        ent->read_only = false;
+-        ent->share_access = 0;
+-      }
+-      conn->vuid_cache->next_entry = 0;
+-    }
+-
+-    return 0;
+-
+-  } else {
+-    
+-    return 0;
+-    
+-  }
++	const char *fake = getenv("XIAOMI_READONLY_NOW");
++	char *end = NULL;
++	long value;
++
++	if (fake != NULL && fake[0] != '\0') {
++		value = strtol(fake, &end, 10);
++		if (end != NULL && *end == '\0' && value > 0) {
++			return (time_t)value;
++		}
++	}
++	return time(NULL);
+ }
+ 
++static NTSTATUS readonly_create_file(struct vfs_handle_struct *handle,
++				     struct smb_request *req,
++				     struct files_struct *dirfsp,
++				     struct smb_filename *smb_fname,
++				     uint32_t access_mask,
++				     uint32_t share_access,
++				     uint32_t create_disposition,
++				     uint32_t create_options,
++				     uint32_t file_attributes,
++				     uint32_t oplock_request,
++				     const struct smb2_lease *lease,
++				     uint64_t allocation_size,
++				     uint32_t private_flags,
++				     struct security_descriptor *sd,
++				     struct ea_list *ea_list,
++				     files_struct **result,
++				     int *pinfo,
++				     const struct smb2_create_blobs *in_context_blobs,
++				     struct smb2_create_blobs *out_context_blobs)
++{
++	const char *period_def[] = {"today 0:0:0", "tomorrow 0:0:0"};
++	const char **period;
++	time_t current_time;
++	time_t begin_period;
++	time_t end_period;
++	int snum;
++
++	snum = (handle->conn != NULL) ? SNUM(handle->conn) : -1;
++	period = lp_parm_string_list(snum,
++				     (handle->param ? handle->param : MODULE_NAME),
++				     "period", period_def);
++	if (period == NULL || period[0] == NULL || period[1] == NULL) {
++		goto next;
++	}
++	if (handle->conn == NULL || handle->conn->read_only) {
++		goto next;
++	}
++
++	current_time = readonly_current_time();
++	begin_period = get_date(period[0], &current_time);
++	end_period = get_date(period[1], &current_time);
++
++	if ((current_time >= begin_period) && (current_time <= end_period)) {
++		DEBUG(1, ("check_if_time_in_range: [true] start: %d, end: %d, "
++			  "current: %d\n",
++			  (int)begin_period, (int)end_period,
++			  (int)current_time));
++		DEBUG(1, ("create file failed caused by readonly timerange "
++			  "limit.\n"));
++		return NT_STATUS_ACCESS_DENIED;
++	}
++
++	DEBUG(1, ("check_if_time_in_range: [false] start: %d, end: %d, "
++		  "current: %d\n",
++		  (int)begin_period, (int)end_period, (int)current_time));
++
++next:
++	return SMB_VFS_NEXT_CREATE_FILE(handle, req, dirfsp, smb_fname,
++					access_mask, share_access,
++					create_disposition, create_options,
++					file_attributes, oplock_request,
++					lease, allocation_size,
++					private_flags, sd, ea_list, result,
++					pinfo, in_context_blobs,
++					out_context_blobs);
++}
+ 
+ static struct vfs_fn_pointers vfs_readonly_fns = {
+-	.connect_fn = readonly_connect
++	.create_file_fn = readonly_create_file
+ };
+ 
+ NTSTATUS vfs_readonly_init(TALLOC_CTX *);
