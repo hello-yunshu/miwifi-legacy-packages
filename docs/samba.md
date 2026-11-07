@@ -1,6 +1,8 @@
 # Samba 实验状态
 
-小米官方 SDK GCC 4.8.2、ARM32/uClibc 0.9.33.2 环境下，上游 Samba 4.23.13 已完成交叉构建；在 Ubuntu 宿主的 QEMU 和原厂 libc 隔离环境中，Emby 目录、账户访问和 SMB 3.1.1 加密文件读取通过。真实路由器 Linux 2.6.36 内核尚未验证。4.23 已进入仅安全更新阶段，后续目标为 [4.25.1](https://www.samba.org/samba/history/)，尚未构建。
+小米官方 SDK GCC 4.8.2、ARM32/uClibc 0.9.33.2 环境下，上游 Samba 4.25.1 已完成干净交叉构建：全新源码树 + 空输出目录，`configure`/`build`/`install` 全部成功，产物可报版本、`testparm` 通过、`smbd` 在 QEMU + 原厂 libc sysroot 下启动。详见 [S1 干净构建记录](s1-clean-build.md)。真实路由器 Linux 2.6.36 内核尚未验证，产物状态为 lab。
+
+此前的 4.23.13 实验为增量修复构建，不作为 S1 成果，仅保留在 `recipes/samba` 作参考。
 
 存在未完成的厂商兼容：MAC 授权策略、摄像机 readonly VFS、shareUpdate、热插拔及 WiFi 管理控制。离线策略模型只表达逆向分析的核心分支，不包含 IPC$、地址到 MAC、完整认证和 Samba 其他检查，不用于生产。
 
