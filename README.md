@@ -4,6 +4,8 @@
 
 **当前状态：研究阶段，无可供安装的软件包。请勿替换路由器原厂程序。** 本项目与小米没有官方关联。
 
+- [项目路线图](docs/plans/roadmap.md)
+- [SMB 分阶段开发计划](docs/plans/smb-development.md)
 - [设备软件清单及升级优先级](docs/inventory.md)
 - [Samba 实验与构建边界](docs/samba.md)
 - [许可证及第三方代码](THIRD_PARTY.md)
