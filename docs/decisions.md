@@ -59,4 +59,23 @@
 - D-S4-14 S3 的三个 BLOCKED 在 S4 的处置：Finder/`mount_smbfs` 非 445 仍 BLOCKED，S4 不依赖（create 语义用 `smbprotocol` 在 1445 覆盖）；原厂撤销实机对照不适用于 S4（readonly 无撤销逻辑）；IPv6 与 SMB1 RAP 不适用于判定路径（`create_file` 协议无关，SMB1 已实测，RAP 浏览不经该钩子）。三项均未绕过，均写明理由。
 - D-S4-15 真实摄像机接入标 BLOCKED，不用“配置正确/`testparm` 通过”冒充。原因：无设备；摄像机通常固定 445，而本轮禁止停原厂。兼容性差异只记录到能实测的层面（SMB1/SMB2/SMB3.1.1 文件客户端、中文名、200/260 字节路径），摄像机固件的认证与路径拼接行为保持“未验证”。
 
+## S5（小米管理与服务生命周期）
+
+- D-S5-01 新版生命周期不复用原厂 `shareUpdate`、`/etc/init.d/samba`、`supervisord`。静态与运行证据表明它们会写 `/etc/config/samba`、生成 `/var/etc/smb.conf`、调用原厂 `smbcontrol`，还会重启 MiniDLNA 并给电视发信号；任何一条都违反本轮约束。适配器只做“UCI 只读 → 新版配置 → 自己的实例”。
+- D-S5-02 UCI 读取一律用 `uci -c <dir>` 指向 shadow 目录（本轮为 `/userdisk/data/samba-s5/uci` 的只读复制）。这样能真实复现 App 写入后的配置形态，又不碰 `/etc/config/samba`；测试结束核对其 md5 未变。
+- D-S5-03 配置采纳分三道：渲染规则校验、4.25.1 `testparm`、隔离路径/端口检查；相机共享额外检查 `lib/vfs/readonly.so` 存在。任一失败返回 3 并保留旧 `smb.conf`（字节不变）与 last-good，同时把诊断写进 `var/log/adapter.log`。只做 `testparm` 不够：它不加载 VFS 模块，模块缺失时配置会“通过”但行为退化。
+- D-S5-04 S5 只负责把 `misc.smb_ctl.limit/start_time/end_time` 渲染为 `vfs object = readonly` 与 `readonly:period`，不复制 S4 的时间判断。拒绝仍由 S4 的 `create_file` 钩子执行；因此 S4 的“06:00–24:00 拒绝”语义与本阶段的共享级 `read_only` 互不影响。实测 deny/allow 两态与 S4 文档一致。
+- D-S5-05 4.0.21 的 `socket options`、`write cache size`、`default cpumask` 在 4.25.1 中不可用或已移除（`SO_SNDBUFFORCE` 被 uClibc 拒绝），适配器不再输出，只保留 `smb2 max read/write/trans`。不把被忽略的参数写进配置冒充“已迁移”，性能调优留到后续阶段重新测量。
+- D-S5-06 新版进程用 `sbin/samba-s5d` 的**真实副本**启动，不用符号链接。实测：符号链接时 `pidof smbd` 会包含新版 PID（busybox 按 `/proc/<pid>/exe` 解析后的基名匹配），原厂 init 的 start 还会把这些 PID 写进 samba cgroup；换成真实副本后 `pidof smbd` 只返回原厂进程。
+- D-S5-07 停止只读自己的 PID 文件，并校验 `/proc/<pid>/exe` 在 `ROOT/sbin/` 下才发信号；死 PID 只清文件，活的外来 PID 返回 4 且不杀。全程没有 `pidof`/`pkill`/`killall`/宽匹配。这是 S3 事故后的硬约束。
+- D-S5-08 `reload` 只允许“新版 `smbcontrol` + 新版自己的配置”。实测旧版 `smbcontrol` 指向新版实例会把实例杀掉且自身返回 0；新版指向旧版返回 1 且旧实例存活。两代消息协议不可交叉，管理链路里不得混用。
+- D-S5-09 启动前用 `smbd -b` 的 `SBINDIR` 校验编译前缀与 `ROOT` 一致（允许符号链接映射后解析相等）。当前树编译在 `/userdisk/data/samba-s2/root`，错位部署会出现“能启动但 VFS/auth 模块找不到”的半失效状态，因此直接拒绝；重定位推迟到后续阶段。
+- D-S5-10 真实磁盘插拔标 BLOCKED：`/extdisks/sdb1` 是生产盘，不允许拔。改用“共享路径不存在”验证共享级降级——生成/启动正常，目标共享 `BAD_NETWORK_NAME`，其他共享不受影响；这不等价于热插拔，不冒充。
+- D-S5-11 MiniDLNA 重启与电视通知标 BLOCKED：设备上 MiniDLNA 未运行、无电视。适配器不调用 `init.d`、不碰 `/etc/config/minidlna`；清理后其配置与 `/tmp/minidlna.conf` mtime 仍为 2018-10-16。替换后是否需要保留原厂这条共用链路，留待产品决定。
+- D-S5-12 `supervisord`/`TaskMonitorServer` 的停止匹配规则标 BLOCKED：验证它需要执行 `supervisord stop`，会停掉原厂 smbd。已用 `pidof` 实验证明名字层必须去重，并用真实副本规避；监控服务内部匹配逻辑未验证，替换时必须重测。
+- D-S5-13 App/管理界面层标 BLOCKED：没有调用 App，验证的是“UCI 变化 → 新版配置 → 实际行为”。App 写入、manifest `status` 门控、`shareUpdate` 的 flock/重入不在本轮结论内。
+- D-S5-14 S3/S4 遗留项（Finder/`mount_smbfs` 非 445、真实摄像机、原厂撤销对照、IPv6/SMB1 RAP、系统时间跳变与长连接）不参与 S5 的生成/启停判定，与本阶段判定无关，未重新测试；不把“无关”写成“已通过”。
+- D-S5-15 适配器实现中曾用 `[][\r\n]` 判非法共享名，busybox grep 把 `r`/`n` 也当字符，误拒 `S5Missing`；改为只拒绝方括号后复测通过。`adapter.log` 中 03:26:00 的 `reject share name: S5Missing` 是已修复缺陷的残留证据，最终结论以修复后为准。
+- D-S5-16 本轮测试结束后按 PID 文件和精确目录清理；原厂 `samba_multicall`/`/etc/config/samba`/`/var/etc/smb.conf`/模板 md5、139/445/137/138 归属、smbd 1448 与 nmbd 8469、根分区可用量均与动手前一致。
+
 
