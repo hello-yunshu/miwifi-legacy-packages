@@ -122,6 +122,13 @@ cmd_uninstall() {
 	else
 		die "vendor backup missing: $S8/versions/v0-vendor/samba.init" 2
 	fi
+	say "remove per-device access chain"
+	# svc_stop already asked the hook to clear it; repeat explicitly while the
+	# adapter still exists so a failed stop cannot leave our chain behind.
+	if [ -x "$BASE/xiaomi-smb-adapter.sh" ]; then
+		"$BASE/xiaomi-smb-adapter.sh" -r "$BASE" pridisk-clear >/dev/null 2>&1 ||
+			echo "note: pridisk-clear returned nonzero" >&2
+	fi
 	say "remove prefix symlink and trees"
 	p="$BASE/current"
 	real=$(readlink -f "$p" 2>/dev/null || true)
