@@ -79,3 +79,22 @@
 - D-S5-16 本轮测试结束后按 PID 文件和精确目录清理；原厂 `samba_multicall`/`/etc/config/samba`/`/var/etc/smb.conf`/模板 md5、139/445/137/138 归属、smbd 1448 与 nmbd 8469、根分区可用量均与动手前一致。
 
 
+
+## S6（实机受控实验）
+
+- D-S6-01 没有备用同型号设备，本轮在生产路由器上做“独立目录 + 非标准端口 1445”的受控实验：不停止、不替换、不改写原厂 4.0.21，端口归属与配置保持不变；真正的切换、停原厂和回滚全部留给 S7。这是对计划“优先备用设备”的现实替代，不把受控实验当成上线。
+- D-S6-02 部署树用 S3 完整安装树叠加 S4 的 `lib/vfs/readonly.so`。S4 的 prefix 树缺少 `libgnutls.so.30` 等依赖，单独打包会让 `testparm`/`smbd` 直接失败；S6 因此显式组合并在部署后核对 `readonly.so` md5 `83e70d25…`。
+- D-S6-03 编译前缀仍是 `/userdisk/data/samba-s2/root`。S6 用临时符号链接 `samba-s2 -> samba-s6` 映射，适配器启动前用 `smbd -b` 的 `SBINDIR` 加 `readlink -f` 校验；不重编译、不改 `SBINDIR`，避免出现“能启动但模块找不到”的半失效状态。
+- D-S6-04 内核兼容结论按实测记录：`getrandom`、`renameat2`、`memfd_create`、`copy_file_range` 在 2.6.36 上为 ENOSYS；`/dev/urandom`、epoll/eventfd/timerfd/signalfd/inotify、accept4、splice、sendfile、posix_fallocate、fcntl/flock、futimens 均可用。robust mutex 在 uClibc 头文件层就不可用，继续使用 fcntl 锁并接受日志中的 `mutexes requested but not available`；未观察到功能失败。
+- D-S6-05 S6 的 UCI 是 `/etc/config` 的只读复制，随后在复制件里删除生产共享、只保留 `S6rw`/`S6ro`/`S6摄像机` 三个合成共享。理由：1445 上不应暴露 `/userdisk/data` 等生产路径；功能语义已由 S3–S5 覆盖，S6 只需内核/性能/资源结论。原厂 `/etc/config/samba` 全程只读，清理后 md5 未变。
+- D-S6-06 客户端矩阵在测试进程上设 `XIAOMI_MAC_FILTER=0`，把 S3 的 MAC 策略与 S6 的协议/性能解耦。默认开启时 macOS 会话被 `STATUS_ACCESS_DENIED` 拒绝，说明策略仍生效；S6 不据此判断客户端兼容性，也不修改生产 MAC 列表。
+- D-S6-07 签名行为按实测记录：`server signing = default` 下认证会话实际要求签名；访客会话不能签名，smbprotocol 以 `require_signing=False` 连接会被拒绝。A/B 用同一认证用户、同一热缓存：未签名 40.2–45.8 MB/s，签名 19.6–22.0 MB/s，签名成本约 50%。不把“default”理解为“不要求签名”。
+- D-S6-08 加密用 `server smb encrypt = required` 加 `smb encrypt = required` 两处同时设置才生效；仅设置 share 级时客户端报 “server doesn't support SMB3 encryption”。加密单流 3.7–3.8 MB/s，`user` CPU 约 1.3 核，属 CPU 受限；保持默认 `smb encrypt = disabled`，加密作为可选能力记录，不作为 S6 默认配置。
+- D-S6-09 原厂 445 吞吐基线标 BLOCKED：访客 SMB1 tree connect 返回 `NT_STATUS_ACCESS_DENIED`，MAC/凭据门控；SMB2 访客无法签名；没有既有账号口令。没有用“本机回环”或“新建原厂账号”替代。性能阈值改按 100Mbps 线速和 2 核/248MB 余量制定：远端单流 ≥ 8 MB/s、签名单流 CPU ≤ 50%、加密 ≤ 70%、空闲 RSS ≤ 32 MB、管理界面 p95 < 200 ms、根分区可用空间不减少。
+- D-S6-10 吞吐以 smbclient 自身报告的纯传输值为准，不把设备侧客户端约 4 s 的初始化算进去；远端 macOS 数字用 smbprotocol 端到端测量。实测远端 10.7–11.4 MB/s（约 91–97% 线速），本机未签名 40–46 MB/s、签名 SMB2 20–22 MB/s、SMB3 加密 3.7–3.8 MB/s、写 32 MB/s、4 并发聚合 31–48 MB/s。
+- D-S6-11 资源以实测记录：新实例空闲 RSS 11.0 MB（父 4.6 + notifyd 3.2 + cleanupd 3.2），原厂 4.5 MB；空闲 CPU 均 1.3%。4 并发峰值 RSS 73.2 MB，16 并发 16/16 成功、峰值 51.9 MB；空闲 60 s 日志零增长，16 次连接增长 4800 B。RSS 求和会重复计算共享库，报告里明确是 RSS 而非 PSS。
+- D-S6-12 失败诊断按“精确杀子进程”做：4 路并发中 `kill -9` 一个连接子进程，该客户端断开，其余 3 路完成，父进程存活、新连接可用。配置拒绝用相对路径共享复测：`generate` 返回 3，`smb.conf` md5 不变；只读共享和相机时间窗均为真实拒绝并在日志中给出原因。
+- D-S6-13 持久化只验证“写入 → stop → start → 读回”，md5 一致；设备重启持久性标 BLOCKED，因为重启生产路由器会中断联网和管理，不符合本轮约束。`/userdisk` 是 ubifs、`/userdisk/data` 是 ext4，测试文件只落在 ext4 合成目录。
+- D-S6-14 遗留 BLOCKED 逐项处置：Finder/`mount_smbfs` 非 445 仍 BLOCKED（`smbutil` 报 socket 未连接、`mount_smbfs` 挂起且未挂载）；原厂撤销对照 BLOCKED（需改原厂 MAC/配置）；IPv6 BLOCKED（`br-lan` 只有 fe80 链路本地，无全局地址）；SMB1 RAP BLOCKED（无真实 RAP 客户端）；真实摄像机 BLOCKED（无硬件）；Emby 非标端口 BLOCKED（设备上无 Emby 进程）；MiniDLNA/电视通知、USB 热插拔、supervisord 匹配、App 集成沿用 S5 的 BLOCKED，不以近似场景代替。跨版本 `smbcontrol` 继续规避，不做跨版本调用。
+- D-S6-15 清理只按 PID 文件与精确路径：stop 校验 `/proc/<pid>/exe` 在 `ROOT/sbin/` 下，随后删除 `/userdisk/data/samba-s6`、`/userdisk/data/s6`、`samba-s2` 符号链接、`共享/s6perf.bin` 硬链接及 `/tmp/s6*` 临时文件；未用 `pidof`/`pkill`/通配杀进程。核对：四个原厂 md5 不变、139/445 仍为 1448、137/138 仍为 8469、`pidof smbd` 仍为 `26994 1448`、根分区可用 20588 KB 不变、1445 无监听、无测试进程与目录。
+- D-S6-16 S6 开始时 `/etc/config/samba` 的 md5 是 `8556a19b…`，与 S5 记录的 `244eb53e…` 不同，mtime 为 11-08 05:05，早于本轮开始（12:45），期间未再变化。该差异属外部改动，不归因于 S6，也不回滚它；S6 的恢复基线以本轮动手前状态为准。
