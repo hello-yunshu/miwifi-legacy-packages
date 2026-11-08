@@ -126,8 +126,11 @@ cmd_uninstall() {
 	# svc_stop already asked the hook to clear it; repeat explicitly while the
 	# adapter still exists so a failed stop cannot leave our chain behind.
 	if [ -x "$BASE/xiaomi-smb-adapter.sh" ]; then
-		"$BASE/xiaomi-smb-adapter.sh" -r "$BASE" pridisk-clear >/dev/null 2>&1 ||
-			echo "note: pridisk-clear returned nonzero" >&2
+		# 1.0.6 uses diskacl-clear; fall back to the old name so an
+		# uninstall still removes the chain after a binary rollback.
+		"$BASE/xiaomi-smb-adapter.sh" -r "$BASE" diskacl-clear >/dev/null 2>&1 ||
+			"$BASE/xiaomi-smb-adapter.sh" -r "$BASE" pridisk-clear >/dev/null 2>&1 ||
+			echo "note: diskacl-clear/pridisk-clear returned nonzero" >&2
 	fi
 	say "remove prefix symlink and trees"
 	p="$BASE/current"

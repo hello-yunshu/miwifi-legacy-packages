@@ -31,6 +31,7 @@ VENDOR_BIN=${S7_VENDOR_BIN:-/usr/sbin/samba_multicall}
 VENDOR_CONF=${S7_VENDOR_CONF:-/etc/config/samba}
 BASELINE=${S7_BASELINE:-$BASE/state/vendor.md5}
 CONFIG_BASELINE=${S7_CONFIG_BASELINE:-$BASE/state/vendor-config.md5}
+CRONTAB=${S7_CRONTAB:-/etc/crontabs/root}
 
 die() { echo "install: $1" >&2; exit "${2:-1}"; }
 
@@ -173,6 +174,13 @@ cmd_uninstall() {
 		fi
 	fi
 
+	# The md5 watcher lives in /etc/crontabs (outside $BASE); remove its line
+	# so an uninstalled tree is not probed every minute.
+	if [ -f "$CRONTAB" ]; then
+		tmp=$CRONTAB.s8tmp.$$
+		grep -v 'diskacl-sync.sh' "$CRONTAB" >"$tmp" 2>/dev/null &&
+			mv "$tmp" "$CRONTAB" || rm -f "$tmp"
+	fi
 	rm -f "$BASE/current"
 	rm -rf "$BASE/versions" "$BASE/state" "$BASE"/drill-*
 	echo "uninstalled"

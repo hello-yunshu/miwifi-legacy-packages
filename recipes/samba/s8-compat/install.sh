@@ -20,6 +20,7 @@ SMBROOT=/userdisk/data/s7root/current
 ADAPTER_SRC=/userdisk/data/s7root/xiaomi-smb-adapter.sh
 S2_LINK=/userdisk/data/samba-s2/root
 HOTPLUG=/etc/hotplug.d/block/90-s8-mounts
+CRON=/etc/crontabs/root
 STAGE=$(dirname "$0")
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -39,8 +40,12 @@ cmd_install() {
 	cp "$STAGE/hook.sh" "$VERS/v1/hook.sh" || die "copy hook"
 	cp "$STAGE/samba.init.wrapper" "$VERS/v1/samba.init.wrapper" ||
 		die "copy wrapper"
-	chmod 755 "$VERS/v1/hook.sh" "$VERS/v1/xiaomi-smb-adapter.sh"
-	for f in "$VERS/v1/hook.sh" "$VERS/v1/samba.init.wrapper"; do
+	cp "$STAGE/diskacl-sync.sh" "$VERS/v1/diskacl-sync.sh" ||
+		die "copy diskacl sync"
+	chmod 755 "$VERS/v1/hook.sh" "$VERS/v1/xiaomi-smb-adapter.sh" \
+		"$VERS/v1/diskacl-sync.sh"
+	for f in "$VERS/v1/hook.sh" "$VERS/v1/samba.init.wrapper" \
+		"$VERS/v1/diskacl-sync.sh"; do
 		sh -n "$f" || die "syntax error: $f"
 	done
 	cp "$VERS/v0-vendor/samba.init" "$VENDOR.tmp" &&
@@ -63,8 +68,32 @@ cmd_install() {
 	real=$(readlink -f "$SMBROOT" 2>/dev/null || echo "$SMBROOT")
 	mkdir -p "$(dirname "$S2_LINK")" || die "mkdir $(dirname "$S2_LINK")"
 	ln -sfn "$real" "$S2_LINK" || die "prefix symlink $S2_LINK"
+	# One-shot md5 watcher: 'lan=no -> yes' does not restart samba, so the
+	# DROP has to be removed by a short-lived cron job, not a daemon.  It
+	# points at the concrete v1 path (stable across 'current' switches) and
+	# exits immediately unless current -> versions/v1.
+	CRON_ENTRY="* * * * * $VERS/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl"
+	mkdir -p "$(dirname "$CRON")" || die "mkdir $(dirname "$CRON")"
+	if [ -f "$CRON" ]; then
+		grep -q "diskacl-sync.sh" "$CRON" ||
+			printf '%s\n' "$CRON_ENTRY" >>"$CRON" ||
+			die "install cron entry"
+	else
+		printf '%s\n' "$CRON_ENTRY" >"$CRON" || die "install cron entry"
+	fi
+	# The crond shipped in 2.25.209 keeps the table it loaded at startup and
+	# does not notice an edited /etc/crontabs/root (observed: the appended
+	# line stayed dormant for several minutes until crond was restarted).
+	# Restart the vendor cron service so the watcher is live immediately;
+	# rc.common's restart is a clean stop/start, never a SIGHUP (a HUP makes
+	# this crond exit instead of reloading).
+	if [ -x /etc/init.d/cron ]; then
+		/etc/init.d/cron restart >/dev/null 2>&1 ||
+			echo "warn: cron restart failed; diskacl watcher starts on next reboot" >&2
+	fi
 	(cd "$VERS/v1" &&
-		md5sum hook.sh xiaomi-smb-adapter.sh samba.init.wrapper > MANIFEST)
+		md5sum hook.sh xiaomi-smb-adapter.sh samba.init.wrapper \
+			diskacl-sync.sh > MANIFEST)
 	echo "installed v1; current -> $(readlink "$CUR")"
 	cmd_verify
 }
@@ -87,6 +116,10 @@ cmd_verify() {
 	(cd "$VERS/v1" && md5sum -c MANIFEST) || die "manifest mismatch"
 	[ -x "$HOTPLUG" ] || die "hotplug script missing"
 	sh -n "$HOTPLUG" || die "hotplug syntax"
+	[ -x "$VERS/v1/diskacl-sync.sh" ] || die "diskacl sync missing"
+	sh -n "$VERS/v1/diskacl-sync.sh" || die "diskacl sync syntax"
+	[ -f "$CRON" ] && grep -q "diskacl-sync.sh" "$CRON" ||
+		die "diskacl cron entry missing"
 	[ "$(md5sum "$HOTPLUG" | awk '{print $1}')" = \
 		"$(cat "$VERS/v1/hotplug.md5" 2>/dev/null)" ] ||
 		die "hotplug checksum mismatch"
