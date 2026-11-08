@@ -24,6 +24,10 @@ PORT=${S5_PORT:-1445}
 BIND=${S5_BIND:-}
 PROC_NAME=${S5_PROC_NAME:-samba-s5d}
 SNAPSHOT=${S5_CONFIG_SNAPSHOT:-}
+# Mount table used by the mount-derived share layer.  Tests point this at a
+# fixture; production reads the live kernel table.
+MOUNTS_FILE=${S8_MOUNTS_FILE:-/proc/mounts}
+EXTDISK_ROOT=${S8_EXTDISK_ROOT:-/extdisks}
 TM_TOOL=${S5_TM_TOOL:-/usr/sbin/taskmonitorTool}
 TM_NAME=${S5_TM_NAME:-samba-s5d}
 ALLOW_STOCK=0
@@ -41,7 +45,7 @@ Commands:
   stop       stop the instance using its PID file only
   restart    stop then start
   reload     generate then 'smbcontrol smbd reload-config'
-  status     report running / stale / stopped (0 / 4 / 3)
+  status     report running / degraded / stale / stopped (0 / 1 / 4 / 3)
   check      print isolation and configuration facts
   tm-register    register this running instance with TaskMonitor (own alias)
   tm-unregister  remove this instance from TaskMonitor (before a planned stop)
@@ -293,6 +297,7 @@ render() {
 		fi
 
 		seen=" "
+		uci_paths=" "
 		fail=0
 		for sec in $(share_sections); do
 			sname=$(uci_get "samba.$sec.name")
@@ -328,6 +333,8 @@ render() {
 				break
 				;;
 			esac
+			pnorm=${spath%/}
+			uci_paths="${uci_paths}${pnorm} "
 
 			echo
 			echo "[$sname]"
@@ -363,6 +370,61 @@ render() {
 				;;
 			esac
 		done
+
+		# Mount-derived shares.  The vendor stack creates a UCI
+		# 'sambashare' for every /extdisks/<dev> when the disk is
+		# mounted (shareUpdate -a).  Do not depend on that: synthesize
+		# a share for any active mount that UCI does not already cover.
+		# UCI wins and nothing is written back to /etc/config/samba.
+		if [ -r "$MOUNTS_FILE" ]; then
+			mlist="$out.mounts"
+			if ! awk '$1 !~ /^#/ && NF >= 2 {print $2 " " $1}' "$MOUNTS_FILE" 2>/dev/null |
+				sort > "$mlist" 2>/dev/null; then
+				: > "$mlist"
+			fi
+			seen_mounts=" "
+			while read mpoint mdev mrest; do
+				case "$mdev" in
+				/dev/*) ;;
+				*) continue ;;
+				esac
+				case "$mpoint" in
+				"${EXTDISK_ROOT:-/extdisks}"/*) ;;
+				*) continue ;;
+				esac
+				case "$mpoint" in
+				"${EXTDISK_ROOT:-/extdisks}"/*/*) continue ;;
+				esac
+				[ -d "$mpoint" ] || continue
+				pnorm=${mpoint%/}
+				case "$uci_paths" in
+				*" $pnorm "*) continue ;;
+				esac
+				case "$seen_mounts" in
+				*" $pnorm "*) continue ;;
+				esac
+				seen_mounts="${seen_mounts}${pnorm} "
+				n=0
+				while :; do
+					case "$seen" in
+					*" [XiaoMi-usb$n] "*) n=$((n + 1)) ;;
+					*) break ;;
+					esac
+				done
+				sname="XiaoMi-usb$n"
+				seen="${seen} [$sname] "
+				echo
+				echo "[$sname]"
+				echo "	path = $mpoint"
+				echo "	read only = no"
+				echo "	guest ok = yes"
+				echo "	create mask = 0777"
+				echo "	directory mask = 0777"
+				echo "	browseable = no"
+				echo "	force user = root"
+			done < "$mlist"
+			rm -f "$mlist"
+		fi
 	} >"$out" 2>"$out.err"
 
 	rc=$?
@@ -428,6 +490,17 @@ pid_from_file() {
 	pid=$(cat "$PIDFILE" 2>/dev/null | tr -dc '0-9')
 	[ -n "$pid" ] || return 1
 	echo "$pid"
+}
+
+# Remove the pidfile only when it still names the pid we just handled.  A
+# TaskMonitor revival or a concurrent start may already have written a newer
+# pid into the same path; deleting it then leaves a live instance without a
+# pidfile, which status reports as "port in use by another process".
+remove_pidfile_if() {
+	[ -f "$PIDFILE" ] || return 0
+	cur=$(cat "$PIDFILE" 2>/dev/null | tr -dc '0-9')
+	[ "$cur" = "$1" ] && rm -f "$PIDFILE"
+	return 0
 }
 
 pid_is_ours() {
@@ -496,7 +569,7 @@ cmd_start() {
 			return 4
 		fi
 		echo "clearing stale pidfile for dead pid $pid"
-		rm -f "$PIDFILE"
+		remove_pidfile_if "$pid"
 	fi
 	if port_listening; then
 		echo "refusing to start: port $PORT already in use" >&2
@@ -547,7 +620,19 @@ cmd_stop() {
 		cmd_tm_unregister >/dev/null 2>&1 || true
 	fi
 	if ! pid=$(pid_from_file); then
-		echo "stopped (no pidfile)"
+		# tm-unregister may kill the process asynchronously; give it a moment,
+		# then require the port to be free.  Reporting success while another
+		# process still owns the port would let start collide with it.
+		i=0
+		while port_listening && [ $i -lt 20 ]; do
+			usleep 100000 2>/dev/null || sleep 1
+			i=$((i + 1))
+		done
+		if port_listening; then
+			echo "stop failed: port $PORT still listening (no live pidfile)" >&2
+			return 5
+		fi
+		echo "stopped (no live pidfile)"
 		return 0
 	fi
 	if ! pid_is_ours "$pid"; then
@@ -555,7 +640,11 @@ cmd_stop() {
 			echo "refusing to kill $pid: not a process of $ROOT" >&2
 			return 4
 		fi
-		rm -f "$PIDFILE"
+		remove_pidfile_if "$pid"
+		if port_listening; then
+			echo "stop failed: port $PORT still listening after removing stale pidfile" >&2
+			return 5
+		fi
 		echo "stopped (removed stale pidfile for dead pid $pid)"
 		return 0
 	fi
@@ -573,7 +662,18 @@ cmd_stop() {
 			sleep 1
 		fi
 	fi
-	rm -f "$PIDFILE"
+	remove_pidfile_if "$pid"
+	# The process is gone, but a child or a foreign listener could still own
+	# the port.  Do not report success until the port is actually free.
+	i=0
+	while port_listening && [ $i -lt 20 ]; do
+		usleep 100000 2>/dev/null || sleep 1
+		i=$((i + 1))
+	done
+	if port_listening; then
+		echo "stop failed: port $PORT still listening after killing pid $pid" >&2
+		return 5
+	fi
 	log "stopped pid=$pid"
 	echo "stopped pid=$pid"
 	return 0

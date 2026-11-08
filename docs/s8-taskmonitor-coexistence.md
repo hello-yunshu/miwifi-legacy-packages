@@ -99,8 +99,8 @@ taskmonitorTool -p "$PROCLINE" -b "$PROCFLAG" -i "$MONNAME" [-n N] -t <start|sto
 ## 8. 仍未验证 / BLOCKED
 
 - TaskMonitor 任务表 03:00 的整表重写来源（今天 mtime 03:00，15:21 又因探针变化）；只知“变更即写 + 至少一次日级重写”，未证明触发者。
-- 原厂 smbd 被 API 注销后，App 侧“SMB 开关/共享修改”是否会自动重新注册并抢 445——需要真实 App 操作，当前标 BLOCKED。
-- 设备重启后的注册顺序与 445 归属，需要重启验证，当前标 BLOCKED（不在本轮授权范围）。
+- 原厂 smbd 被 API 注销后，App 侧“SMB 开关/共享修改”是否会自动重新注册并抢 445——真实 App/云端操作仍为 BLOCKED；但其入口 `init.d/samba` 的 `reload/restart/stop/start` 已实测全部落到新版，见 [S8 替换与接管](s8-taskmonitor-replacement.md#63-app-路径)。
+- ~~设备重启后的注册顺序与 445 归属~~：**已关闭**，两次重启均由新版 `samba-s5d` 监听 139/445，见 [S8 替换与接管](s8-taskmonitor-replacement.md#6-139445-归属与重启持久化)。
 
 ## 9. 改造实施与复测（2026-11-08 15:2x–15:3x）
 
@@ -132,3 +132,7 @@ taskmonitorTool -p "$PROCLINE" -b "$PROCFLAG" -i "$MONNAME" [-n N] -t <start|sto
 - **445 模式**：通过注销原厂条目（而不是杀进程）取得端口，回滚走原厂 init 全链路；全过程可逆、哈希不变、其它服务无异常。
 
 不采用手改任务表、kill `taskmonitorServer`、停 `pluginTaskmonitor` 或停 `wrsst`/`ustackd` 的方案。
+
+## 10. 后续：从“共存”升级为“可替换组件”
+
+本文证明的是机制安全。正式长期形态改为版本化兼容层：`/etc/init.d/samba` 入口归新版、`taskmonitorServer` 本体不动、其余 32–33 个受管服务零改动，并已验证重启持久化与回滚。实现、条目清单与实测数据见 [S8 替换与接管](s8-taskmonitor-replacement.md)。
