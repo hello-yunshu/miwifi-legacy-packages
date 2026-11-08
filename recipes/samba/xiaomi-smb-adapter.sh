@@ -35,6 +35,23 @@ NO_GENERATE=0
 PIDFILE=
 ACTION=
 
+# Per-device disk access control (vendor 'pridisk' intent).
+# The vendor keeps the intent in /etc/config/macfilter and its own
+# apply_firewall never programmed it; this chain is the only enforcement
+# point for the isolated Samba 4.x instance.  We own exactly one chain and
+# two INPUT jumps, and never read, flush or rebuild the rest of INPUT.
+MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
+IPT=${S8_IPTABLES:-iptables}
+PRIDISK_CHAIN=${S8_PRIDISK_CHAIN:-s8-pridisk}
+PRIDISK_IFACE=${S8_PRIDISK_IFACE:-br-lan}
+PRIDISK_TCP_PORTS=${S8_PRIDISK_TCP_PORTS:-139,445}
+PRIDISK_UDP_PORTS=${S8_PRIDISK_UDP_PORTS:-137,138}
+PRIDISK_PRINT=0
+PD_MODE=
+PD_MODE_SRC=
+PD_YES=
+PD_NO=
+
 usage() {
 	cat <<EOF
 Usage: $0 [-r root] [-c uci-dir] [-p port] [-b bind-address] [-B baseline] [-P] <command>
@@ -51,6 +68,9 @@ Commands:
   tm-unregister  remove this instance from TaskMonitor (before a planned stop)
   vendor-stop    ask TaskMonitor to stop and unregister the factory smbd entry
   vendor-start   restore the factory service via /etc/init.d/samba start
+  pridisk-apply  rebuild the per-device access chain from /etc/config/macfilter
+  pridisk-clear  remove our INPUT jumps and delete the chain
+  pridisk-status report mode/chain/jump state
 
 Options:
   -r root    installation tree (default $ROOT)
@@ -61,9 +81,13 @@ Options:
   -B file    accepted-config baseline (default <root>/var/state/config-baseline)
   -P         allow stock ports 139/445 for an authorised takeover
   -N         start without regenerating the configuration
+  -R         dry run: print the iptables commands instead of executing them
 
 Environment:
   S5_ACCEPT_CONFIG=1  record the current samba/misc hashes as accepted
+  S8_MACFILTER        macfilter path (default /etc/config/macfilter)
+  S8_IPTABLES         iptables binary (default iptables)
+  S8_PRIDISK_IFACE    LAN interface for the INPUT jumps (default br-lan)
 EOF
 }
 
@@ -558,6 +582,9 @@ cmd_start() {
 	if pid=$(pid_from_file); then
 		if pid_is_ours "$pid"; then
 			if port_listening; then
+				# Re-assert the access rules; this repairs a chain lost to a
+				# firewall reload while the instance kept running.
+				pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
 				echo "already running pid=$pid"
 				return 0
 			fi
@@ -598,6 +625,7 @@ cmd_start() {
 	while [ $i -lt 20 ]; do
 		if pid=$(pid_from_file) && pid_is_ours "$pid" && port_listening; then
 			log "started pid=$pid port=$PORT via sbin/$PROC_NAME"
+			pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
 			echo "started pid=$pid port=$PORT"
 			return 0
 		fi
@@ -632,6 +660,7 @@ cmd_stop() {
 			echo "stop failed: port $PORT still listening (no live pidfile)" >&2
 			return 5
 		fi
+		pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
 		echo "stopped (no live pidfile)"
 		return 0
 	fi
@@ -645,6 +674,7 @@ cmd_stop() {
 			echo "stop failed: port $PORT still listening after removing stale pidfile" >&2
 			return 5
 		fi
+		pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
 		echo "stopped (removed stale pidfile for dead pid $pid)"
 		return 0
 	fi
@@ -675,6 +705,7 @@ cmd_stop() {
 		return 5
 	fi
 	log "stopped pid=$pid"
+	pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
 	echo "stopped pid=$pid"
 	return 0
 }
@@ -691,12 +722,298 @@ cmd_reload() {
 	if "$ROOT/bin/smbcontrol" -s "$ROOT/etc/smb.conf" smbd reload-config \
 		>"$ROOT/var/log/smbcontrol.out" 2>&1; then
 		log "reload-config sent to pid=$pid"
+		# macfilter may have changed on disk; rebuild the chain idempotently.
+		pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
 		echo "reloaded"
 		return 0
 	fi
 	echo "reload failed; configuration kept, restart required" >&2
 	log "reload failed: $(tail -1 "$ROOT/var/log/smbcontrol.out" 2>/dev/null)"
 	return 6
+}
+
+# --- per-device disk access (pridisk) --------------------------------------
+# macfilter intent (stock firmware uses a 'mode' section):
+#   config mode 'mode'      option pridisk 'whitelist'|'blacklist'
+#   config mac  'y'         option mac 'aa:..'  option pridisk 'yes'|'no'
+# 'config macfilter' is accepted as an alias for the mode section.
+#
+# Policy (documented in the close-out report):
+#   whitelist : RETURN for every 'yes' device, then DROP the rest.
+#   blacklist : DROP for every 'no' device, then RETURN the rest.
+#   missing   : fall back to blacklist semantics (only explicit 'no' is
+#               denied, i.e. the least destructive interpretation).
+#   unknown   : same as missing, and logged.
+#   unreadable/absent file: leave the firewall exactly as it is, log ERROR and
+#               record mode=unavailable.  It is *not* a silent fail-open: the
+#               condition is visible in 'check'/'status' and in adapter.log.
+#               Blocking every client instead would take the family NAS offline
+#               because of a parsing problem, which is the worse failure.
+
+pridisk_parse() {
+	awk '
+	function unq(s,   c) {
+		gsub(/^[ \t\r]+|[ \t\r]+$/, "", s)
+		c = substr(s, 1, 1)
+		if ((c == "\"" || c == "\047") && substr(s, length(s), 1) == c)
+			s = substr(s, 2, length(s) - 2)
+		return s
+	}
+	function emit() {
+		if (stype == "mac" && smac != "")
+			print "mac", smac, spd
+	}
+	/^[ \t]*#/ { next }
+	/^[ \t]*config[ \t]/ {
+		emit()
+		stype = $2
+		smac = ""
+		spd = ""
+		next
+	}
+	/^[ \t]*option[ \t]/ {
+		opt = $2
+		rest = $0
+		sub(/^[ \t]*option[ \t]+[^ \t]+[ \t]+/, "", rest)
+		if (opt == "pridisk") {
+			if (stype == "mac")
+				spd = unq(rest)
+			else if (stype == "mode" || stype == "macfilter")
+				# stock firmware uses config mode; macfilter is an alias.
+				print "mode", unq(rest)
+		} else if (opt == "mac" && stype == "mac") {
+			smac = unq(rest)
+		}
+		next
+	}
+	END { emit() }
+	' "$MACFILTER" 2>/dev/null
+}
+
+pridisk_load() {
+	PD_MODE=
+	PD_MODE_SRC=
+	PD_YES=" "
+	PD_NO=" "
+	PD_UNSET=0
+	PD_BAD=0
+	[ -f "$MACFILTER" ] && [ -r "$MACFILTER" ] || return 1
+	mkdir -p "$ROOT/var/run" 2>/dev/null || return 1
+	PRIDISK_PARSE=$ROOT/var/run/pridisk.parse.$$
+	if ! pridisk_parse >"$PRIDISK_PARSE"; then
+		rm -f "$PRIDISK_PARSE"
+		return 1
+	fi
+	while read -r kind a b; do
+		case "$kind" in
+		mode)
+			case "$a" in
+			""|-) ;;
+			*) PD_MODE=$(printf '%s' "$a" | tr 'A-Z' 'a-z') ;;
+			esac
+			;;
+		mac)
+			m=$(printf '%s' "$a" | tr 'A-Z' 'a-z')
+			case "$m" in
+			??:??:??:??:??:??) ;;
+			*)
+				PD_BAD=$((PD_BAD + 1))
+				continue
+				;;
+			esac
+			case "$m" in
+			*[!0-9a-f:]*) PD_BAD=$((PD_BAD + 1)); continue ;;
+			esac
+			case "$b" in
+			yes|on|1|true) PD_YES="$PD_YES$m " ;;
+			no|off|0|false) PD_NO="$PD_NO$m " ;;
+			*) PD_UNSET=$((PD_UNSET + 1)) ;;
+			esac
+			;;
+		esac
+	done <"$PRIDISK_PARSE"
+	rm -f "$PRIDISK_PARSE"
+
+	case "$PD_MODE" in
+	whitelist)
+		PD_MODE_SRC=explicit
+		;;
+	blacklist)
+		PD_MODE_SRC=explicit
+		;;
+	"")
+		PD_MODE=blacklist
+		PD_MODE_SRC=default
+		;;
+	*)
+		PD_MODE_SRC=fallback
+		pridisk_log "unknown pridisk mode '$PD_MODE', treating as blacklist"
+		PD_MODE=blacklist
+		;;
+	esac
+	[ "$PD_BAD" -eq 0 ] || pridisk_log "ignored $PD_BAD macfilter entr(ies) with an invalid mac"
+	[ "$PD_UNSET" -eq 0 ] || pridisk_log "$PD_UNSET device(s) have no explicit pridisk value"
+	return 0
+}
+
+pridisk_count() {
+	c=0
+	for m in $1; do c=$((c + 1)); done
+	echo "$c"
+}
+
+pridisk_log() {
+	log "pridisk: $*"
+}
+
+# Print in dry-run mode, execute otherwise.  stderr from the real binary is
+# kept for diagnosis but never aborts the lifecycle by itself.
+ipt_run() {
+	if [ "$PRIDISK_PRINT" = 1 ]; then
+		printf '%s' "$IPT"
+		for a in "$@"; do printf ' %s' "$a"; done
+		printf '\n'
+		return 0
+	fi
+	"$IPT" "$@" 2>>"$ROOT/var/log/pridisk.err"
+}
+
+ipt_out() {
+	"$IPT" "$@" 2>/dev/null
+}
+
+pridisk_chain_exists() {
+	ipt_out -S "$PRIDISK_CHAIN" >/dev/null 2>&1
+}
+
+pridisk_state() {
+	[ -d "$ROOT/var/state" ] || return 0
+	{
+		printf 'mode=%s\n' "$1"
+		printf 'mode_source=%s\n' "${PD_MODE_SRC:-none}"
+		printf 'allowed=%s\n' "$2"
+		printf 'denied=%s\n' "$3"
+		printf 'iface=%s\n' "$PRIDISK_IFACE"
+		printf 'chain=%s\n' "$PRIDISK_CHAIN"
+		printf 'macfilter=%s\n' "$MACFILTER"
+		printf 'updated=%s\n' "$(date +%s)"
+	} >"$ROOT/var/state/pridisk.state" 2>/dev/null || true
+}
+
+# Delete every INPUT rule that jumps to our chain.  Only those exact jumps are
+# touched; the rest of INPUT keeps its original order.
+pridisk_jump_remove() {
+	lines=$(ipt_out -S INPUT 2>/dev/null | grep -F -- "-j $PRIDISK_CHAIN")
+	[ -n "$lines" ] || return 0
+	printf '%s\n' "$lines" | while IFS= read -r line; do
+		spec=${line#-A INPUT }
+		[ "$spec" = "$line" ] && continue
+		# shellcheck disable=SC2086
+		set -- $spec
+		ipt_run -D INPUT "$@"
+	done
+}
+
+pridisk_apply() {
+	mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$ROOT/var/run" 2>/dev/null
+	if ! pridisk_load; then
+		pridisk_log "UNAVAILABLE: $MACFILTER missing or unreadable; firewall untouched"
+		echo "pridisk: unavailable ($MACFILTER); firewall left untouched" >&2
+		pridisk_state unavailable 0 0
+		return 0
+	fi
+	allowed=$(pridisk_count "$PD_YES")
+	denied=$(pridisk_count "$PD_NO")
+
+	if [ "$PD_MODE" = whitelist ]; then
+		[ "$allowed" -gt 0 ] ||
+			pridisk_log "WARNING: whitelist has no 'yes' device; all LAN SMB access will be dropped"
+		pridisk_log "mode=whitelist source=$PD_MODE_SRC allow=$allowed deny=$denied"
+	else
+		pridisk_log "mode=blacklist source=$PD_MODE_SRC allow=$allowed deny=$denied"
+	fi
+
+	if ! pridisk_chain_exists; then
+		if ! ipt_run -N "$PRIDISK_CHAIN" && [ "$PRIDISK_PRINT" = 0 ]; then
+			pridisk_log "cannot create chain $PRIDISK_CHAIN"
+			echo "pridisk: cannot create chain $PRIDISK_CHAIN" >&2
+			pridisk_state error 0 0
+			return 1
+		fi
+	fi
+	ipt_run -F "$PRIDISK_CHAIN"
+
+	if [ "$PD_MODE" = whitelist ]; then
+		for m in $PD_YES; do
+			ipt_run -A "$PRIDISK_CHAIN" -m mac --mac-source "$m" -j RETURN
+		done
+		ipt_run -A "$PRIDISK_CHAIN" -j DROP
+	else
+		for m in $PD_NO; do
+			ipt_run -A "$PRIDISK_CHAIN" -m mac --mac-source "$m" -j DROP
+		done
+		ipt_run -A "$PRIDISK_CHAIN" -j RETURN
+	fi
+
+	pridisk_jump_remove
+	if [ "$PRIDISK_PRINT" = 0 ] &&
+		ipt_out -S INPUT 2>/dev/null | grep -qF -- "-j $PRIDISK_CHAIN"; then
+		pridisk_log "stale $PRIDISK_CHAIN jump survived deletion; refusing to add duplicates"
+		echo "pridisk: stale jump in INPUT; chain rebuilt but jumps not re-added" >&2
+		pridisk_state error "$allowed" "$denied"
+		return 1
+	fi
+
+	# Position 1/2: the vendor has an any-interface ACCEPT for
+	# 22,80,135:139,445 early in INPUT; our jump must precede it or the
+	# per-device decision never runs.  Two rules, both scoped to the LAN.
+	ipt_run -I INPUT 1 -i "$PRIDISK_IFACE" -p tcp \
+		-m multiport --dports "$PRIDISK_TCP_PORTS" -j "$PRIDISK_CHAIN"
+	ipt_run -I INPUT 2 -i "$PRIDISK_IFACE" -p udp \
+		-m multiport --dports "$PRIDISK_UDP_PORTS" -j "$PRIDISK_CHAIN"
+
+	pridisk_state "$PD_MODE" "$allowed" "$denied"
+	if [ "$PRIDISK_PRINT" = 1 ]; then
+		echo "pridisk: dry run, $( [ "$PD_MODE" = whitelist ] && echo "allow=$allowed" || echo "deny=$denied" ) rule(s)"
+	else
+		pridisk_log "applied chain=$PRIDISK_CHAIN iface=$PRIDISK_IFACE"
+		echo "pridisk: applied mode=$PD_MODE allow=$allowed deny=$denied"
+	fi
+	return 0
+}
+
+pridisk_clear() {
+	mkdir -p "$ROOT/var/log" "$ROOT/var/state" 2>/dev/null
+	pridisk_jump_remove
+	if pridisk_chain_exists; then
+		ipt_run -F "$PRIDISK_CHAIN"
+		if ! ipt_run -X "$PRIDISK_CHAIN" && [ "$PRIDISK_PRINT" = 0 ]; then
+			pridisk_log "chain $PRIDISK_CHAIN still present after -X"
+			echo "pridisk: chain $PRIDISK_CHAIN still present" >&2
+			return 1
+		fi
+	fi
+	pridisk_state cleared 0 0
+	if [ "$PRIDISK_PRINT" = 1 ]; then
+		echo "pridisk: dry run, chain removed"
+	else
+		pridisk_log "cleared chain=$PRIDISK_CHAIN"
+		echo "pridisk: cleared"
+	fi
+	return 0
+}
+
+pridisk_status() {
+	chain=absent
+	pridisk_chain_exists && chain=present
+	jumps=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "-j $PRIDISK_CHAIN")
+	echo "pridisk_chain=$chain"
+	echo "pridisk_jumps=$jumps"
+	if [ -f "$ROOT/var/state/pridisk.state" ]; then
+		sed 's/^/pridisk_/' "$ROOT/var/state/pridisk.state"
+	else
+		echo "pridisk_state=absent"
+	fi
 }
 
 cmd_check() {
@@ -729,6 +1046,7 @@ cmd_check() {
 		return 1
 	fi
 	echo "isolation=OK"
+	pridisk_status
 	cmd_status || true
 	[ $drift -eq 1 ] && return 7
 	return 0
@@ -873,7 +1191,7 @@ cmd_vendor_start() {
 	echo "factory smbd restored"
 }
 
-while getopts "r:c:p:b:n:B:PNh" opt; do
+while getopts "r:c:p:b:n:B:PNRh" opt; do
 	case "$opt" in
 	r) ROOT=$OPTARG ;;
 	c) CONF_SRC=$OPTARG ;;
@@ -883,6 +1201,7 @@ while getopts "r:c:p:b:n:B:PNh" opt; do
 	B) SNAPSHOT=$OPTARG ;;
 	P) ALLOW_STOCK=1 ;;
 	N) NO_GENERATE=1 ;;
+	R) PRIDISK_PRINT=1 ;;
 	h) usage; exit 0 ;;
 	*) usage; exit 2 ;;
 	esac
@@ -903,5 +1222,8 @@ tm-register) cmd_tm_register ;;
 tm-unregister) cmd_tm_unregister ;;
 vendor-stop) cmd_vendor_stop ;;
 vendor-start) cmd_vendor_start ;;
+pridisk-apply) pridisk_apply ;;
+pridisk-clear) pridisk_clear ;;
+pridisk-status) pridisk_status ;;
 *) usage; exit 2 ;;
 esac
