@@ -49,6 +49,15 @@ ACTION=
 # enforcement point for the isolated Samba 4.x instance.  We own exactly one
 # chain and two INPUT jumps, and never read, flush or rebuild the rest of
 # INPUT.  The old 's8-pridisk' chain is only ever removed, never created.
+#
+# Guest network: a guest device must never reach SMB by default, and it is
+# NOT part of the per-device list.  Guest clients randomise their MAC
+# (iOS/Android private Wi-Fi addresses), so macfilter never contains them and
+# a blacklist would default-allow them: the list is structurally unable to
+# cover guests.  Guest access is therefore refused unconditionally by one
+# INPUT rule scoped to br-guest, inserted before the vendor's any-interface
+# ACCEPT for 22,80,135:139,445.  It is a DROP, not a jump to s8-diskacl,
+# because the chain tail RETURN would fall through to that ACCEPT.
 MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
 IPT=${S8_IPTABLES:-iptables}
 DISKACL_CHAIN=${S8_DISKACL_CHAIN:-s8-diskacl}
@@ -56,6 +65,8 @@ LEGACY_CHAIN=${S8_LEGACY_CHAIN:-s8-pridisk}
 DISKACL_IFACE=${S8_DISKACL_IFACE:-br-lan}
 DISKACL_TCP_PORTS=${S8_DISKACL_TCP_PORTS:-139,445}
 DISKACL_UDP_PORTS=${S8_DISKACL_UDP_PORTS:-137,138}
+GUEST_IFACE=${S8_GUEST_IFACE:-br-guest}
+NET_DIR=${S8_NET_DIR:-/sys/class/net}
 DISKACL_PRINT=0
 DA_MODE=
 DA_MODE_SRC=
@@ -106,6 +117,8 @@ Environment:
   S8_DISKACL_CHAIN    our chain name (default s8-diskacl)
   S8_LEGACY_CHAIN     old chain removed on sight (default s8-pridisk)
   S8_DISKACL_IFACE    LAN interface for the INPUT jumps (default br-lan)
+  S8_GUEST_IFACE      guest interface refused unconditionally (default br-guest)
+  S8_NET_DIR          sysfs net directory used to detect interfaces (default /sys/class/net)
 EOF
 }
 
@@ -917,6 +930,76 @@ diskacl_chain_exists() {
 	ipt_out -S "$DISKACL_CHAIN" >/dev/null 2>&1
 }
 
+# --- guest network -------------------------------------------------------
+# One rule, always interface-scoped, never derived from macfilter.
+guest_iface_present() {
+	[ -d "$NET_DIR/$GUEST_IFACE" ]
+}
+
+guest_spec() {
+	printf -- '-i %s -p tcp -m multiport --dports %s -j DROP' \
+		"$GUEST_IFACE" "$DISKACL_TCP_PORTS"
+}
+
+# Index of the vendor's any-interface ACCEPT that would otherwise let a
+# guest reach 139/445.  Our rule must stay strictly above it.  The rule
+# counter skips the '-P INPUT ...' policy header that iptables -S prints,
+# because -I index counts rules only.
+guest_accept_index() {
+	ipt_out -S INPUT 2>/dev/null | awk '
+		/^-A INPUT / { n++ }
+		/-j ACCEPT/ && /--dports / && /445/ && !/-i / { print n; exit }'
+}
+
+guest_rule_index() {
+	spec=$(guest_spec)
+	ipt_out -S INPUT 2>/dev/null |
+		awk -v s="$spec" '
+			/^-A INPUT / { n++; if (index($0, s)) { print n; exit } }'
+}
+
+guest_rule_remove() {
+	spec=$(guest_spec)
+	lines=$(ipt_out -S INPUT 2>/dev/null | grep -F -- "$spec")
+	[ -n "$lines" ] || return 0
+	printf '%s\n' "$lines" | while IFS= read -r line; do
+		rest=${line#-A INPUT }
+		[ "$rest" = "$line" ] && continue
+		# shellcheck disable=SC2086
+		set -- $rest
+		ipt_run -D INPUT "$@"
+	done
+}
+
+guest_rule_ok() {
+	guest_iface_present || return 0
+	spec=$(guest_spec)
+	n=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "$spec")
+	[ "$n" = 1 ] || return 1
+	gi=$(guest_rule_index)
+	[ -n "$gi" ] || return 1
+	vi=$(guest_accept_index)
+	[ -n "$vi" ] || return 0
+	[ "$gi" -lt "$vi" ]
+}
+
+guest_apply() {
+	guest_iface_present || return 0
+	guest_rule_remove
+	idx=$(guest_accept_index)
+	[ -n "$idx" ] || idx=1
+	ipt_run -I INPUT "$idx" -i "$GUEST_IFACE" -p tcp \
+		-m multiport --dports "$DISKACL_TCP_PORTS" -j DROP
+	if [ "$DISKACL_PRINT" = 0 ] && ! guest_rule_ok; then
+		diskacl_log "guest rule for $GUEST_IFACE is missing or below the vendor ACCEPT"
+		echo "diskacl: guest rule not in the required position" >&2
+		return 1
+	fi
+	[ "$DISKACL_PRINT" = 1 ] ||
+		diskacl_log "guest: DROP $GUEST_IFACE tcp $DISKACL_TCP_PORTS"
+	return 0
+}
+
 diskacl_state() {
 	[ "$DISKACL_PRINT" = 0 ] || return 0
 	[ -d "$ROOT/var/state" ] || return 0
@@ -980,6 +1063,14 @@ diskacl_apply() {
 	# that can block the whole LAN, and it must go even when the new policy
 	# is refused or unavailable.
 	if ! legacy_clear; then
+		diskacl_state error 0 0 error
+		return 1
+	fi
+
+	# Guest refusal is independent of macfilter: apply it on every path,
+	# including refused/unavailable, so a guest network that the vendor
+	# brings up later never inherits SMB access by accident.
+	if ! guest_apply; then
 		diskacl_state error 0 0 error
 		return 1
 	fi
@@ -1072,6 +1163,7 @@ diskacl_clear() {
 	if ! legacy_clear; then
 		return 1
 	fi
+	guest_rule_remove
 	diskacl_jump_remove "$DISKACL_CHAIN"
 	if diskacl_chain_exists; then
 		ipt_run -F "$DISKACL_CHAIN"
@@ -1102,6 +1194,21 @@ diskacl_status() {
 	echo "diskacl_jumps=$jumps"
 	echo "diskacl_legacy_chain=$legacy"
 	echo "diskacl_legacy_jumps=$legacy_jumps"
+	if guest_iface_present; then
+		spec=$(guest_spec)
+		n=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "$spec")
+		if [ "$n" = 0 ]; then
+			guest=absent
+		elif guest_rule_ok; then
+			guest=enforced
+		else
+			guest=misplaced
+		fi
+	else
+		guest=iface-absent
+	fi
+	echo "diskacl_guest=$guest"
+	echo "diskacl_guest_iface=$GUEST_IFACE"
 	if [ -f "$ROOT/var/state/diskacl.state" ]; then
 		sed 's/^/diskacl_/' "$ROOT/var/state/diskacl.state"
 	else

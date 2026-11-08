@@ -22,7 +22,8 @@ FWDIR=$TMP/fw
 CMDLOG=$TMP/commands.log
 OUT=$TMP/out.txt
 CH=$FWDIR/chains
-mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$BIN" "$FWDIR" "$CH" || exit 2
+NETDIR=$TMP/net
+mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$BIN" "$FWDIR" "$CH" "$NETDIR" || exit 2
 : >"$CMDLOG"
 
 cat >"$BIN/iptables" <<'MOCK'
@@ -48,6 +49,9 @@ case $cmd in
 -S)
 	t=$1
 	if [ "$t" = INPUT ]; then
+		# Real iptables -S prints the policy header first; keep the mock
+		# faithful so index arithmetic cannot hide a one-off.
+		printf -- '-P INPUT ACCEPT\n'
 		while IFS= read -r line; do
 			printf -- '-A INPUT %s\n' "$line"
 		done <"$INPUT"
@@ -163,7 +167,7 @@ FIX=$TMP/macfilter
 RUNSH=${S8_TEST_SH:-sh}
 run_adapter() {
 	env S8_MACFILTER="$FIX" S8_IPTABLES="$BIN/iptables" \
-		MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
+		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
 		"$RUNSH" "$ADAPTER" -r "$ROOT" "$@"
 }
 
@@ -605,7 +609,7 @@ EOF
 sync_run() {
 	env S8_BASE="$BASE" S8_SMB_ROOT="$ROOT" S8_MACFILTER="$FIX" \
 		S8_IPTABLES="$BIN/iptables" S8_SYNC_STATE="$BASE/state" \
-		MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
+		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
 		"$RUNSH" "$SYNC" >"$OUT" 2>&1
 }
 sync_run
@@ -650,6 +654,188 @@ assert_eq "switch to whitelist: exit 8" 8 "$?"
 assert_eq "switch to whitelist: chain left as-is" 2 "$(chain_count s8-diskacl)"
 assert_eq "switch to whitelist: state refused" refused "$(state_field decision)"
 
-echo "cases=22 assertions=$CASES failures=$FAILS"
+# --- 23. guest rule exists and sits above the vendor ACCEPT --------------
+GUEST_SPEC='-i br-guest -p tcp -m multiport --dports 139,445 -j DROP'
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' \
+	'-i br-lan -j zone_lan'
+cat >"$FIX" <<'EOF'
+config mode 'mode'
+	option lan 'blacklist'
+
+config mac 'dev1'
+	option mac 'aa:bb:cc:00:0c:01'
+	option lan 'no'
+EOF
+run_adapter diskacl-apply >"$OUT" 2>&1
+assert_eq "guest: exit 0" 0 "$?"
+assert_eq "guest: tcp jump first" \
+	'-i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl' "$(input_nth 1)"
+assert_eq "guest: udp jump second" \
+	'-i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl' "$(input_nth 2)"
+assert_eq "guest: DROP is third" "$GUEST_SPEC" "$(input_nth 3)"
+assert_eq "guest: vendor ACCEPT fourth" \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' "$(input_nth 4)"
+assert_eq "guest: foreign zone rule fifth" '-i br-lan -j zone_lan' "$(input_nth 5)"
+assert_eq "guest: exactly one guest rule" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+
+# --- 24. guest refusal survives a refused policy ------------------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' \
+	'-i br-lan -j zone_lan'
+cat >"$FIX" <<'EOF'
+config mode 'mode'
+	option lan 'whitelist'
+
+config mac 'dev1'
+	option mac 'aa:bb:cc:00:0c:11'
+	option lan 'no'
+EOF
+run_adapter diskacl-apply >"$OUT" 2>&1
+assert_eq "guest+refused: exit 8" 8 "$?"
+assert_eq "guest+refused: no per-device chain" absent "$(chain_exists s8-diskacl)"
+assert_eq "guest+refused: guest rule still first" "$GUEST_SPEC" "$(input_nth 1)"
+assert_eq "guest+refused: vendor ACCEPT second" \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' "$(input_nth 2)"
+assert_eq "guest+refused: three INPUT rules" 3 "$(input_count)"
+
+# --- 25. repeated apply keeps one guest rule ------------------------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input '-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT'
+cat >"$FIX" <<'EOF'
+config mode 'mode'
+	option lan 'blacklist'
+
+config mac 'dev1'
+	option mac 'aa:bb:cc:00:0c:21'
+	option lan 'no'
+EOF
+run_adapter diskacl-apply >/dev/null 2>&1
+run_adapter diskacl-apply >/dev/null 2>&1
+assert_eq "guest idempotent: four INPUT rules" 4 "$(input_count)"
+assert_eq "guest idempotent: one guest rule" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+assert_eq "guest idempotent: position kept" "$GUEST_SPEC" "$(input_nth 3)"
+
+# --- 26. deleted guest rule is rebuilt ----------------------------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input '-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT'
+run_adapter diskacl-apply >/dev/null 2>&1
+grep -vF -- "$GUEST_SPEC" "$FWDIR/input.rules" >"$FWDIR/input.new"
+mv "$FWDIR/input.new" "$FWDIR/input.rules"
+run_adapter diskacl-apply >/dev/null 2>&1
+assert_eq "guest rebuild: rule back" "$GUEST_SPEC" "$(input_nth 3)"
+assert_eq "guest rebuild: one copy" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+
+# --- 27. guest rule below the vendor ACCEPT is moved back up -------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input \
+	'-i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl' \
+	'-i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl' \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' \
+	"$GUEST_SPEC"
+run_adapter diskacl-apply >"$OUT" 2>&1
+assert_eq "guest misplaced: exit 0" 0 "$?"
+assert_eq "guest misplaced: back above ACCEPT" "$GUEST_SPEC" "$(input_nth 3)"
+assert_eq "guest misplaced: ACCEPT fourth" \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' "$(input_nth 4)"
+assert_eq "guest misplaced: one copy" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+
+# --- 28. no br-guest: no guest rule, no error ---------------------------
+reset_fw
+rm -rf "$NETDIR/br-guest"
+put_input '-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT'
+run_adapter diskacl-apply >"$OUT" 2>&1
+assert_eq "no guest iface: exit 0" 0 "$?"
+assert_eq "no guest iface: only LAN jumps" 3 "$(input_count)"
+assert_file_not "no guest iface: no guest rule" "$GUEST_SPEC" "$FWDIR/input.rules"
+assert_file_not "no guest iface: no position error" "guest rule not in the required position" "$OUT"
+
+# --- 29. clear removes the guest rule, keeps foreign rules --------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+put_input \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' \
+	'-i br-lan -j zone_lan'
+run_adapter diskacl-apply >/dev/null 2>&1
+run_adapter diskacl-clear >"$OUT" 2>&1
+assert_eq "guest clear: chain gone" absent "$(chain_exists s8-diskacl)"
+assert_file_not "guest clear: guest rule gone" "$GUEST_SPEC" "$FWDIR/input.rules"
+assert_eq "guest clear: foreign rules kept" 2 "$(input_count)"
+assert_eq "guest clear: vendor ACCEPT first" \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' "$(input_nth 1)"
+assert_eq "guest clear: zone rule kept" '-i br-lan -j zone_lan' "$(input_nth 2)"
+
+# --- 30. sync health check rebuilds a missing guest rule ----------------
+reset_fw
+mkdir -p "$NETDIR/br-guest"
+GBASE=$TMP/base-guest
+mkdir -p "$GBASE/versions/v1" "$GBASE/state"
+cp "$ADAPTER" "$GBASE/versions/v1/xiaomi-smb-adapter.sh"
+cp "$SYNC" "$GBASE/versions/v1/diskacl-sync.sh"
+chmod 755 "$GBASE/versions/v1/xiaomi-smb-adapter.sh" \
+	"$GBASE/versions/v1/diskacl-sync.sh"
+ln -sfn versions/v1 "$GBASE/current"
+put_input '-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT'
+cat >"$FIX" <<'EOF'
+config mode 'mode'
+	option lan 'blacklist'
+
+config mac 'dev1'
+	option mac 'aa:bb:cc:00:0d:01'
+	option lan 'no'
+EOF
+guest_sync() {
+	env S8_BASE="$GBASE" S8_SMB_ROOT="$ROOT" S8_MACFILTER="$FIX" \
+		S8_IPTABLES="$BIN/iptables" S8_SYNC_STATE="$GBASE/state" \
+		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
+		"$RUNSH" "$SYNC" >"$OUT" 2>&1
+}
+guest_sync
+assert_eq "guest sync: rule created" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+grep -vF -- "$GUEST_SPEC" "$FWDIR/input.rules" >"$FWDIR/input.new"
+mv "$FWDIR/input.new" "$FWDIR/input.rules"
+guest_sync
+assert_eq "guest sync: missing rule restored" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+assert_eq "guest sync: restored above ACCEPT" "$GUEST_SPEC" "$(input_nth 3)"
+
+# --- 31. sync health check fixes a misplaced guest rule ----------------
+put_input \
+	'-i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl' \
+	'-i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl' \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' \
+	"$GUEST_SPEC"
+guest_sync
+assert_eq "guest sync moved: one copy" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+assert_eq "guest sync moved: above ACCEPT" "$GUEST_SPEC" "$(input_nth 3)"
+assert_eq "guest sync moved: ACCEPT fourth" \
+	'-p tcp -m multiport --dports 22,80,135:139,445 -j ACCEPT' "$(input_nth 4)"
+
+# --- 32. guest health check runs even without macfilter -----------------
+FIX=$TMP/macfilter-missing
+grep -vF -- "$GUEST_SPEC" "$FWDIR/input.rules" >"$FWDIR/input.new"
+mv "$FWDIR/input.new" "$FWDIR/input.rules"
+chain_before=$(chain_count s8-diskacl)
+guest_sync
+assert_eq "guest sync no macfilter: rule restored" 1 \
+	"$(grep -cF -- "$GUEST_SPEC" "$FWDIR/input.rules")"
+assert_eq "guest sync no macfilter: chain untouched" "$chain_before" \
+	"$(chain_count s8-diskacl)"
+FIX=$TMP/macfilter
+
+echo "cases=32 assertions=$CASES failures=$FAILS"
 [ "$FAILS" -eq 0 ] || exit 1
 exit 0
