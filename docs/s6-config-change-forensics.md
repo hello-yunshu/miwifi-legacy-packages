@@ -71,13 +71,15 @@ S6 报告中遗留的“外部改动”结论在此补齐。所有结论均来�
 - 重写形态是 UCI 整文件写：`/etc/config/samba`、`/etc/config/misc`、`/etc/crontabs/root` 同秒变化，`samba` 尾部留下空的 `config sambashare`，符合 `uci commit` 整体序列化。
 - **不是 Samba 设置页/共享链路**：`/var/etc/smb.conf` 的 mtime 仍是 2018-10-16，md5 `bcad8b90…` 未变；05:05 前后没有 `updateconfig`、`shareUpdate`、`smbcontrol`、hotplug、USB、mount 记录；`/tmp/log/log.smbd` 在 05:05 无新增。
 - **TaskMonitor 会重启原厂 smbd**：14:47:42 原厂 smbd 被 TERM 后约 14 秒内被监督栈拉起并写入 `log.smbd`。这解释了为什么单独杀原厂 smbd 后 139/445 会被重新占用。
-- **没有可用的停止接口**：`taskmonitorTool -t stop -b smbd` 段错误（rc 139）；补 `-p "/usr/sbin/smbd -D"` 后返回 1、无效果；ubus `taskmonitor stop/status` 返回 `Invalid command`。
+- **停止接口存在，但调用方式未文档化**（2026-11-08 S8 修正）：`taskmonitorTool -t stop -b smbd` 段错误（rc 139）是**缺 `-p`** 导致的参数崩溃；按 `supervisord` 的完整参数集调用可正常注销任务（rc 0），详见 [S8 共存研究](s8-taskmonitor-coexistence.md#4-合法接口)。`status` 经 ubus 确实不可用，`list`/`debug` 可用。
+- **`shareUpdate -s` 会在任何一次原厂 `start` 时重写 `/etc/config/samba`**（2026-11-08 S8 补证）：`/etc/init.d/samba` 的 `start_impl` 第 181 行调用 `/usr/sbin/shareUpdate -s`，该程序链接 `libuci.so`，并通过 `uci_lookup_ptr`/`uci commit` 重写配置。15:27 执行 `vendor-start`（`/etc/init.d/samba start`）后，`/etc/config/samba` 的 **mtime 立即更新而 md5 不变**（`8556a19b…`），`/var/etc/smb.conf` 同样被重写但 md5 仍为 `bcad8b90…`；`misc` 与 `crontabs` 未变。也就是说，“samba 单文件整文件重写”有一部分是**原厂启动路径的幂等回写**，不代表共享内容变化。
 
 ### 频率与触发条件
 
 - 持久 syslog 中同类停止对出现在 11-06 04:26、11-07 03:58、11-08 03:10、11-08 05:05，间隔分别为约 23 h 32 m、23 h 12 m、1 h 55 m，**不是定时任务**。
 - `/etc/crontabs/root` 的完整内容已核对：只有 ntpsetclock、相机/场景、OTA 预下载（03/04/05 点的第 49 分）、sysapihttpd、mixbox 等条目，**没有 TaskMonitor、wrsst、ustackd 或 samba 相关行**，因此 05:05 不是 cron 触发。
 - 设备 uptime 跨过 05:05 未重启，**不是开机流程**；OTA 预下载 05:49 才启动，**不是 OTA**。
+- 受控对照（15:27，S8 期间）：只执行 `/etc/init.d/samba start` 会导致 `samba` **单独** mtime 刷新、md5 不变，`misc`/`crontabs` 不动。因此“单文件、内容不变”的 samba 回写可以由原厂启动路径解释；05:05 是**三文件同时**变化，仍应视为更上层的配置应用事件，而不是一次普通 start。
 - 结论边界：可证明“管理栈在同一秒有动作 + 三个 UCI 文件被整文件重写 + 配置文件并非由 Samba 链路生成”，但**不能证明具体发起方是 App 保存、云端下发还是管理面自愈**：HTTP 访问日志不落盘，TaskMonitor 只记录 kill 结果，`/tmp/log` 已滚动。频率上只能确认它是“按管理事件发生、时间不规则”，不能给出固定周期。
 
 ### 对新版 SMB 的实际影响
@@ -88,6 +90,7 @@ S6 报告中遗留的“外部改动”结论在此补齐。所有结论均来�
 | 共享 / include / 只读 / 相机时间窗 | 全部由该渲染链决定，**存在被带偏的风险**：新增/删除共享、改路径、改 `read_only`、改 `readonly:period` 都会在新配置中生效 |
 | PID 文件 / 运行目录 / `smb.conf` 生成链 | **不受牵连**。全部在 `/userdisk/data/samba-s2/root`（版本树）内，原厂只写 `/etc/config`、`/var/etc`、`/etc/crontabs`，两边不共享路径 |
 | 原厂 `smbd` 自动重启 | 对新版是**端口竞争**风险：停原厂后监督栈会尝试拉起，接管窗口必须短，且以“新版先绑定成功”为准 |
+| 原厂启动造成的 mtime-only 回写 | 守卫按 `md5+size+mtime+inode` 严格比较，`shareUpdate -s` 的幂等回写也会让 `generate/check/start` 返回 7。这是**预期的 fail-closed**：内容未变时可 `S5_ACCEPT_CONFIG=1` 显式接受；切换前若刚执行过 `vendor-start`，需要先接受再切 |
 
 ### 防御（已落地并有受控复现）
 

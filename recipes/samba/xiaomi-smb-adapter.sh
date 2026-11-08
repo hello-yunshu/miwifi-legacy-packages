@@ -24,6 +24,8 @@ PORT=${S5_PORT:-1445}
 BIND=${S5_BIND:-}
 PROC_NAME=${S5_PROC_NAME:-samba-s5d}
 SNAPSHOT=${S5_CONFIG_SNAPSHOT:-}
+TM_TOOL=${S5_TM_TOOL:-/usr/sbin/taskmonitorTool}
+TM_NAME=${S5_TM_NAME:-samba-s5d}
 ALLOW_STOCK=0
 NO_GENERATE=0
 PIDFILE=
@@ -41,6 +43,10 @@ Commands:
   reload     generate then 'smbcontrol smbd reload-config'
   status     report running / stale / stopped (0 / 4 / 3)
   check      print isolation and configuration facts
+  tm-register    register this running instance with TaskMonitor (own alias)
+  tm-unregister  remove this instance from TaskMonitor (before a planned stop)
+  vendor-stop    ask TaskMonitor to stop and unregister the factory smbd entry
+  vendor-start   restore the factory service via /etc/init.d/samba start
 
 Options:
   -r root    installation tree (default $ROOT)
@@ -535,6 +541,11 @@ cmd_start() {
 }
 
 cmd_stop() {
+	# A registered instance would be revived by the 5 s check right after the
+	# kill, so unregister first.  Absence of the tool is not an error here.
+	if [ -x "$TM_TOOL" ] && tm_entry_present "$(tm_procline)"; then
+		cmd_tm_unregister >/dev/null 2>&1 || true
+	fi
 	if ! pid=$(pid_from_file); then
 		echo "stopped (no pidfile)"
 		return 0
@@ -623,6 +634,145 @@ cmd_check() {
 	return 0
 }
 
+# --- TaskMonitor coexistence ------------------------------------------------
+# The vendor supervisor keeps a PID-keyed task table in
+# /tmp/taskmonitor/taskmonitor.conf (binary, rewritten by taskmonitorServer).
+# Its CLI crashes with SIGSEGV when -p or the optional flags are omitted, so
+# every call below mirrors supervisord's full invocation.  We never edit that
+# table and never restart taskmonitorServer/pluginTaskmonitor.
+
+tm_tool() {
+	[ -x "$TM_TOOL" ] || die "taskmonitorTool missing: $TM_TOOL" 2
+}
+
+tm_procline() {
+	printf './sbin/%s -D -s %s/etc/smb.conf -l %s/var/log' \
+		"$PROC_NAME" "$ROOT" "$ROOT"
+}
+
+tm_call() {
+	"$TM_TOOL" -p "$2" -b "$2" -i "$3" -t "$1" \
+		-C 0 -M 1 -r -1 -L "$ROOT/lib:$ROOT/lib/private" -D "$ROOT" \
+		-g none -d off -v -1 --vmzdata -1 --fastreboot 0 --delay 0
+}
+
+tm_entry_present() {
+	[ -r /tmp/taskmonitor/taskmonitor.conf ] || return 1
+	strings -n 4 /tmp/taskmonitor/taskmonitor.conf 2>/dev/null | grep -qF "$1"
+}
+
+cmd_tm_register() {
+	need_root
+	tm_tool
+	pid=$(pid_from_file) || die "not running: no pidfile" 1
+	pid_is_ours "$pid" || die "refusing: pid $pid is not this tree" 4
+	port_listening || die "refusing: port $PORT not listening" 1
+	procline=$(tm_procline)
+	if tm_entry_present "$procline"; then
+		echo "already registered as $TM_NAME"
+		return 0
+	fi
+	tm_call start "$procline" "$TM_NAME" || {
+		echo "TaskMonitor refused registration" >&2
+		log "tm-register failed"
+		return 1
+	}
+	log "tm-registered $TM_NAME pid=$pid"
+	echo "registered $TM_NAME (pid=$pid)"
+}
+
+# Must run before a planned stop: once registered, TaskMonitor restarts the
+# instance within its 5 s check, so killing it first would just revive it.
+cmd_tm_unregister() {
+	tm_tool
+	procline=$(tm_procline)
+	tm_call stop "$procline" "$TM_NAME"
+	rc=$?
+	case $rc in
+	0)
+		log "tm-unregistered $TM_NAME"
+		echo "unregistered $TM_NAME"
+		return 0
+		;;
+	1)
+		echo "not registered as $TM_NAME"
+		return 0
+		;;
+	*)
+		echo "TaskMonitor unregister failed rc=$rc" >&2
+		log "tm-unregister rc=$rc"
+		return 1
+		;;
+	esac
+}
+
+vendor_pid() {
+	for d in /proc/[0-9]*; do
+		[ -r "$d/cmdline" ] || continue
+		cmd=$(tr '\0' ' ' <"$d/cmdline" 2>/dev/null)
+		cmd=${cmd% }
+		[ "$cmd" = "/usr/sbin/smbd -D" ] || continue
+		exe=$(readlink "$d/exe" 2>/dev/null) || continue
+		[ "$exe" = "/usr/sbin/samba_multicall" ] || continue
+		echo "${d#/proc/}"
+	done
+}
+
+stock_ports_busy() {
+	netstat -ltn 2>/dev/null | awk '{print $4}' | grep -qE ':(139|445)$'
+}
+
+# Unregister the vendor task instead of signalling the process: a plain TERM
+# is followed by an automatic restart within seconds.
+cmd_vendor_stop() {
+	tm_tool
+	pids=$(vendor_pid | tr '\n' ' ')
+	"$TM_TOOL" -p "/usr/sbin/smbd -D" -b "/usr/sbin/smbd -D" -i smbd -t stop \
+		-C 0 -M 1 -r -1 -L none -D none -g none -d off -v -1 \
+		--vmzdata -1 --fastreboot 0 --delay 0
+	rc=$?
+	if [ $rc -ne 0 ] && [ -n "$pids" ]; then
+		echo "TaskMonitor could not stop the factory smbd (rc=$rc)" >&2
+		log "vendor-stop rc=$rc"
+		return 1
+	fi
+	i=0
+	while [ $i -lt 15 ]; do
+		stock_ports_busy || break
+		sleep 1
+		i=$((i + 1))
+	done
+	if stock_ports_busy; then
+		echo "factory smbd still listens on 139/445 after TaskMonitor stop" >&2
+		log "vendor-stop: ports still busy"
+		return 1
+	fi
+	log "vendor smbd unregistered via TaskMonitor (was: $pids)"
+	echo "factory smbd stopped and unregistered"
+}
+
+# Rollback goes through the vendor's own init script so that shareUpdate,
+# updateconfig, supervisord registration and nmbd all run exactly as after a
+# normal boot.  It never stops the new instance; call 'stop' first.
+cmd_vendor_start() {
+	[ -x /etc/init.d/samba ] || die "/etc/init.d/samba missing" 2
+	/etc/init.d/samba start >/dev/null 2>&1
+	i=0
+	while [ $i -lt 25 ]; do
+		netstat -ltn 2>/dev/null | awk '{print $4}' |
+			grep -qE ':(139|445)$' && break
+		sleep 1
+		i=$((i + 1))
+	done
+	[ -n "$(vendor_pid)" ] || {
+		echo "factory smbd did not come back" >&2
+		log "vendor-start failed"
+		return 1
+	}
+	log "vendor smbd restored via init.d/samba start"
+	echo "factory smbd restored"
+}
+
 while getopts "r:c:p:b:n:B:PNh" opt; do
 	case "$opt" in
 	r) ROOT=$OPTARG ;;
@@ -649,5 +799,9 @@ restart) cmd_stop; cmd_start ;;
 reload) cmd_reload ;;
 status) cmd_status ;;
 check) cmd_check ;;
+tm-register) cmd_tm_register ;;
+tm-unregister) cmd_tm_unregister ;;
+vendor-stop) cmd_vendor_stop ;;
+vendor-start) cmd_vendor_start ;;
 *) usage; exit 2 ;;
 esac
