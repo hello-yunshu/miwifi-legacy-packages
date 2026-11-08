@@ -2,6 +2,23 @@
 
 计划基线：2026-11-07。目标是在 R2D 官方固件上运行持续维护的 Samba，解决 Emby 访问问题，并保留经验证的小米授权、摄像机和管理功能。完成定义是功能、权限、实机和恢复共同达标；仅编译成功不足以发布。
 
+## 阶段总览（2026-11-08 审计后）
+
+| 阶段 | 状态 | 一句话 | 详见 |
+| --- | --- | --- | --- |
+| S0 | 关闭 | 可观测项已补齐，不可观测项列明原因 | [baseline/index.md](../baseline/index.md) |
+| S1 | 完成 | 4.25.1 干净构建、散列与依赖齐备；未 strip | [s1-clean-build.md](../s1-clean-build.md) |
+| S2 | 部分 | 隔离回归通过；Emby/Windows 11/强制策略等未测 | [s2-isolated-regression.md](../s2-isolated-regression.md) |
+| S3 | 核心完成 | 真值表、枚举/连接入口、负向测试通过；原厂撤销/IPv6/RAP 实机缺 | [s3-mac-policy.md](../s3-mac-policy.md) |
+| S4 | 语义完成 | 摄像机时间窗语义复刻并实测；真实摄像机未验证 | [s4-camera-readonly.md](../s4-camera-readonly.md) |
+| S5 | 适配器完成 | 生成/校验/启停/失败恢复通过；真实 App/USB/外围未验证 | [s5-lifecycle.md](../s5-lifecycle.md) |
+| S6 | 完成 | 实机内核、客户端、吞吐/资源通过；原厂 445 基线缺 | [s6-device-test.md](../s6-device-test.md) |
+| S7 | 完成 | 工具与真机切换/回滚通过；OTA/USB/跨版本升级缺 | [s7-switch-rollback.md](../s7-switch-rollback.md) |
+| S8 | 进行中 | 候选草案、TaskMonitor 替换、重启归属完成；发布门槛未闭合 | [s8-candidate-release.md](../s8-candidate-release.md)、[审计报告](../audit-2026-11-08.md) |
+
+下面各阶段末尾的“状态（日期）”是当时的时间点快照，保留原文；与上表冲突时以上表和 [2026-11-08 审计](audit-2026-11-08.md) 为准。
+
+
 ## 当前事实与待确认事项
 
 | 内容 | 状态 | 含义 |
@@ -32,7 +49,8 @@
 
 **验收**：每项结论标注现场观察、隔离测试、源码/反汇编或待确认。缺设备和无法观测的功能必须留在支持限制里。
 
-**交付位置**：[docs/baseline/](../baseline/index.md)。2026-11-07 状态：六项文档骨架与证据索引已交付；现场内存、磁盘、进程参数与运行库散列未采集，权限完整顺序与地址到 MAC 的解析路径未恢复，因此 S0 尚未完全关闭。
+**交付位置**：[docs/baseline/](../baseline/index.md)。2026-11-07 状态：六项文档骨架与证据索引已交付；随后以只读方式补齐现场内存、磁盘、进程参数、运行库散列与 MAC 解析链路（见 [device.md](../baseline/device.md)），完整检查顺序、MAC 列表写入者/生命周期、会话撤销即时性、真实摄像机等不可观测项已列入 [unknowns.md](../baseline/unknowns.md)。按 [baseline/index.md](../baseline/index.md) 口径，S0 关闭；2026-11-08 审计确认该口径，并修正了本节此前“尚未完全关闭”的旧表述。
+
 
 ## S1：最新稳定版的干净构建
 
@@ -147,7 +165,7 @@
 
 **验收**：回滚后原厂共享、权限和小米管理恢复，实际核对数据和文件完整性。未演练恢复不得形成正式安装包。
 
-**状态（2026-11-08，S7 收尾）**：安装/升级/卸载与回滚工具完成，演练记录见 [S7 切换与回滚演练](../s7-switch-rollback.md)。已达成：版本目录/状态目录、符号链接激活与编译前缀断言、重复安装幂等（md5）、运行中拒绝切换、端口占用启动失败、配置损坏保留 last-good、共享目录缺失与恢复、卸载、厂商基线校验与漂移检测，共 17 项真机演练按预期返回。真实 139/445 切换在用户授权后执行：第一次因 macOS SMB3 枚举挂起立即回滚；根因定位为 Samba 4.25 默认 multi-channel，适配器渲染配置关闭该选项（`server multi channel support = no`）后第二次通过——macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，停机窗口约 11 秒，验证完成后立即回滚原厂；四个原厂 md5 不变，139/445 归 2282、137/138 归 8469。配置源守卫（哈希基线 + 默认拒绝 + `S5_ACCEPT_CONFIG=1` 显式接受）已落地，并用受控 UCI 整文件重写复现：漂移时 `generate`/`check`/`start` 均返回 7 且不改写 `smb.conf`，显式接受后新共享才生效。TaskMonitor 的重写机制、频率证据与影响面见 [05:05 变更取证](../s6-config-change-forensics.md#taskmonitorserver-的重写机制与对新版-smb-的影响2026-11-08-补证)。阻塞：设备重启后持久性、真实 USB 拔出、固件 OTA 覆盖、真实不同版本间升级。本轮未进入 S8。
+**状态（2026-11-08，S7 收尾）**：安装/升级/卸载与回滚工具完成，演练记录见 [S7 切换与回滚演练](../s7-switch-rollback.md)。已达成：版本目录/状态目录、符号链接激活与编译前缀断言、重复安装幂等（md5）、运行中拒绝切换、端口占用启动失败、配置损坏保留 last-good、共享目录缺失与恢复、卸载、厂商基线校验与漂移检测，共 17 项真机演练按预期返回。真实 139/445 切换在用户授权后执行：第一次因 macOS SMB3 枚举挂起立即回滚；根因定位为 Samba 4.25 默认 multi-channel，适配器渲染配置关闭该选项（`server multi channel support = no`）后第二次通过——macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，接管窗口约 11 秒（含新版运行与 macOS 验证；端口空窗为秒级，审计复测 vendor→new 约 5 秒），验证完成后立即回滚原厂；四个原厂 md5 不变，139/445 归 2282、137/138 归 8469。配置源守卫（哈希基线 + 默认拒绝 + `S5_ACCEPT_CONFIG=1` 显式接受）已落地，并用受控 UCI 整文件重写复现：漂移时 `generate`/`check`/`start` 均返回 7 且不改写 `smb.conf`，显式接受后新共享才生效。TaskMonitor 的重写机制、频率证据与影响面见 [05:05 变更取证](../s6-config-change-forensics.md#taskmonitorserver-的重写机制与对新版-smb-的影响2026-11-08-补证)。阻塞：真实 USB 拔出、固件 OTA 覆盖、真实不同版本间升级（设备重启持久性已由 S8 关闭）。本轮未进入 S8。
 
 ## S8：候选发布与后续升级
 
@@ -158,7 +176,7 @@
 - 在干净环境复建后发布 release-candidate；经过限定设备组合的实机验证再声明 supported。
 - 上游新版本迁移重复 S1/S2；认证、策略、VFS、管理或内核变化触发相应 S3—S7 回归。维护版本支持状态，不能一次构建后长期无更新。
 
-**状态（2026-11-08，S8 开始）**：候选发布清单草案见 [S8 候选发布](s8-candidate-release.md)。已落地：版本/源码/依赖/补丁/散列/矩阵/资源摘要/验证与回滚说明。同期完成 TaskMonitor 共存改造与真机复测，见 [S8 共存研究](s8-taskmonitor-coexistence.md)：新版可按独立别名注册并由原厂监督栈自愈；445 接管改为“API 注销原厂条目 + 原厂 init 回滚”，实测 macOS 枚举/挂载/回滚通过，四个原厂哈希不变，其它服务 PID/监听不变。另查明 `shareUpdate -s` 会在任何原厂 `start` 时对 `/etc/config/samba` 与 `/var/etc/smb.conf` 做同内容回写（mtime 变、md5 不变），守卫按预期 fail-closed，需显式接受。未达成：本轮干净环境复建、发布签名、重启/OTA/USB/摄像机/Emby 场景。
+**状态（2026-11-08，S8 收尾）**：候选发布清单草案见 [S8 候选发布](s8-candidate-release.md)。已落地：版本/源码/依赖/补丁/散列/矩阵/资源摘要/验证与回滚说明。TaskMonitor 已按可替换组件处理，见 [S8 替换与接管](s8-taskmonitor-replacement.md)：全量 33–34 条任务清单与 init 映射（`web_filter_record` 开机随机 `sleep 0–299 s` 后注册）；`taskmonitorServer` 缺位实测为“rc=0 但不拉起”，故不替换 server 本体，改为替换 `/etc/init.d/samba` 入口 + 版本化兼容外壳（`/userdisk/data/s8compat` 的 `v0-vendor`/`v1`/`current` + MANIFEST + 回滚）。服务影响实测：激活窗口约 6 s，32 条非 SMB 条目 PID 不变，`fan_tmp` 与新版 smbd kill 后 8 s 自愈，四个原厂哈希不变。**139/445 归属已关闭**：两次重启后均由 `samba-s5d` 监听（6336、6377；审计复测 6861、6216，收尾 23809），**没有原厂 smbd 进程**（`/usr/sbin/smbd` 文件本身是 `samba_multicall` 的符号链接，判据为 cmdline + `/proc/<pid>/exe`）；App 入口 `reload/restart/stop/start` 均落到新版（入口级验证，真实 App BLOCKED），`install.sh rollback` 可完整回原厂（smbd 15176）。另查明 `shareUpdate -s` 会在任何原厂 `start` 时对 `/etc/config/samba` 与 `/var/etc/smb.conf` 做同内容回写（mtime 变、md5 不变）；手动 `generate/check/start` 下守卫 fail-closed（rc=7），兼容层 hook 的 `start/reload` 固定 `S5_ACCEPT_CONFIG=1`，生产路径是记录后接受，不是运行时拒绝。未达成：本轮干净环境复建、发布签名、真实 App/云端操作、OTA、USB、摄像机、Emby。审计后的完成度与阻断清单见 [2026-11-08 审计](../audit-2026-11-08.md)。
 
 ## 决策与阻断记录
 

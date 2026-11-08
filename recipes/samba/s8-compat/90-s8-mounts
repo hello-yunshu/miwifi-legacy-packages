@@ -1,0 +1,23 @@
+#!/bin/sh
+# S8 SMB compat: notify the adapter when a block device is mounted or
+# removed.  The adapter re-renders and its mount-derived layer picks up
+# /extdisks/<dev> without waiting for the vendor shareUpdate path.
+# This script never writes /etc/config/samba.
+case "${ACTION:-}" in
+add|remove) ;;
+*) exit 0 ;;
+esac
+HOOK=/userdisk/data/s8compat/current/hook.sh
+[ -x "$HOOK" ] || exit 0
+LOG=/userdisk/data/s8compat/logs/hotplug.log
+dev=${DEVPATH##*/}
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+logger -t s8compat -p daemon.info "block ${ACTION:-?} ${DEVPATH:-?} -> reload" 2>/dev/null || true
+"$HOOK" reload >/dev/null 2>&1
+rc=$?
+# The syslog stream is not persistent on this firmware (misc.boot.syslog=0),
+# so keep our own record; it is the only proof this hook ran after a reboot.
+printf '%s epoch=%s action=%s devpath=%s dev=%s reload_rc=%s\n' \
+	"$(date '+%Y-%m-%dT%H:%M:%S%z')" "$(date +%s)" \
+	"${ACTION:-?}" "${DEVPATH:-?}" "${dev:-?}" "$rc" >>"$LOG" 2>/dev/null || true
+exit 0
