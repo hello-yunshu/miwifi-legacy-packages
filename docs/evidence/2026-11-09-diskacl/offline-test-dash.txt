@@ -1,0 +1,136 @@
+PASS blacklist: exit 0
+PASS blacklist: two DROP + RETURN
+PASS blacklist: first DROP lower-cased
+PASS blacklist: second DROP
+PASS blacklist: tail RETURN
+PASS blacklist: two INPUT jumps
+PASS blacklist: state mode
+PASS blacklist: state allowed
+PASS blacklist: state denied
+PASS blacklist: state applied
+PASS empty blacklist: no chain
+PASS empty blacklist: no INPUT jump
+PASS empty blacklist: applied with deny=0
+PASS empty blacklist: denied=0
+PASS all no: three DROP + RETURN
+PASS all no: denied=3
+PASS all no: allowed=0
+PASS mixed: two DROP + RETURN
+PASS mixed: allowed=3 (yes+y+unset)
+PASS mixed: denied=2
+PASS mixed: unset counted
+PASS missing: apply non-fatal
+PASS missing: no chain
+PASS missing: no jump
+PASS missing: state unavailable
+PASS missing: stderr warning
+PASS missing: adapter.log
+PASS directory: unavailable
+PASS directory: no chain
+PASS whitelist: refused exit 8
+PASS whitelist: no chain
+PASS whitelist: no jump
+PASS whitelist: state mode
+PASS whitelist: state refused
+PASS whitelist: stderr
+PASS mode missing: refused exit 8
+PASS mode missing: no chain
+PASS mode missing: state mode
+PASS mode missing: state refused
+PASS zero sections: unavailable
+PASS zero sections: no chain
+PASS idempotent: chain 2 rules
+PASS idempotent: INPUT 2 jumps
+PASS idempotent: tcp jump rule 1
+PASS idempotent: udp jump rule 2
+PASS order: tcp jump first
+PASS order: udp jump second
+PASS order: vendor ACCEPT third
+PASS order: foreign rule kept
+PASS clear: chain deleted
+PASS clear: foreign rules survive
+PASS clear: first foreign rule kept
+PASS clear: second foreign rule kept
+PASS clear: state cleared
+PASS clear: reported
+PASS legacy: chain removed
+PASS legacy: jump removed
+PASS legacy: new chain is DROP+RETURN
+PASS legacy: new tcp jump is first
+PASS legacy: foreign zone rule kept
+PASS legacy+refused: exit 8
+PASS legacy+refused: old chain removed
+PASS legacy+refused: old jump removed
+PASS legacy+refused: no new chain
+PASS legacy+refused: no INPUT rule
+PASS rebuild: chain back
+PASS rebuild: DROP+RETURN
+PASS rebuild: two jumps
+PASS no->yes: chain is RETURN-only
+PASS no->yes: RETURN is the tail
+PASS no->yes: DROP gone
+PASS no->yes: jumps kept
+PASS invalid mac: only valid one denied
+PASS invalid mac: chain DROP+RETURN
+PASS invalid mac: logged
+PASS dry-run: no chain
+PASS dry-run: no INPUT rule
+PASS dry-run: no state file
+PASS dry-run: prints -N
+PASS dry-run: prints DROP
+PASS dry-run: prints tcp jump
+PASS dry-run: prints udp jump
+PASS dry-run: no mutation commands
+PASS dry-run clear: chain untouched
+PASS dry-run clear: prints -X
+PASS dry-run clear: prints jump delete
+PASS stock shape: mode blacklist
+PASS stock shape: allowed=1 (the yes device)
+PASS stock shape: denied=1
+PASS stock shape: one DROP + RETURN
+PASS sync: first run applies DROP
+PASS sync: unchanged md5 does not re-apply
+PASS sync: no->yes leaves RETURN-only
+PASS sync: no->yes DROP removed
+PASS switch to whitelist: exit 8
+PASS switch to whitelist: chain left as-is
+PASS switch to whitelist: state refused
+PASS guest: exit 0
+PASS guest: tcp jump first
+PASS guest: udp jump second
+PASS guest: DROP is third
+PASS guest: vendor ACCEPT fourth
+PASS guest: foreign zone rule fifth
+PASS guest: exactly one guest rule
+PASS guest+refused: exit 8
+PASS guest+refused: no per-device chain
+PASS guest+refused: guest rule still first
+PASS guest+refused: vendor ACCEPT second
+PASS guest+refused: three INPUT rules
+PASS guest idempotent: four INPUT rules
+PASS guest idempotent: one guest rule
+PASS guest idempotent: position kept
+PASS guest rebuild: rule back
+PASS guest rebuild: one copy
+PASS guest misplaced: exit 0
+PASS guest misplaced: back above ACCEPT
+PASS guest misplaced: ACCEPT fourth
+PASS guest misplaced: one copy
+PASS no guest iface: exit 0
+PASS no guest iface: only LAN jumps
+PASS no guest iface: no guest rule
+PASS no guest iface: no position error
+PASS guest clear: chain gone
+PASS guest clear: guest rule gone
+PASS guest clear: foreign rules kept
+PASS guest clear: vendor ACCEPT first
+PASS guest clear: zone rule kept
+PASS guest sync: rule created
+PASS guest sync: missing rule restored
+PASS guest sync: restored above ACCEPT
+PASS guest sync moved: one copy
+PASS guest sync moved: above ACCEPT
+PASS guest sync moved: ACCEPT fourth
+PASS guest sync no macfilter: rule restored
+PASS guest sync no macfilter: chain untouched
+cases=32 assertions=135 failures=0

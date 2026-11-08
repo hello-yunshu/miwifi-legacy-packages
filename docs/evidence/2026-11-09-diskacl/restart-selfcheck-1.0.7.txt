@@ -1,0 +1,76 @@
+Mon Nov  9 03:10:32 CST 2026
+== restart ==
+stopped (no live pidfile)
+5
+2
+adapter: configuration drift accepted (S5_ACCEPT_CONFIG=1)
+started pid=1687 port=139 445
+registered samba-s5d (pid=1687)
+restart rc=0
+== INPUT after restart ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== chain after restart ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== DROP count ==
+8
+== guest position vs vendor ACCEPT ==
+4:-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+5:-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+== status ==
+diskacl_chain=present
+diskacl_jumps=2
+diskacl_legacy_chain=absent
+diskacl_legacy_jumps=0
+diskacl_guest=enforced
+diskacl_guest_iface=br-guest
+diskacl_mode=blacklist
+diskacl_decision=applied
+diskacl_mode_source=explicit
+diskacl_allowed=32
+diskacl_denied=8
+diskacl_entries=40
+diskacl_unset=0
+diskacl_iface=br-lan
+diskacl_chain=s8-diskacl
+diskacl_macfilter=/etc/config/macfilter
+diskacl_updated=1794165039
+== pid ==
+ 1687 root     27348 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+ 1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+ 1699 root     26416 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+ 1701 root     27432 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 2067 root     25560 R    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+== adapter log tail ==
+2026-11-09 03:10:37 generated from /etc/config md5=f94e2f5caf29375e075c48d566301e07
+2026-11-09 03:10:39 started pid=1687 port=139 445 via sbin/samba-s5d
+2026-11-09 03:10:39 diskacl: guest: DROP br-guest tcp 139,445
+2026-11-09 03:10:39 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 03:10:39 diskacl: applied chain=s8-diskacl iface=br-lan deny=8
+2026-11-09 03:10:40 tm-registered samba-s5d pid=1687
+Mon Nov  9 03:10:49 CST 2026
+== ps now ==
+ 1687 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+ 1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+ 1699 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+ 1701 root     27432 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 2159 nobody   27460 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+== counters ==
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 5A:3D:A1:E4:04:E8
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+   47  5211 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+== guest rule counters ==
+    0     0 DROP       tcp  --  br-guest *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445

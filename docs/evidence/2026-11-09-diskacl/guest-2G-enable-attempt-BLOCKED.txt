@@ -1,0 +1,36 @@
+Mon Nov  9 03:14:31 CST 2026
+== guest attempt log (/tmp/wifi-up.log) ==
+/sbin/wifi: Waiting for {br-lan br-guest}.
+/sbin/wifi: br-lan is ready.
+/sbin/wifi: br-guest is ready.
+BSS Config summary: primary -> "wl1", wl1_vifs -> ""
+BSS Config "wl1": index 0
+wlconf: wlconfig(wl1): configuring bsscfg #0 (wl1) with SSID "Paddy's Wi-Fi_O"
+wlconf: Enabling non-aggregated regulation on band 2
+/sbin/wifi: start_net cfg063579 .name=wl1 .net_cfg=lan
+/sbin/wifi: run3 eval set_wifi_up 'cfg063579' 'wl1'
+/sbin/wifi: check_wifidev...wl1
+/sbin/wifi: guest_dev...wl1
+/sbin/wifi: radio_disabled...0
+/sbin/wifi: iface[1].disabled...1
+ifconfig: wl1.2: error fetching interface information: Device not found
+/sbin/wifi: guest_ok...
+brctl: iface wl1.2: No such device
+/sbin/wifi: ...force wl1 up, for wl2 wl3 create.
+/sbin/wifi: Enter[lanapmode]
+wl1: WLC_SET_VAR(bss): Invalid argument
+wlconf_start:3659:(wl1): setting iovar "bss" failed, err = -1
+== post-restore ==
+disabled=1
+ls: /sys/class/net/wl1.2: No such file or directory
+bridge name	bridge id		STP enabled	interfaces
+br-lan		7fff.f0b4292b8041	no		eth0.1
+							wl0
+							wl1
+br-guest		7fff.000000000000	no
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+diskacl_guest=enforced
+diskacl_guest_iface=br-guest
+== counters ==
+    0     0 DROP       tcp  --  br-guest *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445
+brctl: invalid argument 'br-guest' to 'brctl'

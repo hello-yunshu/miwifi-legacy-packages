@@ -1,0 +1,48 @@
+Mon Nov  9 03:14:45 CST 2026
+== guest uci after restore ==
+ifname=[wl1.2]
+network=[guest]
+device=[wl1]
+macfilter=[deny]
+mode=[ap]
+ssid=[  小米共享WiFi_8041]
+ap_isolate=[1]
+encryption=[psk2]
+key=[051985336837]
+maclist=[A4:DB:30:CD:FE:F0]
+disabled=[1]
+== wl1/wl0 members ==
+bridge name	bridge id		STP enabled	interfaces
+br-lan		7fff.f0b4292b8041	no		eth0.1
+							wl0
+							wl1
+br-guest		7fff.000000000000	no
+== final INPUT ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== final status ==
+diskacl_chain=present
+diskacl_jumps=2
+diskacl_legacy_chain=absent
+diskacl_legacy_jumps=0
+diskacl_guest=enforced
+diskacl_guest_iface=br-guest
+diskacl_mode=blacklist
+diskacl_decision=applied
+diskacl_mode_source=explicit
+diskacl_allowed=32
+diskacl_denied=8
+diskacl_entries=40
+diskacl_unset=0
+diskacl_iface=br-lan
+diskacl_chain=s8-diskacl
+diskacl_macfilter=/etc/config/macfilter
+diskacl_updated=1794165122
+== counters ==
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+   45  4869 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+    0     0 DROP       tcp  --  br-guest *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445

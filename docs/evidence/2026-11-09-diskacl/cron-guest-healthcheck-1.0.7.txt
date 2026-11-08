@@ -1,0 +1,26 @@
+Mon Nov  9 03:11:15 CST 2026
+== delete guest rule ==
+del rc=0
+== immediately after ==
+0
+RESTORED after ~50s at 03:12:05
+== final INPUT ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== final status ==
+diskacl_guest=enforced
+diskacl_guest_iface=br-guest
+== sync.log tail ==
+diskacl: applied mode=blacklist allow=32 deny=8
+diskacl: applied mode=blacklist allow=31 deny=9
+diskacl: applied mode=blacklist allow=32 deny=8
+diskacl: applied mode=blacklist allow=32 deny=8
+== adapter log tail ==
+2026-11-09 03:10:40 tm-registered samba-s5d pid=1687
+2026-11-09 03:12:02 diskacl: guest: DROP br-guest tcp 139,445
+2026-11-09 03:12:02 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 03:12:02 diskacl: applied chain=s8-diskacl iface=br-lan deny=8

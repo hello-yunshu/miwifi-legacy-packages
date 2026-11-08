@@ -1,0 +1,61 @@
+Mon Nov  9 03:09:41 CST 2026
+== version ==
+versions/1.0.6-r2d/root
+versions/v1
+== compat md5 ==
+65bb092e458f01094a40dcd02447d5f6  /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh
+6621b1c531717e4c0b86d9d0752a7021  /userdisk/data/s8compat/versions/v1/diskacl-sync.sh
+== INPUT ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== chain ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== chain counters ==
+Chain s8-diskacl (2 references)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC F0:D5:BF:40:1D:2A
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 18:BC:5A:19:B9:16
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 80:A5:89:86:B7:E5
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC E2:54:2E:FB:8B:75
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:5C:9A:3F:B4:4C
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC D4:35:38:57:FD:80
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 5A:3D:A1:E4:04:E8
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+ 171K   12M RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+== state ==
+mode=blacklist
+decision=applied
+mode_source=explicit
+allowed=32
+denied=8
+entries=40
+unset=0
+iface=br-lan
+chain=s8-diskacl
+macfilter=/etc/config/macfilter
+updated=1794163502
+== sync cache ==
+1fa7f1d59410e81415c1eee07ee9a25b
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter
+== cron ==
+23:* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== pid ==
+23178 root     27360 S <  ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+23191 root     26424 S <  {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+23192 root     26428 S <  {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+25929 root     27444 S <  {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+== listeners ==
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 77100 
