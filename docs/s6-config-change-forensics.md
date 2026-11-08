@@ -62,6 +62,51 @@ S6 报告中遗留的“外部改动”结论在此补齐。所有结论均来�
 - **无旧文件副本**，因此不能给出“改了哪些字段”的逐项 diff；只能给出“语义未变 + 机器重写”的结论。
 - 同机还发现两处与本问题无直接关系的痕迹，记录备查，不作归因：`/tmp/log/log.smbd` 显示 01:16–03:29 原厂 smbd 被多次重启；`/userdisk/data/.Emby/log` 下有 02:23 的 `casemiss.txt` 测试残留。两者都早于 05:05，且没有证据表明与本次配置写入同源。
 
+## TaskMonitorServer 的重写机制与对新版 SMB 的影响（2026-11-08 补证）
+
+### 机制
+
+- 监督栈是 `taskmonitorDaemon`（PID 1092）拉起 `taskmonitorServer`（PID 1090）；任务表 `/tmp/taskmonitor/taskmonitor.conf`（92 796 B，mtime 03:00）里有三条与 SMB 相关的任务：`/usr/sbin/smbd -D`（两处）、`smbd`。`taskmonitorTool` 通过 ubus 对象 `taskmonitor` 操作，`pluginTaskmonitor`（PID 8616）常驻。
+- 05:05:48 的重写与 TaskMonitor 的两条停止命令同秒发生；两条命令都是 `not find the task`，属于对“已关闭服务”的幂等重放，不是运行中切换。
+- 重写形态是 UCI 整文件写：`/etc/config/samba`、`/etc/config/misc`、`/etc/crontabs/root` 同秒变化，`samba` 尾部留下空的 `config sambashare`，符合 `uci commit` 整体序列化。
+- **不是 Samba 设置页/共享链路**：`/var/etc/smb.conf` 的 mtime 仍是 2018-10-16，md5 `bcad8b90…` 未变；05:05 前后没有 `updateconfig`、`shareUpdate`、`smbcontrol`、hotplug、USB、mount 记录；`/tmp/log/log.smbd` 在 05:05 无新增。
+- **TaskMonitor 会重启原厂 smbd**：14:47:42 原厂 smbd 被 TERM 后约 14 秒内被监督栈拉起并写入 `log.smbd`。这解释了为什么单独杀原厂 smbd 后 139/445 会被重新占用。
+- **没有可用的停止接口**：`taskmonitorTool -t stop -b smbd` 段错误（rc 139）；补 `-p "/usr/sbin/smbd -D"` 后返回 1、无效果；ubus `taskmonitor stop/status` 返回 `Invalid command`。
+
+### 频率与触发条件
+
+- 持久 syslog 中同类停止对出现在 11-06 04:26、11-07 03:58、11-08 03:10、11-08 05:05，间隔分别为约 23 h 32 m、23 h 12 m、1 h 55 m，**不是定时任务**。
+- `/etc/crontabs/root` 的完整内容已核对：只有 ntpsetclock、相机/场景、OTA 预下载（03/04/05 点的第 49 分）、sysapihttpd、mixbox 等条目，**没有 TaskMonitor、wrsst、ustackd 或 samba 相关行**，因此 05:05 不是 cron 触发。
+- 设备 uptime 跨过 05:05 未重启，**不是开机流程**；OTA 预下载 05:49 才启动，**不是 OTA**。
+- 结论边界：可证明“管理栈在同一秒有动作 + 三个 UCI 文件被整文件重写 + 配置文件并非由 Samba 链路生成”，但**不能证明具体发起方是 App 保存、云端下发还是管理面自愈**：HTTP 访问日志不落盘，TaskMonitor 只记录 kill 结果，`/tmp/log` 已滚动。频率上只能确认它是“按管理事件发生、时间不规则”，不能给出固定周期。
+
+### 对新版 SMB 的实际影响
+
+| 面 | 结论 |
+| --- | --- |
+| 是否读 `/etc/config/samba` | **读**。适配器每次 `generate/start/reload` 都用 `uci -c /etc/config` 读取 `samba` 与 `misc`，渲染自己的 `smb.conf`；源被改写会在下一次生成时被带进来 |
+| 共享 / include / 只读 / 相机时间窗 | 全部由该渲染链决定，**存在被带偏的风险**：新增/删除共享、改路径、改 `read_only`、改 `readonly:period` 都会在新配置中生效 |
+| PID 文件 / 运行目录 / `smb.conf` 生成链 | **不受牵连**。全部在 `/userdisk/data/samba-s2/root`（版本树）内，原厂只写 `/etc/config`、`/var/etc`、`/etc/crontabs`，两边不共享路径 |
+| 原厂 `smbd` 自动重启 | 对新版是**端口竞争**风险：停原厂后监督栈会尝试拉起，接管窗口必须短，且以“新版先绑定成功”为准 |
+
+### 防御（已落地并有受控复现）
+
+适配器新增配置源守卫：
+
+- `generate` 在渲染前计算 `/etc/config/samba` 与 `/etc/config/misc` 的 `md5 + size + mtime + inode`，与基线文件（默认 `<root>/var/state/config-baseline`，可用 `-B` 指定）比较。
+- 首次运行自动采纳基线，并保留可读副本 `samba.accepted`、`misc.accepted`；基线不一致时**拒绝生成**，退出码 7，打印基线与当前值；只有显式 `S5_ACCEPT_CONFIG=1` 才更新基线并继续。
+- `check` 增加 `config_baseline=`、`config_drift=yes/no`，漂移时返回 7；`reload` 传播真实退出码；安装器的厂商基线拆成“二进制 `state/vendor.md5`”与“配置 `state/vendor-config.md5`”，`verify` 对配置漂移只报告 `CONFIG-DRIFT`，由适配器守卫决定是否采纳。
+
+受控复现（不触碰真实 `/etc/config`）：
+
+1. 把 `/etc/config` 复制到 `/tmp/uci-test`，基线记录 `samba md5=8556… size=1795 mtime=1794085548 inode=3704417`、`misc md5=731e…`。
+2. 用 `uci -c /tmp/uci-test add samba sambashare`、`set name=S7DriftTest`、`set path=/tmp`、`commit` 模拟一次整文件重写。
+3. `generate` 返回 **7**，`smb.conf` md5 保持 `9122bec661189dcfe650ccc1bc92e73e` 不变；`check` 返回 7；`start` 返回 7，1445 无监听、无进程。
+4. `S5_ACCEPT_CONFIG=1 generate` 返回 0，基线更新，新配置包含 `S7DriftTest`（md5 `9b4d11ae…`）。
+5. 删除 `/tmp/uci-test`，对真实 `/etc/config` 重新采纳基线，`smb.conf` 回到 `9122bec…`。
+
+结论：管理栈再次改写 `/etc/config/samba` 时，新版不会静默用被改写的源重启；必须先人工对账并显式接受。运行中的实例不会被后台改写直接换配置（生成被拒绝），只会在下次显式操作时暴露。
+
 ## 对既有文档的修正
 
 - S6 的恢复基线 md5 `8556a19b…` 就是 05:05 之后的值，S6 未造成该差异，结论不变；D-S6-16 的“外部改动”由本文替换为可证据化描述。
