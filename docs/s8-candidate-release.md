@@ -8,10 +8,10 @@
 | 项 | 值 |
 | --- | --- |
 | 上游 | Samba 4.25.1 |
-| 发布版本 | `1.0.3-r2d`（包 `miwifi-smb-1.0.3-r2d.tar.gz`，SHA-256 `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848`；已构建，待实机安装） |
+| 发布版本 | `1.0.3-r2d`（包 `miwifi-smb-1.0.3-r2d.tar.gz`，SHA-256 `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848`；已构建并已实机安装） |
 | 源码 SHA-256 | `7f367545bca69aa96897628f82f0f04d4b66b3bcb36cb978b9bb952c4b4c428d`（43 590 836 B，`.tar.asc` 已用上游公钥验签） |
 | 目标设备 | 小米路由器 R2D，ROM 2.25.209，Linux 2.6.36 / uClibc 0.9.33.2 / ARMv7 soft-float |
-| 设备端安装前缀 | 设备当前 `versions/1.0.2-r2d/root`（1.0.3-r2d 尚未安装）；安装后为 `versions/1.0.3-r2d/root`；激活链接 `/userdisk/data/samba-s2/root` |
+| 设备端安装前缀 | 设备当前 `versions/1.0.3-r2d/root`（2026-11-08 已安装，`previous=1.0.2-r2d`）；激活链接 `/userdisk/data/samba-s2/root` |
 | 运行态 | 独立树、独立 PID/锁/状态/日志；不覆盖 `/usr/sbin/samba_multicall` |
 | 适配器 | `recipes/samba/xiaomi-smb-adapter.sh` |
 
@@ -55,7 +55,7 @@
 
 | 产物 | 大小 | MD5 | SHA-256（仓库内文件） |
 | --- | --- | --- | --- |
-| `miwifi-smb-1.0.3-r2d.tar.gz`（当前交付，待安装） | 14 299 319 B | `f305a1b94637afc8b4a9cd9b359d6c32` | `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848` |
+| `miwifi-smb-1.0.3-r2d.tar.gz`（当前交付，已实机安装） | 14 299 319 B | `f305a1b94637afc8b4a9cd9b359d6c32` | `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848` |
 | `miwifi-smb-1.0.2-r2d.tar.gz`（**已作废/被 1.0.3-r2d 取代**） | 14 299 118 B | `bc10176f3d66aa9a412a4882f94f57e4` | `07d5eb5083bf3817e177b9135b0dfe32ddbeae6ed5014326cfeec593a5f037d3` |
 | `miwifi-smb-1.0.1-r2d.tar.gz`（**已作废/被 1.0.2-r2d 取代**） | — | — | `cf4491148c47964619509a01865f25c0c8a1f5549c20181caf732d46ee8085ff` |
 | `miwifi-smb-1.0.0-r2d.tar.gz`（**已作废/被取代**） | — | — | `ce4684b20472191da1debe647fe18f39b69ce78f578b31556affa61b5151fe9b` |

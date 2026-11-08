@@ -384,7 +384,7 @@ miwifi-smb-1.0.3-r2d/
 
 | 文件 | MD5 | SHA-256（顶层 tar） |
 | --- | --- | --- |
-| 包 tar（1.0.3-r2d，**当前有效，待实机安装**） | `f305a1b94637afc8b4a9cd9b359d6c32` | `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848` |
+| 包 tar（1.0.3-r2d，**当前有效，已实机安装**） | `f305a1b94637afc8b4a9cd9b359d6c32` | `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848` |
 | 包 tar（1.0.2-r2d，**已作废/被 1.0.3-r2d 取代**） | `bc10176f3d66aa9a412a4882f94f57e4` | `07d5eb5083bf3817e177b9135b0dfe32ddbeae6ed5014326cfeec593a5f037d3` |
 | 包 tar（1.0.1-r2d，**已作废/被取代**） | — | `cf4491148c47964619509a01865f25c0c8a1f5549c20181caf732d46ee8085ff` |
 | 包 tar（1.0.0-r2d，**已作废/被取代**） | — | `ce4684b20472191da1debe647fe18f39b69ce78f578b31556affa61b5151fe9b` |
@@ -407,7 +407,7 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 
 ### 5.3 实机安装（已执行）
 
-上表为 1.0.0-r2d / 1.0.1-r2d 的历史记录；1.0.2-r2d 的实机链路见 §5.3.1；1.0.3-r2d 已构建、**尚未安装**（见 §5.3.2）。
+上表为 1.0.0-r2d / 1.0.1-r2d 的历史记录；1.0.2-r2d 的实机链路见 §5.3.1；1.0.3-r2d 已构建并**已安装到实体机**（见 §5.3.2）。
 
 | 步骤 | 命令 | 结果 |
 | --- | --- | --- |
@@ -445,7 +445,7 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 （`[global] [homes] [XiaoMi] [XiaoMi-usb0] [下载] [共享] [图片] [摄像机监控视频$] [文档]`）；
 未列名客户端因 `[XiaoMi-usb0] browseable=no` 枚举到 6 个 Disk。
 
-### 5.3.2 1.0.2-r2d → 1.0.3-r2d（已构建，待实机安装）
+### 5.3.2 1.0.2-r2d → 1.0.3-r2d（已实机安装）
 
 触发原因：`compat/90-s8-mounts` 的日志落点从 `logger -t s8compat`（user.notice，本机不落 `/tmp/messages`）
 改为追加 `/userdisk/data/s8compat/logs/hotplug.log`，字节 `051ba4ad…` → `861b98d8…`，与 1.0.2-r2d 已安装内容不一致。
@@ -455,7 +455,7 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 | 构建 | `release/miwifi-smb-1.0.3-r2d/`，`VERSION=1.0.3-r2d`，仅 `compat/90-s8-mounts` 相对 1.0.2-r2d 变更 |
 | 包内校验 | `md5sum -c MANIFEST.md5` 10/10 OK；`shasum -a 256 -c SHA256SUMS` 11/11 OK（主机侧执行） |
 | 顶层 tar | `miwifi-smb-1.0.3-r2d.tar.gz`，14 299 319 B，MD5 `f305a1b94637afc8b4a9cd9b359d6c32`，SHA-256 `bbb6ff92…`（ustar，无 AppleDouble） |
-| 实机安装 | **未执行**。设备当前仍是 `versions/1.0.2-r2d/root`；仅 `/etc/hotplug.d/block/90-s8-mounts` 因热插拔测试已提前替换为 `861b98d8…`，与版本树暂时不一致，待安装 1.0.3-r2d 后统一 |
+| 实机安装 | **已执行（2026-11-08 22:55，`install-release.sh upgrade`，RC=0）**。`current -> versions/1.0.3-r2d/root`，`state/previous=1.0.2-r2d`；`samba-s5d` 新 pid **3093** 持有 139/445（旧 pid 8906 退出）；共享 **9 段**；`hotplug.md5` 与 `/etc/hotplug.d/block/90-s8-mounts` 均为 `861b98d8…`，版本树与 hotplug 入口自此一致；`/etc/config/samba` 未改动（仍 `244eb53e…`） |
 
 ### 5.4 兜底行为（实测）
 
@@ -479,15 +479,16 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 
 | 项 | 值 |
 | --- | --- |
-| 运行版本 | `1.0.2-r2d`；`/userdisk/data/s7root/current -> versions/1.0.2-r2d/root` |
-| 回退目标 | `previous=1.0.1-r2d`（已安装且可回退）；`versions/v1` 仍在，`/userdisk/data/s7root-backup/v1-root.tar.gz` 保留 |
-| 前缀链接 | `/userdisk/data/samba-s2/root -> /userdisk/data/s7root/versions/1.0.2-r2d/root` |
-| 139/445 | 均由 `samba-s5d`（pid **8906**）持有；无原厂 `samba_multicall` 进程 |
-| 共享 | `smb.conf` **8 段**（当前无外接盘：`[global] [homes] [XiaoMi] [下载] [共享] [图片] [摄像机监控视频$] [文档]`） |
-| USB 共享 | 无 `[XiaoMi-usb*]`（测试盘已拔出）；`/etc/config/samba` md5 `1b1c63cb…`，无悬空路径 |
-| 适配器 | md5 `f106c788052402fc4fb7dc2614543fd3`（含挂载派生层）；`/etc/hotplug.d/block/90-s8-mounts` md5 `861b98d8…`（文件日志版，已随热插拔测试部署） |
+| 运行版本 | `1.0.3-r2d`；`/userdisk/data/s7root/current -> versions/1.0.3-r2d/root` |
+| 回退目标 | `previous=1.0.2-r2d`（已安装且可回退）；`versions/v1` 仍在，`/userdisk/data/s7root-backup/v1-root.tar.gz` 保留 |
+| 前缀链接 | `/userdisk/data/samba-s2/root -> /userdisk/data/s7root/versions/1.0.3-r2d/root` |
+| 139/445 | 均由 `samba-s5d`（pid **3093**）持有；无原厂 `samba_multicall` 进程 |
+| 共享 | `smb.conf` **9 段**（WD 931G 大盘在位：`[global] [homes] [XiaoMi] [XiaoMi-usb0] [下载] [共享] [图片] [摄像机监控视频$] [文档]`） |
+| USB 共享 | `[XiaoMi-usb0]` → `/extdisks/sdb1`（`grep -c`=1，无重复段）；`/etc/config/samba` md5 `244eb53e…`（适配器不回写 UCI） |
+| 适配器 | md5 `f106c788052402fc4fb7dc2614543fd3`（含挂载派生层）；`/etc/hotplug.d/block/90-s8-mounts` md5 `861b98d8…`（文件日志版），与发布包及 `s8compat/versions/v1/hotplug.md5` 内容一致 |
 | 兼容层 | `/userdisk/data/s8compat/stage/install.sh verify` rc=0，hook/adapter/wrapper 三项 MD5 OK |
-| 发布包 | 设备上仍是 `/userdisk/data/release/miwifi-smb-1.0.2-r2d`；**1.0.3-r2d 已构建待安装**（§5.3.2） |
-| 测试残留 | 无半装状态；`/userdisk/data/release` 保留 `1.0.2-r2d` 包与 `1.0.1-r2d` 旧包（历史对照）；`/tmp` 仅留 `s8-backup-adapter.sh`、`s8-backup-install.sh` 两个回滚备份 |
+| 发布包 | `/userdisk/data/release/miwifi-smb-1.0.3-r2d` 已落到设备；`./install-release.sh verify` 10/10 OK（`version=1.0.3-r2d`、`tree_md5=0f6001010c84a016cd46f129dbe47388`） |
+| 采集工装 | `s8-usb-test` 采集进程 **已停止**（pid 21094 已退出，`ps` 无残留）；`collect.log` 522 KiB 定稿于 22:56:42 后不再增长；证据归档见 `docs/evidence/2026-11-08-hotplug/` |
+| 测试残留 | 无半装状态；`/userdisk/data/release` 保留 `1.0.1-r2d` / `1.0.2-r2d` 旧包（历史对照）；`/tmp` 仅留 `s8-backup-adapter.sh`、`s8-backup-install.sh` 两个回滚备份 |
 
 
