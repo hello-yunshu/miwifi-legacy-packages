@@ -14,6 +14,7 @@
 #   4 stale PID file or PID does not belong to this tree (nothing killed)
 #   5 port already in use
 #   6 reload channel failed (configuration kept, restart required)
+#   7 configuration source drifted from the accepted baseline
 
 set -u
 
@@ -22,13 +23,15 @@ CONF_SRC=${S5_UCI_DIR:-/etc/config}
 PORT=${S5_PORT:-1445}
 BIND=${S5_BIND:-}
 PROC_NAME=${S5_PROC_NAME:-samba-s5d}
+SNAPSHOT=${S5_CONFIG_SNAPSHOT:-}
+ALLOW_STOCK=0
 NO_GENERATE=0
 PIDFILE=
 ACTION=
 
 usage() {
 	cat <<EOF
-Usage: $0 [-r root] [-c uci-dir] [-p port] [-b bind-address] <command>
+Usage: $0 [-r root] [-c uci-dir] [-p port] [-b bind-address] [-B baseline] [-P] <command>
 
 Commands:
   generate   render UCI -> smb.conf, validate, keep last-good
@@ -42,10 +45,15 @@ Commands:
 Options:
   -r root    installation tree (default $ROOT)
   -c dir     alternate UCI config dir (default $CONF_SRC, read-only use)
-  -p port    TCP port for this instance (default $PORT)
+  -p port    TCP port(s) for this instance, e.g. '139 445' (default $PORT)
   -b addr    bind address (default: network.lan.ipaddr, else all)
   -n name    process name used to start the binary (default $PROC_NAME)
+  -B file    accepted-config baseline (default <root>/var/state/config-baseline)
+  -P         allow stock ports 139/445 for an authorised takeover
   -N         start without regenerating the configuration
+
+Environment:
+  S5_ACCEPT_CONFIG=1  record the current samba/misc hashes as accepted
 EOF
 }
 
@@ -133,10 +141,70 @@ config_is_isolated() {
 	if grep -Eq '^[[:space:]]*(lock|pid|state|cache|private|ncalrpc)[[:space:]]*directory[[:space:]]*=[[:space:]]*(/tmp/(lock|run)|/var/(etc|lock|run|state|cache|lib/samba))' "$conf"; then
 		return 1
 	fi
-	if grep -Eq '^[[:space:]]*smb ports[[:space:]]*=[[:space:]]*(139|445)([[:space:]]|$)' "$conf"; then
+	if [ "$ALLOW_STOCK" = 0 ] &&
+		grep -Eq '^[[:space:]]*smb ports[[:space:]]*=[[:space:]]*(139|445)([[:space:]]|$)' "$conf"; then
 		return 1
 	fi
 	return 0
+}
+
+config_snapshot() {
+	if [ -n "$SNAPSHOT" ]; then
+		echo "$SNAPSHOT"
+	else
+		echo "$ROOT/var/state/config-baseline"
+	fi
+}
+
+config_facts() {
+	for f in samba misc; do
+		p="$CONF_SRC/$f"
+		if [ -r "$p" ]; then
+			sum=$(md5sum "$p" 2>/dev/null | awk '{print $1}')
+			set -- $(stat -c '%s %Y %i' "$p" 2>/dev/null || echo "0 0 0")
+			echo "$f md5=$sum size=$1 mtime=$2 inode=$3"
+		else
+			echo "$f missing"
+		fi
+	done
+}
+
+# The vendor management stack can rewrite /etc/config/samba and
+# /etc/config/misc at arbitrary times (S7 forensics: 2026-11-08 05:05:48).
+# Refuse to render a new smb.conf from a source that no longer matches the
+# accepted snapshot; an operator who has reviewed the change can opt in with
+# S5_ACCEPT_CONFIG=1, which records the new hashes and keeps a readable copy.
+config_guard() {
+	snap=$(config_snapshot)
+	dir=$(dirname "$snap")
+	now=$(config_facts)
+	if [ ! -f "$snap" ]; then
+		mkdir -p "$dir" || return 1
+		printf '%s\n' "$now" >"$snap" || return 1
+		[ -r "$CONF_SRC/samba" ] && cp -p "$CONF_SRC/samba" "$dir/samba.accepted" 2>/dev/null
+		[ -r "$CONF_SRC/misc" ] && cp -p "$CONF_SRC/misc" "$dir/misc.accepted" 2>/dev/null
+		log "config baseline adopted: $(printf '%s' "$now" | tr '\n' ';')"
+		return 0
+	fi
+	old=$(cat "$snap" 2>/dev/null)
+	[ "$old" = "$now" ] && return 0
+	if [ "${S5_ACCEPT_CONFIG:-0}" = 1 ]; then
+		printf '%s\n' "$now" >"$snap" || return 1
+		[ -r "$CONF_SRC/samba" ] && cp -p "$CONF_SRC/samba" "$dir/samba.accepted" 2>/dev/null
+		[ -r "$CONF_SRC/misc" ] && cp -p "$CONF_SRC/misc" "$dir/misc.accepted" 2>/dev/null
+		log "config drift accepted explicitly"
+		echo "adapter: configuration drift accepted (S5_ACCEPT_CONFIG=1)" >&2
+		return 0
+	fi
+	echo "adapter: configuration source changed unexpectedly" >&2
+	echo "  baseline: $snap" >&2
+	echo "  accepted:" >&2
+	printf '%s\n' "$old" | sed 's/^/    /' >&2
+	echo "  current:" >&2
+	printf '%s\n' "$now" | sed 's/^/    /' >&2
+	echo "  refusing to regenerate; review and rerun with S5_ACCEPT_CONFIG=1" >&2
+	log "config drift rejected"
+	return 7
 }
 
 render() {
@@ -179,6 +247,13 @@ render() {
 		echo '	load printers = no'
 		echo '	printable = no'
 		echo '	server min protocol = NT1'
+		# Samba 4.25 advertises SMB3 multi-channel by default.  macOS
+		# clients negotiate it, then stall for ~18 s after a successful
+		# session setup because no second channel can be established on
+		# this single-interface router; smbutil view never enumerates.
+		# SMB2_10 works and so does SMB3 with this switch off, so the
+		# extra channel support is not worth the client regression.
+		echo '	server multi channel support = no'
 		echo '	deadtime = 30'
 		echo '	enable core files = no'
 		echo '	null passwords = yes'
@@ -299,6 +374,9 @@ render() {
 cmd_generate() {
 	need_root
 	prepare_dirs
+	config_guard
+	grc=$?
+	[ $grc -eq 0 ] || return $grc
 	out="$ROOT/etc/smb.conf.new"
 	render "$out" || { rm -f "$out"; return 3; }
 
@@ -361,7 +439,10 @@ pid_is_ours() {
 }
 
 port_listening() {
-	netstat -ltn 2>/dev/null | awk '{print $4}' | grep -q ":$PORT\$"
+	for p in $PORT; do
+		netstat -ltn 2>/dev/null | awk '{print $4}' | grep -q ":$p\$" || return 1
+	done
+	return 0
 }
 
 cmd_status() {
@@ -488,7 +569,9 @@ cmd_stop() {
 }
 
 cmd_reload() {
-	cmd_generate >/dev/null || return 3
+	cmd_generate >/dev/null
+	grc=$?
+	[ $grc -eq 0 ] || return $grc
 	if ! pid=$(pid_from_file) || ! pid_is_ours "$pid"; then
 		echo "not running" >&2
 		return 3
@@ -517,22 +600,38 @@ cmd_check() {
 		echo "last_good_md5=$(md5sum "$ROOT/etc/smb.conf.last-good" | cut -d' ' -f1)"
 	cfg=$(uci_get samba.@samba[0].name)
 	[ -n "$cfg" ] && echo "uci_netbios=$cfg"
+	snap=$(config_snapshot)
+	echo "config_baseline=$snap"
+	drift=0
+	if [ -f "$snap" ]; then
+		if [ "$(cat "$snap" 2>/dev/null)" = "$(config_facts)" ]; then
+			echo "config_drift=no"
+		else
+			echo "config_drift=yes"
+			drift=1
+		fi
+	else
+		echo "config_baseline=absent"
+	fi
 	if [ -f "$ROOT/etc/smb.conf" ] && ! config_is_isolated "$ROOT/etc/smb.conf"; then
 		echo "isolation=FAIL"
 		return 1
 	fi
 	echo "isolation=OK"
 	cmd_status || true
+	[ $drift -eq 1 ] && return 7
 	return 0
 }
 
-while getopts "r:c:p:b:n:Nh" opt; do
+while getopts "r:c:p:b:n:B:PNh" opt; do
 	case "$opt" in
 	r) ROOT=$OPTARG ;;
 	c) CONF_SRC=$OPTARG ;;
 	p) PORT=$OPTARG ;;
 	b) BIND=$OPTARG ;;
 	n) PROC_NAME=$OPTARG ;;
+	B) SNAPSHOT=$OPTARG ;;
+	P) ALLOW_STOCK=1 ;;
 	N) NO_GENERATE=1 ;;
 	h) usage; exit 0 ;;
 	*) usage; exit 2 ;;

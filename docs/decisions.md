@@ -101,7 +101,7 @@
 
 ## S7（切换与回滚演练）
 
-- D-S7-01 本轮不切 139/445：停原厂 smbd 并改端口归属属于生产切换，必须单独授权。S7 在 1445 上完成安装布局、切换、回滚与故障演练，原厂二进制/配置/端口全程未动；真实切换清单已写入报告，但状态为未执行。
+- D-S7-01 本轮前半段不切 139/445：停原厂 smbd 并改端口归属属于生产切换，必须单独授权。S7 在 1445 上完成安装布局、切换、回滚与故障演练，原厂二进制/配置/端口未动；真实切换在用户后续明确授权后执行，见 D-S7-17/D-S7-18。
 - D-S7-02 激活方式为“重指编译前缀符号链接”，不重编译、不改 `SBINDIR`：`smbd -b` 报的前缀是 `/userdisk/data/samba-s2/root`，安装器把该路径做成指向 `versions/<name>/root` 的链接并断言 `readlink -f` 一致。这样避免重定位后 VFS/auth 模块静默加载失败。
 - D-S7-03 切换前必须停实例：PID 文件位于当前版本树内，切换前缀后新树无法定位旧进程。`activate` 检测到旧版本仍在运行即返回 1 并给出停止命令，不自动杀进程。
 - D-S7-04 幂等安装以 payload md5 为准：同一 tar 重复 `install` 返回 `already-installed` 且 rc=0；同名不同 payload 直接拒绝（rc=3），不覆盖已有版本。
@@ -111,5 +111,11 @@
 - D-S7-08 配置损坏演练用非法布尔值（`read_only=maybe`）触发 `testparm` 拒绝：`generate` 返回 3，`smb.conf` md5 保持不变。部署目录暂时缺失用删除合成共享根目录模拟，客户端得到 `NT_STATUS_BAD_NETWORK_NAME`，恢复目录后立即可读；该模拟不等价于真实 USB 热插拔，热插拔继续 BLOCKED。
 - D-S7-09 厂商覆盖检测采用“首次安装记录基线 + `verify` 比对”：`/usr/sbin/samba_multicall` 与 `/etc/config/samba` 漂移返回 5；本轮用伪造基线验证了检测逻辑，未经历真实固件 OTA，真实覆盖恢复流程标 BLOCKED。
 - D-S7-10 本轮 v1/v2 使用同一 payload，只验证布局、激活、回滚与故障路径，不声称验证了跨二进制版本升级；真实不同版本升级因缺少第二份构建标 BLOCKED。
-- D-S7-11 设备重启持久性、真实 139/445 切换、真实 USB 拔出、固件 OTA 覆盖均标 BLOCKED，理由分别是中断生产网络、需授权、生产盘不可拔、无可用 OTA；不以 stop/start 或目录缺失代替。
-- D-S7-12 清理只按 PID 文件与精确路径：删除 `/userdisk/data/s7root` 与空的 `/userdisk/data/samba-s2`，核对四个原厂 md5、139/445 与 137/138 归属、1445 无监听、根分区可用 20588 KB 与动手前一致。
+- D-S7-11 设备重启持久性、真实 139/445 切换、真实 USB 拔出、固件 OTA 覆盖曾均标 BLOCKED，理由分别是中断生产网络、需授权、生产盘不可拔、无可用 OTA；其中真实 139/445 切换已在 D-S7-17/D-S7-18 关闭，其余仍 BLOCKED，不以 stop/start 或目录缺失代替。
+- D-S7-12 清理只按 PID 文件与精确路径：删除 `/userdisk/data/s7root` 与空的 `/userdisk/data/samba-s2`，核对四个原厂 md5、139/445 与 137/138 归属、1445 无监听、根分区可用 20588 KB 与动手前一致。（本轮为真实切换重新安装了测试树，当前残留见 D-S7-18。）
+- D-S7-13 配置源采用“哈希基线 + 默认拒绝”：适配器在 `generate` 前比较 `/etc/config/samba`、`/etc/config/misc` 的 `md5/size/mtime/inode` 与基线（默认 `<root>/var/state/config-baseline`，可 `-B` 指定），不一致返回 7 并打印前后值，只有 `S5_ACCEPT_CONFIG=1` 才更新基线继续；首次运行自动采纳并保存 `samba.accepted`/`misc.accepted` 可读副本。理由：管理栈会整文件重写 UCI，若静默跟随会覆盖共享、include、只读与相机时间窗。受控复现已证明漂移时 `smb.conf` 不被改写、`check`/`start` 均返回 7、显式接受后新共享才进入配置。
+- D-S7-14 厂商基线拆成“二进制”与“配置”两份：`state/vendor.md5` 只放 `/usr/sbin/samba_multicall`，`state/vendor-config.md5` 放 `/etc/config/samba` 与 `misc`；`verify` 对配置漂移只报 `CONFIG-DRIFT`，不把它误判为固件覆盖，是否采用由适配器的配置源守卫决定。
+- D-S7-15 TaskMonitor 没有可用的停止接口（`taskmonitorTool -t stop -b smbd` 段错误 rc 139，补参数后 rc 1 无效，ubus `stop/status` 返回 `Invalid command`），且会在原厂 smbd 被 TERM 后约 14 秒自动拉起。接管因此采用同一脚本内“按 PID 文件 + `/proc/<pid>/exe` + cmdline 校验后 TERM 原厂 → 端口释放 → 立即 `-P` 启动新版”，不做 12 秒观察；`-P` 仅用于已授权的 139/445 短窗口，平时仍强制非保留端口，失败自动回滚原厂。
+- D-S7-16 macOS 在 SMB3 下共享枚举挂起的根因是 Samba 4.25 默认广播 multi-channel：客户端完成 SESSION_SETUP（AuthZ 为 `nobody`）后 18 秒内不发 TREE_CONNECT 只发 LOGOFF；`SMB2_02`/`SMB2_10` 正常，`SMB3_02` 仍挂起，`server multi channel support = no` 后 SMB3_11 恢复。适配器渲染配置固定加入该行并注明原因；不回退到 SMB1，也不通过限制协议上限规避。
+- D-S7-17 第一次真实切换（新版 PID 22144）在服务端自检通过但 macOS 枚举挂起时判定失败，立即回滚：适配器按 PID 文件 + exe 停新版 → `/usr/sbin/smbd -D` 恢复原厂 → 复核 PID/exe/端口/md5，并确认 macOS `smbutil view` 与 `mount_smbfs` 恢复。异常判定以真实客户端行为为准，不以设备侧 `smbclient` 正常代替。
+- D-S7-18 第二次真实切换通过：原厂 TERM 15:08:36、新版停止 15:08:47，停机窗口约 11 秒，原厂 15:08:51 前恢复；期间 macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，回滚后四个原厂 md5 与切换前完全一致，139/445 归 PID 2282、137/138 归 8469。测试树 `/userdisk/data/s7root`、`s7-root.tar.gz`、`samba-s2` 保留但无新版进程，根分区可用 20588 KB 未变。

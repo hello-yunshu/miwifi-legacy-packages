@@ -1,6 +1,6 @@
 # S7 切换与回滚演练
 
-目标：给出可执行的安装/升级/卸载/回滚工具，并用真机演练证明失败可恢复。**本轮不切 139/445**，原厂 4.0.21 的二进制、配置、端口归属全程未动。
+目标：给出可执行的安装/升级/卸载/回滚工具，并用真机演练证明失败可恢复。安装/回滚工具与本轮前半段的 1445 演练不动原厂；真实 139/445 切换在用户授权后单独执行，执行记录见“真实 139/445 切换”一节，原厂二进制与 `/etc/config/samba` 始终未被修改。
 
 ## 约束与范围
 
@@ -51,10 +51,48 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 | 11 | 卸载 | `uninstall` | 按 PID 文件停止实例，前缀链接与版本/状态目录被移除 |
 | 12 | 厂商覆盖检测 | `verify`；再用伪造基线跑一次 | 正常 rc=0；伪造基线 rc=5，能报出漂移文件 |
 | 13 | 设备重启 | — | **BLOCKED**：重启生产路由器会中断联网与管理，未执行 |
-| 14 | 真实 139/445 切换 | — | **BLOCKED**：需停原厂 smbd 并改端口归属，须用户单独授权 |
+| 14 | 真实 139/445 切换 | 见“真实 139/445 切换”一节 | 已执行：第一次尝试因 macOS 共享枚举挂起立即回滚；修复多通道协商后第二次通过，验证完成即回滚原厂 |
 | 15 | 真实不同版本升级 | — | **BLOCKED**：没有第二份可用的 4.x 构建；v1/v2 只验证布局与切换 |
 | 16 | 真实 USB/磁盘拔出 | — | **BLOCKED**：内部盘是 `sda1`，`/extdisks` 为生产盘；用“共享根不存在”模拟，不等价于热插拔 |
 | 17 | 固件升级真实覆盖 | — | **BLOCKED**：无可用 OTA；只验证检测逻辑（伪造基线触发 rc=5） |
+
+## 真实 139/445 切换（2026-11-08，用户授权）
+
+做法：停原厂只按 `/var/run/smbd.pid` 加 `/proc/<pid>/exe`（`/usr/sbin/samba_multicall`）与 cmdline（`/usr/sbin/smbd -D`）逐个校验，先 TERM 已验证的子进程再 TERM 主进程；端口释放后同一脚本内立即 `start -p "139 445" -P`，不做 12 秒等待；验证完立刻停新版并重启原厂。原厂二进制、`/etc/config/samba`、`/var/etc/smb.conf` 全程只读。
+
+### 第一次尝试（15:00 之前）：异常并立即回滚
+
+- 接管本身成功：新版 PID 22144，`/proc/<pid>/exe` 指向版本树 `sbin/samba-s5d`，139/445 均由新版监听，12 秒后未被 TaskMonitor 抢回。
+- **客户端验证失败**：macOS `smbutil view //guest@192.168.3.2` 挂起；服务端 `smbstatus` 能看到来自 192.168.3.176/63 的 SMB3_11 会话，设备侧 `smbclient -m SMB3 -L 127.0.0.1` 正常列出 7 个共享。按“异常立即回滚”处理。
+- 回滚：适配器 `stop`（PID 文件 + exe）→ 端口释放 → `/usr/sbin/smbd -D` 拉起原厂，PID 23832，139/445 恢复；macOS `smbutil view` 恢复 2 个共享，`mount_smbfs` 可读。
+
+### 根因定位：SMB3 多通道协商
+
+在 1445 上用 `smbutil view -N //guest@192.168.3.2:1445` 可稳定复现挂起（客户端 18 秒内不发 TREE_CONNECT，只发 LOGOFF；服务端日志显示 SESSION_SETUP 已成功、AuthZ 为 `nobody`）。逐项排除：
+
+| 变量 | 结果 |
+| --- | --- |
+| `server max protocol = SMB3_02` | 仍挂起 |
+| `server signing = disabled` | 仍挂起 |
+| `server max protocol = SMB2_10` / `SMB2_02` | **正常**，2 个共享 |
+| 认证用户（新建 `nobody` 口令）代替访客 | SMB3_02 下仍挂起 |
+| `server multi channel support = no`，协议上限恢复默认（SMB3_11） | **正常**，枚举与 `mount_smbfs` 均通过 |
+
+结论：Samba 4.25.1 默认广播 SMB3 multi-channel，macOS 客户端在本机单网卡/2.6.36 环境下协商后卡在会话建立完成到 TREE_CONNECT 之间；关闭多通道即恢复，SMB3 本身可用。适配器渲染配置已加入 `server multi channel support = no` 并附注释，1445 上复测 `smbutil view` 与 `mount_smbfs` 均通过。
+
+### 第二次尝试（15:08:34–15:08:51）：通过
+
+| 阶段 | 观测 |
+| --- | --- |
+| 切换前 | `/usr/sbin/samba_multicall` `5e422d34…`、`/etc/config/samba` `8556a19b…`、`/etc/config/misc` `731ebecdf…`、`/var/etc/smb.conf` `bcad8b90…`；139/445 由 PID 23832 持有，137/138 由 8469/nmbd 持有 |
+| 停原厂 | PID 23832 exe/cmdline 校验通过后 TERM；子进程按同样校验处理；139/445 在 1 秒内释放 |
+| 启新版 | 版本树 pidfile 写入新 PID，exe 为版本树 `sbin/samba-s5d`，139/445 均由新版监听，`start_rc=0` |
+| 客户端 | macOS `smbutil view -N //guest@192.168.3.2` 列出 homes/XiaoMi/XiaoMi-usb0 三个共享；`mount_smbfs` 挂载 `XiaoMi` 成功并读到文件 |
+| 回滚 | 15:08:47 适配器 `stop`（PID 文件 + exe）→ 端口 0 秒释放 → 原厂 `/usr/sbin/smbd -D`；PID 2282，139/445 恢复；137/138 未受影响 |
+| 哈希复核 | 四个原厂文件 md5 与切换前完全一致（二进制、`samba`、`misc`、`/var/etc/smb.conf`） |
+| 停机窗口 | 原厂 TERM 15:08:36 → 新版停止 15:08:47，约 **11 秒**；原厂 15:08:51 前恢复监听 |
+
+回滚步骤（可复用于下次）：停新版 → 等 139/445 释放（最多 8 秒）→ `/usr/sbin/smbd -D` → 复核 PID 文件、`/proc/<pid>/exe`、端口、四个 md5、客户端枚举与挂载。TaskMonitor 可能在停原厂后约 14 秒尝试拉起原厂；本次窗口 11 秒，未发生抢占；若发生，以上述端口归属与 exe 校验为准，不按进程名杀。
 
 ### 演练中发现并修复的缺陷
 
@@ -65,7 +103,7 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 | 安装器用 `sha256sum` | 设备无该 applet，摘要为空，重复安装被误判为“payload 不同” | 改用设备已有的 `md5sum` |
 | 版本切换与运行中实例 | PID 文件在版本树内，切换后新树找不到旧实例 | 切换前强制停实例（返回 1 并给出停止命令） |
 
-## 切换原厂端口的操作清单（待授权，未执行）
+## 切换原厂端口的操作清单（2026-11-08 已执行，清单保留）
 
 1. `verify` 通过，记录原厂四个 md5、`ss`/`netstat` 端口归属、`df`。
 2. 停原厂：只按 PID 文件 + `/proc/<pid>/exe`（`samba_multicall`/`smbd`）逐进程验证后停止；确认 139/445/137/138 释放。
@@ -81,12 +119,13 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 | --- | --- |
 | `/usr/sbin/samba_multicall` | `5e422d3463f40b4405ef8325ce3603e8` |
 | `/etc/config/samba` | `8556a19b6d81d49bfd5ab738e0132b51` |
+| `/etc/config/misc` | `731ebecdfb56528599cdc4b09bf0f0f0` |
 | `/var/etc/smb.conf` | `bcad8b90869688b7982a50aaa891cf99` |
 | `/etc/samba/smb.conf.template` | `95ad7d4146de73a50fb33e823d495b94` |
-| 139/445 | 1448/smbd |
+| 139/445 | 2282/smbd，`/proc/2282/exe` = `/usr/sbin/samba_multicall` |
 | 137/138 | 8469/nmbd |
 | 1445 | 无监听 |
-| 测试残留 | `/userdisk/data/s7root`、`/userdisk/data/samba-s2` 均不存在，无 `samba-s5d` 进程 |
-| 根分区可用 | 20588 KB（与动手前一致） |
+| 测试残留 | `/userdisk/data/s7root`（45 384 KB）、`/userdisk/data/s7-root.tar.gz`（14 180 KB）、`/userdisk/data/samba-s2` 保留作为已安装测试树；无 `samba-s5d`/`samba-dcerpcd` 进程；`/tmp` 下的接管脚本与 `uci-test` 已删除 |
+| 根分区可用 | 20588 KB（与动手前一致，未写入根分区） |
 
 `/etc/config/samba` 的 mtime 仍是 05:05，本轮未写入；该变更的来源见 [05:05 变更取证](s6-config-change-forensics.md)。

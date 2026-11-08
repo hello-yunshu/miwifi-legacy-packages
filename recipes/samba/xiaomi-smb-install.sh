@@ -30,6 +30,7 @@ BIND=${S7_BIND:-192.168.3.2}
 VENDOR_BIN=${S7_VENDOR_BIN:-/usr/sbin/samba_multicall}
 VENDOR_CONF=${S7_VENDOR_CONF:-/etc/config/samba}
 BASELINE=${S7_BASELINE:-$BASE/state/vendor.md5}
+CONFIG_BASELINE=${S7_CONFIG_BASELINE:-$BASE/state/vendor-config.md5}
 
 die() { echo "install: $1" >&2; exit "${2:-1}"; }
 
@@ -52,12 +53,22 @@ baked_prefix() {
 }
 
 record_vendor_baseline() {
-	[ -f "$BASELINE" ] && return 0
-	mkdir -p "$BASE/state" || die "cannot create $BASE/state" 1
-	{
-		[ -f "$VENDOR_BIN" ] && echo "$(md5sum "$VENDOR_BIN" | awk '{print $1}')  $VENDOR_BIN"
-		[ -f "$VENDOR_CONF" ] && echo "$(md5sum "$VENDOR_CONF" | awk '{print $1}')  $VENDOR_CONF"
-	} >"$BASELINE"
+	[ -f "$BASELINE" ] || {
+		mkdir -p "$BASE/state" || die "cannot create $BASE/state" 1
+		[ -f "$VENDOR_BIN" ] &&
+			echo "$(md5sum "$VENDOR_BIN" | awk '{print $1}')  $VENDOR_BIN" >"$BASELINE"
+	}
+	# The management stack rewrites these UCI files on its own schedule, so
+	# they are recorded separately and reported as configuration drift rather
+	# than treated as a firmware overwrite.  The adapter's config guard is the
+	# gate that decides whether a changed source may be rendered.
+	[ -f "$CONFIG_BASELINE" ] || {
+		mkdir -p "$BASE/state" || die "cannot create $BASE/state" 1
+		{
+			[ -f "$VENDOR_CONF" ] && echo "$(md5sum "$VENDOR_CONF" | awk '{print $1}')  $VENDOR_CONF"
+			[ -f /etc/config/misc ] && echo "$(md5sum /etc/config/misc | awk '{print $1}')  /etc/config/misc"
+		} >"$CONFIG_BASELINE"
+	}
 }
 
 cmd_install() {
@@ -180,6 +191,17 @@ cmd_verify() {
 			echo "ok $path"
 		fi
 	done <"$BASELINE"
+
+	if [ -f "$CONFIG_BASELINE" ]; then
+		while read -r sum path; do
+			[ -f "$path" ] || { echo "CONFIG-MISSING $path"; continue; }
+			now=$(md5sum "$path" | awk '{print $1}')
+			if [ "$now" != "$sum" ]; then
+				echo "CONFIG-DRIFT $path expected=$sum now=$now"
+				echo "  source changed by the management stack; adapter config guard decides reuse"
+			fi
+		done <"$CONFIG_BASELINE"
+	fi
 
 	if cur=$(current_name 2>/dev/null); then
 		baked=$(baked_prefix "$(tree_root "$cur")") || { echo "BAD current $cur"; rc=3; }
