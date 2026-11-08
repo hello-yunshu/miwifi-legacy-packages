@@ -31,24 +31,53 @@ MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
 IPT=${S8_IPTABLES:-iptables}
 CHAIN=${S8_DISKACL_CHAIN:-s8-diskacl}
 LEGACY=${S8_LEGACY_CHAIN:-s8-pridisk}
+GUEST_IFACE=${S8_GUEST_IFACE:-br-guest}
+GUEST_PORTS=${S8_DISKACL_TCP_PORTS:-139,445}
+NET_DIR=${S8_NET_DIR:-/sys/class/net}
 STATE=${S8_SYNC_STATE:-$BASE/state}
 LOG=$STATE/sync.log
 
 cur=$(readlink "$BASE/current" 2>/dev/null || true)
 [ "$cur" = versions/v1 ] || exit 0
 [ -x "$ADAPTER" ] || exit 0
-[ -f "$MACFILTER" ] && [ -r "$MACFILTER" ] || exit 0
-
-sum=$(md5sum "$MACFILTER" 2>/dev/null | awk '{print $1}')
-[ -n "$sum" ] || exit 0
 
 mkdir -p "$STATE" 2>/dev/null || exit 0
-old=$(cat "$STATE/macfilter.md5" 2>/dev/null || true)
+
+# macfilter drives the per-device chain; it is optional here so that the
+# guest refusal below is still health-checked when the file is missing.
+sum=""
+if [ -f "$MACFILTER" ] && [ -r "$MACFILTER" ]; then
+	sum=$(md5sum "$MACFILTER" 2>/dev/null | awk '{print $1}')
+fi
+
 need=0
-[ "$sum" = "$old" ] || need=1
+if [ -n "$sum" ]; then
+	old=$(cat "$STATE/macfilter.md5" 2>/dev/null || true)
+	[ "$sum" = "$old" ] || need=1
+fi
+
+# Guest refusal must exist exactly once and stay above the vendor's
+# any-interface ACCEPT for 139/445.  A rule that slipped below it is as
+# useless as a missing one, so both trigger a rebuild.
+if [ -d "$NET_DIR/$GUEST_IFACE" ] && [ "$need" -eq 0 ]; then
+	gspec="-i $GUEST_IFACE -p tcp -m multiport --dports $GUEST_PORTS -j DROP"
+	n=$("$IPT" -S INPUT 2>/dev/null | grep -cF -- "$gspec")
+	[ "$n" = 1 ] || need=1
+	if [ "$need" -eq 0 ]; then
+		gi=$("$IPT" -S INPUT 2>/dev/null |
+			awk -v s="$gspec" '
+				/^-A INPUT / { n++; if (index($0, s)) { print n; exit } }')
+		vi=$("$IPT" -S INPUT 2>/dev/null |
+			awk '
+				/^-A INPUT / { n++ }
+				/-j ACCEPT/ && /--dports / && /445/ && !/-i / { print n; exit }')
+		[ -n "$gi" ] || need=1
+		[ "$need" -eq 0 ] && [ -n "$vi" ] && [ "$gi" -ge "$vi" ] && need=1
+	fi
+fi
 
 # Cheap self-heal when the file itself did not change.
-if [ "$need" -eq 0 ]; then
+if [ "$need" -eq 0 ] && [ -n "$sum" ]; then
 	statef=$SMBROOT/var/state/diskacl.state
 	decision=$(sed -n 's/^decision=//p' "$statef" 2>/dev/null)
 	denied=$(sed -n 's/^denied=//p' "$statef" 2>/dev/null)
@@ -57,7 +86,10 @@ if [ "$need" -eq 0 ]; then
 		jumps=$("$IPT" -S INPUT 2>/dev/null | grep -cF -- "-j $CHAIN")
 		[ "$jumps" = 2 ] || need=1
 	fi
-	# A returning legacy chain is always urgent, even under a refused policy.
+fi
+
+# A returning legacy chain is always urgent, even under a refused policy.
+if [ "$need" -eq 0 ]; then
 	"$IPT" -S "$LEGACY" >/dev/null 2>&1 && need=1
 fi
 
@@ -69,6 +101,7 @@ rc=0
 # file changes); both mean there is nothing to retry this minute.
 case $rc in
 0|8)
+	[ -n "$sum" ] || exit 0
 	tmp=$STATE/.macfilter.md5.$$
 	if printf '%s\n' "$sum" >"$tmp" 2>/dev/null; then
 		mv "$tmp" "$STATE/macfilter.md5" 2>/dev/null || rm -f "$tmp"
