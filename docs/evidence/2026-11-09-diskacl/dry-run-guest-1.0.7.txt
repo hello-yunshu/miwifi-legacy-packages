@@ -1,0 +1,31 @@
+== guest facts ==
+/sys/class/net/br-guest
+11: br-guest: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN 
+    inet 192.168.19.1/24 brd 192.168.19.255 scope global br-guest
+1
+== before ==
+c3c3c0232eb744f1c1622f0fe1097a69  -
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== dry-run (1.0.7 adapter, read-only) ==
+iptables -I INPUT 3 -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+iptables -F s8-diskacl
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:03 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:04 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:05 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:06 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:07 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:08 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:09 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:0a -j DROP
+iptables -A s8-diskacl -j RETURN
+iptables -D INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+iptables -D INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+iptables -I INPUT 1 -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+iptables -I INPUT 2 -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+diskacl: dry run, 8 DROP rule(s) + RETURN
+== after ==
+c3c3c0232eb744f1c1622f0fe1097a69  -

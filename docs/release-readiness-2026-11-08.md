@@ -539,4 +539,47 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 黑名单语义、拒绝策略、legacy 清理、cron 兜底与重启安全性均在真机闭环；
 两方向延迟与"名单外不误伤"有实测数字。剩余仅发布收口（`1.0.7-r2d`）与文档/包作废标注。
 
+## 8. `1.0.7-r2d` 装机与访客规则自检（2026-11-09 03:10–03:15）
+
+### 8.1 装机
+
+* `install-release.sh upgrade`，`current -> versions/1.0.7-r2d/root`；
+  `compat` 下 adapter `00ca9624…`、sync `2a00da5e…`，与 `MANIFEST.md5` 一致。
+* 装机后 `INPUT`（自顶向下）：`br-lan tcp -> s8-diskacl`、`br-lan udp -> s8-diskacl`、
+  `-i br-guest -p tcp -m multiport --dports 139,445 -j DROP`、
+  `mixbox-firewall ACCEPT`、`delegate_input`。访客规则在原厂 ACCEPT **之前**（4 vs 5）。
+* `diskacl-status`：`guest=enforced`，`jumps=2`，`legacy=absent`，`denied=8`、`allowed=32`。
+* 快照：[`install-1.0.7-pre-snapshot.txt`](evidence/2026-11-09-diskacl/install-1.0.7-pre-snapshot.txt)、
+  [`install-1.0.7-post-snapshot.txt`](evidence/2026-11-09-diskacl/install-1.0.7-post-snapshot.txt)、
+  [`install-1.0.7-run.txt`](evidence/2026-11-09-diskacl/install-1.0.7-run.txt)。
+
+### 8.2 `samba restart` 自检
+
+* 重启后主进程 pid `630 -> 1687`；链仍为 **8 DROP + 1 RETURN**，没有退化成全员 DROP。
+* 访客规则仍在原厂 ACCEPT 之前；`adapter.log` 记录 `guest: DROP br-guest tcp 139,445`。
+* LAN 与名单外对照：本机 `smbutil view` 成功列出 3 个共享；`RETURN` 命中从 28 增至 47，
+  证明 LAN 流量确实穿过该链并被放行。访客规则计数为 0（访客网未起来，无流量）。
+* 证据：[`restart-selfcheck-1.0.7.txt`](evidence/2026-11-09-diskacl/restart-selfcheck-1.0.7.txt)。
+
+### 8.3 cron 访客健康检查
+
+* 手动删除访客规则（`iptables -D`），规则计数立即为 0；**约 50 秒后**由 cron 调用
+  `diskacl-sync.sh` 重建，03:12:05 恢复，位置仍在原厂 ACCEPT 之前。
+* 证据：[`cron-guest-healthcheck-1.0.7.txt`](evidence/2026-11-09-diskacl/cron-guest-healthcheck-1.0.7.txt)。
+
+### 8.4 访客网真实流量测试：BLOCKED
+
+* 临时置 `wireless.guest_2G.disabled=0` 并 `wifi up`：`wl1.2` 未能创建
+  （`wl1: WLC_SET_VAR(bss): Invalid argument`、`wifi: wl driver adapter not found`），
+  `br-guest` 成员接口始终为空。已立即恢复 `disabled=1` 并再次 `wifi up`，
+  确认 `br-guest` 无成员、`wl1.2` 不存在、其余无线字段（SSID/密钥/macfilter/maclist/ap_isolate）不变。
+* 本机侧亦无可用访客客户端：`en0` 为虚拟化接口，`networksetup -getairportnetwork en0`
+  报告未关联任何 AirPort 网络，无法关联访客 SSID。为保证不"凑结果"，未改动无线配置去强行造流量。
+* 兜底证据：访客规则位次与 `diskacl-status guest=enforced` 的只读快照，以及会把违规流量挡在
+  原厂 ACCEPT 之前的 dry-run 规则集；
+  [`guest-2G-enable-attempt-BLOCKED.txt`](evidence/2026-11-09-diskacl/guest-2G-enable-attempt-BLOCKED.txt)、
+  [`dry-run-guest-1.0.7.txt`](evidence/2026-11-09-diskacl/dry-run-guest-1.0.7.txt)。
+* 结论：规则面与健康检查已在真机闭环；"访客客户端 139/445 不通、137/138 原状"的端到端实测
+  因本机无线驱动无法拉起访客 BSS 而无法执行，需在有真实访客客户端的条件下补测。
+
 
