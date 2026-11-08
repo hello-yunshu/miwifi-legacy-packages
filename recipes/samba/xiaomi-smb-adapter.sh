@@ -15,6 +15,8 @@
 #   5 port already in use
 #   6 reload channel failed (configuration kept, restart required)
 #   7 configuration source drifted from the accepted baseline
+#   8 disk access policy refused (mode.lan is not blacklist, or malformed;
+#     nothing changed)
 
 set -u
 
@@ -35,22 +37,34 @@ NO_GENERATE=0
 PIDFILE=
 ACTION=
 
-# Per-device disk access control (vendor 'pridisk' intent).
-# The vendor keeps the intent in /etc/config/macfilter and its own
-# apply_firewall never programmed it; this chain is the only enforcement
-# point for the isolated Samba 4.x instance.  We own exactly one chain and
-# two INPUT jumps, and never read, flush or rebuild the rest of INPUT.
+# Per-device disk access control (vendor "全盘访问" intent).
+# The vendor keeps the intent in /etc/config/macfilter:
+#   config mode 'mode'   option lan 'blacklist'|'whitelist'
+#   config mac           option mac 'aa:bb:..'  option lan 'yes'|'no'
+# 'lan=no' means the device must not reach the SMB service.  Only the
+# blacklist mode is enforced (DROP explicit 'no', RETURN everyone else);
+# any other or malformed mode is refused without touching the firewall, so a
+# parsing surprise can never take the whole LAN off SMB.  The vendor's own
+# apply_firewall does not program this intent, so this chain is the only
+# enforcement point for the isolated Samba 4.x instance.  We own exactly one
+# chain and two INPUT jumps, and never read, flush or rebuild the rest of
+# INPUT.  The old 's8-pridisk' chain is only ever removed, never created.
 MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
 IPT=${S8_IPTABLES:-iptables}
-PRIDISK_CHAIN=${S8_PRIDISK_CHAIN:-s8-pridisk}
-PRIDISK_IFACE=${S8_PRIDISK_IFACE:-br-lan}
-PRIDISK_TCP_PORTS=${S8_PRIDISK_TCP_PORTS:-139,445}
-PRIDISK_UDP_PORTS=${S8_PRIDISK_UDP_PORTS:-137,138}
-PRIDISK_PRINT=0
-PD_MODE=
-PD_MODE_SRC=
-PD_YES=
-PD_NO=
+DISKACL_CHAIN=${S8_DISKACL_CHAIN:-s8-diskacl}
+LEGACY_CHAIN=${S8_LEGACY_CHAIN:-s8-pridisk}
+DISKACL_IFACE=${S8_DISKACL_IFACE:-br-lan}
+DISKACL_TCP_PORTS=${S8_DISKACL_TCP_PORTS:-139,445}
+DISKACL_UDP_PORTS=${S8_DISKACL_UDP_PORTS:-137,138}
+DISKACL_PRINT=0
+DA_MODE=
+DA_MODE_SRC=
+DA_NO=
+DA_DENIED=0
+DA_ALLOWED=0
+DA_ENTRIES=0
+DA_UNSET=0
+DA_BAD=0
 
 usage() {
 	cat <<EOF
@@ -68,9 +82,11 @@ Commands:
   tm-unregister  remove this instance from TaskMonitor (before a planned stop)
   vendor-stop    ask TaskMonitor to stop and unregister the factory smbd entry
   vendor-start   restore the factory service via /etc/init.d/samba start
-  pridisk-apply  rebuild the per-device access chain from /etc/config/macfilter
-  pridisk-clear  remove our INPUT jumps and delete the chain
-  pridisk-status report mode/chain/jump state
+  diskacl-apply  rebuild the per-device SMB access chain from macfilter.lan
+                 (blacklist only: DROP explicit 'lan=no', RETURN the rest)
+  diskacl-clear  remove our INPUT jumps and chains (incl. legacy s8-pridisk)
+  diskacl-status report mode/chain/jump state
+  pridisk-*      deprecated aliases for the three commands above
 
 Options:
   -r root    installation tree (default $ROOT)
@@ -87,7 +103,9 @@ Environment:
   S5_ACCEPT_CONFIG=1  record the current samba/misc hashes as accepted
   S8_MACFILTER        macfilter path (default /etc/config/macfilter)
   S8_IPTABLES         iptables binary (default iptables)
-  S8_PRIDISK_IFACE    LAN interface for the INPUT jumps (default br-lan)
+  S8_DISKACL_CHAIN    our chain name (default s8-diskacl)
+  S8_LEGACY_CHAIN     old chain removed on sight (default s8-pridisk)
+  S8_DISKACL_IFACE    LAN interface for the INPUT jumps (default br-lan)
 EOF
 }
 
@@ -582,9 +600,11 @@ cmd_start() {
 	if pid=$(pid_from_file); then
 		if pid_is_ours "$pid"; then
 			if port_listening; then
-				# Re-assert the access rules; this repairs a chain lost to a
-				# firewall reload while the instance kept running.
-				pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
+				# Re-assert the access rules.  diskacl_apply can only build
+				# the blacklist chain (explicit 'lan=no' -> DROP, tail
+				# RETURN) or refuse without touching the firewall; it can
+				# never turn a restart into an all-LAN DROP.
+				diskacl_apply >/dev/null || diskacl_log "apply failed rc=$?"
 				echo "already running pid=$pid"
 				return 0
 			fi
@@ -625,7 +645,7 @@ cmd_start() {
 	while [ $i -lt 20 ]; do
 		if pid=$(pid_from_file) && pid_is_ours "$pid" && port_listening; then
 			log "started pid=$pid port=$PORT via sbin/$PROC_NAME"
-			pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
+			diskacl_apply >/dev/null || diskacl_log "apply failed rc=$?"
 			echo "started pid=$pid port=$PORT"
 			return 0
 		fi
@@ -660,7 +680,7 @@ cmd_stop() {
 			echo "stop failed: port $PORT still listening (no live pidfile)" >&2
 			return 5
 		fi
-		pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
+		diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
 		echo "stopped (no live pidfile)"
 		return 0
 	fi
@@ -674,7 +694,7 @@ cmd_stop() {
 			echo "stop failed: port $PORT still listening after removing stale pidfile" >&2
 			return 5
 		fi
-		pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
+		diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
 		echo "stopped (removed stale pidfile for dead pid $pid)"
 		return 0
 	fi
@@ -705,7 +725,7 @@ cmd_stop() {
 		return 5
 	fi
 	log "stopped pid=$pid"
-	pridisk_clear >/dev/null || pridisk_log "clear failed rc=$?"
+	diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
 	echo "stopped pid=$pid"
 	return 0
 }
@@ -723,7 +743,8 @@ cmd_reload() {
 		>"$ROOT/var/log/smbcontrol.out" 2>&1; then
 		log "reload-config sent to pid=$pid"
 		# macfilter may have changed on disk; rebuild the chain idempotently.
-		pridisk_apply >/dev/null || pridisk_log "apply failed rc=$?"
+		# The blacklist-only policy cannot widen into an all-LAN DROP.
+		diskacl_apply >/dev/null || diskacl_log "apply failed rc=$?"
 		echo "reloaded"
 		return 0
 	fi
@@ -732,25 +753,31 @@ cmd_reload() {
 	return 6
 }
 
-# --- per-device disk access (pridisk) --------------------------------------
+# --- per-device disk access (macfilter.lan) ------------------------------
 # macfilter intent (stock firmware uses a 'mode' section):
-#   config mode 'mode'      option pridisk 'whitelist'|'blacklist'
-#   config mac  'y'         option mac 'aa:..'  option pridisk 'yes'|'no'
+#   config mode 'mode'      option lan 'blacklist'|'whitelist'
+#   config mac  'y'         option mac 'aa:..'  option lan 'yes'|'no'
 # 'config macfilter' is accepted as an alias for the mode section.
 #
-# Policy (documented in the close-out report):
-#   whitelist : RETURN for every 'yes' device, then DROP the rest.
-#   blacklist : DROP for every 'no' device, then RETURN the rest.
-#   missing   : fall back to blacklist semantics (only explicit 'no' is
-#               denied, i.e. the least destructive interpretation).
-#   unknown   : same as missing, and logged.
-#   unreadable/absent file: leave the firewall exactly as it is, log ERROR and
-#               record mode=unavailable.  It is *not* a silent fail-open: the
-#               condition is visible in 'check'/'status' and in adapter.log.
-#               Blocking every client instead would take the family NAS offline
-#               because of a parsing problem, which is the worse failure.
+# Policy:
+#   blacklist : DROP for every device with an explicit 'lan=no', then RETURN.
+#               A device with 'lan=yes' or no value is allowed by default.
+#   refused   : mode.lan missing, not blacklist, or unparsable -> nothing is
+#               built and state/decision=refused (exit 8).  Guessing here can
+#               take the whole LAN off SMB, so we never do.
+#   unavailable: file absent/unreadable, or no 'config mac' section -> the
+#               firewall is left alone and state/decision=unavailable.
+#   legacy s8-pridisk: removed on every apply/clear.  It is only ever deleted,
+#               never created; this removes the old all-DROP chain even when
+#               the current policy is refused.
+#
+# start/reload call diskacl_apply so a vendor samba restart or a 'lan=no'
+# change is enforced immediately.  The blacklist-only contract means the
+# worst outcome of that call is the explicit 'no' set being dropped; it can
+# never become an allow=0 chain.  'lan=no -> yes' does not restart samba,
+# so a once-a-minute md5 watcher (compat/diskacl-sync.sh) reconciles it.
 
-pridisk_parse() {
+diskacl_parse() {
 	awk '
 	function unq(s,   c) {
 		gsub(/^[ \t\r]+|[ \t\r]+$/, "", s)
@@ -760,150 +787,159 @@ pridisk_parse() {
 		return s
 	}
 	function emit() {
-		if (stype == "mac" && smac != "")
-			print "mac", smac, spd
+		if (stype == "mode" || stype == "macfilter")
+			print "mode", slan
+		else if (stype == "mac" && smac != "")
+			print "mac", smac, slan
 	}
 	/^[ \t]*#/ { next }
 	/^[ \t]*config[ \t]/ {
 		emit()
 		stype = $2
 		smac = ""
-		spd = ""
+		slan = ""
 		next
 	}
 	/^[ \t]*option[ \t]/ {
 		opt = $2
 		rest = $0
 		sub(/^[ \t]*option[ \t]+[^ \t]+[ \t]+/, "", rest)
-		if (opt == "pridisk") {
-			if (stype == "mac")
-				spd = unq(rest)
-			else if (stype == "mode" || stype == "macfilter")
-				# stock firmware uses config mode; macfilter is an alias.
-				print "mode", unq(rest)
-		} else if (opt == "mac" && stype == "mac") {
+		if (opt == "lan")
+			slan = unq(rest)
+		else if (opt == "mac" && stype == "mac")
 			smac = unq(rest)
-		}
 		next
 	}
 	END { emit() }
 	' "$MACFILTER" 2>/dev/null
 }
 
-pridisk_load() {
-	PD_MODE=
-	PD_MODE_SRC=
-	PD_YES=" "
-	PD_NO=" "
-	PD_UNSET=0
-	PD_BAD=0
+diskacl_load() {
+	DA_MODE=
+	DA_MODE_SRC=
+	DA_NO=" "
+	DA_DENIED=0
+	DA_ALLOWED=0
+	DA_ENTRIES=0
+	DA_UNSET=0
+	DA_BAD=0
 	[ -f "$MACFILTER" ] && [ -r "$MACFILTER" ] || return 1
-	mkdir -p "$ROOT/var/run" 2>/dev/null || return 1
-	PRIDISK_PARSE=$ROOT/var/run/pridisk.parse.$$
-	if ! pridisk_parse >"$PRIDISK_PARSE"; then
-		rm -f "$PRIDISK_PARSE"
+	if [ "$DISKACL_PRINT" = 1 ]; then
+		# Dry run must not create files inside the installation tree.
+		DISKACL_PARSE=/tmp/diskacl.parse.$$
+	else
+		mkdir -p "$ROOT/var/run" 2>/dev/null || return 1
+		DISKACL_PARSE=$ROOT/var/run/diskacl.parse.$$
+	fi
+	if ! diskacl_parse >"$DISKACL_PARSE"; then
+		rm -f "$DISKACL_PARSE"
 		return 1
 	fi
+	da_mode_seen=0
 	while read -r kind a b; do
 		case "$kind" in
 		mode)
+			da_mode_seen=1
 			case "$a" in
 			""|-) ;;
-			*) PD_MODE=$(printf '%s' "$a" | tr 'A-Z' 'a-z') ;;
+			*) DA_MODE=$(printf '%s' "$a" | tr 'A-Z' 'a-z') ;;
 			esac
 			;;
 		mac)
+			DA_ENTRIES=$((DA_ENTRIES + 1))
 			m=$(printf '%s' "$a" | tr 'A-Z' 'a-z')
 			case "$m" in
-			??:??:??:??:??:??) ;;
+			[0-9a-f][0-9a-f]:[0-9a-f][0-9a-f]:[0-9a-f][0-9a-f]:[0-9a-f][0-9a-f]:[0-9a-f][0-9a-f]:[0-9a-f][0-9a-f]) ;;
 			*)
-				PD_BAD=$((PD_BAD + 1))
+				DA_BAD=$((DA_BAD + 1))
 				continue
 				;;
 			esac
-			case "$m" in
-			*[!0-9a-f:]*) PD_BAD=$((PD_BAD + 1)); continue ;;
-			esac
-			case "$b" in
-			yes|on|1|true) PD_YES="$PD_YES$m " ;;
-			no|off|0|false) PD_NO="$PD_NO$m " ;;
-			*) PD_UNSET=$((PD_UNSET + 1)) ;;
+			v=$(printf '%s' "$b" | tr 'A-Z' 'a-z')
+			case "$v" in
+			no|off|0|false) DA_NO="$DA_NO$m "; DA_DENIED=$((DA_DENIED + 1)) ;;
+			yes|on|1|true) DA_ALLOWED=$((DA_ALLOWED + 1)) ;;
+			*) DA_UNSET=$((DA_UNSET + 1)); DA_ALLOWED=$((DA_ALLOWED + 1)) ;;
 			esac
 			;;
 		esac
-	done <"$PRIDISK_PARSE"
-	rm -f "$PRIDISK_PARSE"
+	done <"$DISKACL_PARSE"
+	rm -f "$DISKACL_PARSE"
 
-	case "$PD_MODE" in
-	whitelist)
-		PD_MODE_SRC=explicit
-		;;
+	# A file with no device section is a parse failure, not an empty
+	# blacklist: leave the firewall untouched and say so.
+	[ "$DA_ENTRIES" -gt 0 ] || return 1
+	[ "$da_mode_seen" = 1 ] || { DA_MODE_SRC=missing; return 2; }
+	case "$DA_MODE" in
 	blacklist)
-		PD_MODE_SRC=explicit
+		DA_MODE_SRC=explicit
+		return 0
 		;;
 	"")
-		PD_MODE=blacklist
-		PD_MODE_SRC=default
+		DA_MODE_SRC=missing
+		return 2
 		;;
 	*)
-		PD_MODE_SRC=fallback
-		pridisk_log "unknown pridisk mode '$PD_MODE', treating as blacklist"
-		PD_MODE=blacklist
+		DA_MODE_SRC=$DA_MODE
+		return 3
 		;;
 	esac
-	[ "$PD_BAD" -eq 0 ] || pridisk_log "ignored $PD_BAD macfilter entr(ies) with an invalid mac"
-	[ "$PD_UNSET" -eq 0 ] || pridisk_log "$PD_UNSET device(s) have no explicit pridisk value"
-	return 0
 }
 
-pridisk_count() {
+diskacl_count() {
 	c=0
 	for m in $1; do c=$((c + 1)); done
 	echo "$c"
 }
 
-pridisk_log() {
-	log "pridisk: $*"
+diskacl_log() {
+	[ "$DISKACL_PRINT" = 1 ] && return 0
+	log "diskacl: $*"
 }
 
 # Print in dry-run mode, execute otherwise.  stderr from the real binary is
 # kept for diagnosis but never aborts the lifecycle by itself.
 ipt_run() {
-	if [ "$PRIDISK_PRINT" = 1 ]; then
+	if [ "$DISKACL_PRINT" = 1 ]; then
 		printf '%s' "$IPT"
 		for a in "$@"; do printf ' %s' "$a"; done
 		printf '\n'
 		return 0
 	fi
-	"$IPT" "$@" 2>>"$ROOT/var/log/pridisk.err"
+	"$IPT" "$@" 2>>"$ROOT/var/log/diskacl.err"
 }
 
 ipt_out() {
 	"$IPT" "$@" 2>/dev/null
 }
 
-pridisk_chain_exists() {
-	ipt_out -S "$PRIDISK_CHAIN" >/dev/null 2>&1
+diskacl_chain_exists() {
+	ipt_out -S "$DISKACL_CHAIN" >/dev/null 2>&1
 }
 
-pridisk_state() {
+diskacl_state() {
+	[ "$DISKACL_PRINT" = 0 ] || return 0
 	[ -d "$ROOT/var/state" ] || return 0
 	{
 		printf 'mode=%s\n' "$1"
-		printf 'mode_source=%s\n' "${PD_MODE_SRC:-none}"
+		printf 'decision=%s\n' "$4"
+		printf 'mode_source=%s\n' "${DA_MODE_SRC:-none}"
 		printf 'allowed=%s\n' "$2"
 		printf 'denied=%s\n' "$3"
-		printf 'iface=%s\n' "$PRIDISK_IFACE"
-		printf 'chain=%s\n' "$PRIDISK_CHAIN"
+		printf 'entries=%s\n' "${DA_ENTRIES:-0}"
+		printf 'unset=%s\n' "${DA_UNSET:-0}"
+		printf 'iface=%s\n' "$DISKACL_IFACE"
+		printf 'chain=%s\n' "$DISKACL_CHAIN"
 		printf 'macfilter=%s\n' "$MACFILTER"
 		printf 'updated=%s\n' "$(date +%s)"
-	} >"$ROOT/var/state/pridisk.state" 2>/dev/null || true
+	} >"$ROOT/var/state/diskacl.state" 2>/dev/null || true
 }
 
-# Delete every INPUT rule that jumps to our chain.  Only those exact jumps are
+# Delete every INPUT rule that jumps to a chain.  Only those exact jumps are
 # touched; the rest of INPUT keeps its original order.
-pridisk_jump_remove() {
-	lines=$(ipt_out -S INPUT 2>/dev/null | grep -F -- "-j $PRIDISK_CHAIN")
+diskacl_jump_remove() {
+	chain=$1
+	lines=$(ipt_out -S INPUT 2>/dev/null | grep -F -- "-j $chain")
 	[ -n "$lines" ] || return 0
 	printf '%s\n' "$lines" | while IFS= read -r line; do
 		spec=${line#-A INPUT }
@@ -914,105 +950,162 @@ pridisk_jump_remove() {
 	done
 }
 
-pridisk_apply() {
-	mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$ROOT/var/run" 2>/dev/null
-	if ! pridisk_load; then
-		pridisk_log "UNAVAILABLE: $MACFILTER missing or unreadable; firewall untouched"
-		echo "pridisk: unavailable ($MACFILTER); firewall left untouched" >&2
-		pridisk_state unavailable 0 0
-		return 0
-	fi
-	allowed=$(pridisk_count "$PD_YES")
-	denied=$(pridisk_count "$PD_NO")
-
-	if [ "$PD_MODE" = whitelist ]; then
-		[ "$allowed" -gt 0 ] ||
-			pridisk_log "WARNING: whitelist has no 'yes' device; all LAN SMB access will be dropped"
-		pridisk_log "mode=whitelist source=$PD_MODE_SRC allow=$allowed deny=$denied"
-	else
-		pridisk_log "mode=blacklist source=$PD_MODE_SRC allow=$allowed deny=$denied"
-	fi
-
-	if ! pridisk_chain_exists; then
-		if ! ipt_run -N "$PRIDISK_CHAIN" && [ "$PRIDISK_PRINT" = 0 ]; then
-			pridisk_log "cannot create chain $PRIDISK_CHAIN"
-			echo "pridisk: cannot create chain $PRIDISK_CHAIN" >&2
-			pridisk_state error 0 0
+# The old 1.0.4 chain put an unconditional DROP at its tail.  Remove its
+# jumps first (otherwise a surviving jump would still fall through to the
+# DROP), then the chain.  It is never re-created.
+legacy_clear() {
+	diskacl_jump_remove "$LEGACY_CHAIN"
+	if ipt_out -S "$LEGACY_CHAIN" >/dev/null 2>&1; then
+		ipt_run -F "$LEGACY_CHAIN"
+		if ! ipt_run -X "$LEGACY_CHAIN" && [ "$DISKACL_PRINT" = 0 ]; then
+			diskacl_log "legacy chain $LEGACY_CHAIN still present after -X"
+			echo "diskacl: legacy chain $LEGACY_CHAIN still present" >&2
 			return 1
 		fi
 	fi
-	ipt_run -F "$PRIDISK_CHAIN"
+	if [ "$DISKACL_PRINT" = 0 ] &&
+		ipt_out -S INPUT 2>/dev/null | grep -qF -- "-j $LEGACY_CHAIN"; then
+		diskacl_log "legacy jump to $LEGACY_CHAIN survived deletion"
+		echo "diskacl: legacy jump survived deletion" >&2
+		return 1
+	fi
+	return 0
+}
 
-	if [ "$PD_MODE" = whitelist ]; then
-		for m in $PD_YES; do
-			ipt_run -A "$PRIDISK_CHAIN" -m mac --mac-source "$m" -j RETURN
-		done
-		ipt_run -A "$PRIDISK_CHAIN" -j DROP
-	else
-		for m in $PD_NO; do
-			ipt_run -A "$PRIDISK_CHAIN" -m mac --mac-source "$m" -j DROP
-		done
-		ipt_run -A "$PRIDISK_CHAIN" -j RETURN
+diskacl_apply() {
+	[ "$DISKACL_PRINT" = 1 ] ||
+		mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$ROOT/var/run" 2>/dev/null
+
+	# Remove the old chain before anything else: it is the only object here
+	# that can block the whole LAN, and it must go even when the new policy
+	# is refused or unavailable.
+	if ! legacy_clear; then
+		diskacl_state error 0 0 error
+		return 1
 	fi
 
-	pridisk_jump_remove
-	if [ "$PRIDISK_PRINT" = 0 ] &&
-		ipt_out -S INPUT 2>/dev/null | grep -qF -- "-j $PRIDISK_CHAIN"; then
-		pridisk_log "stale $PRIDISK_CHAIN jump survived deletion; refusing to add duplicates"
-		echo "pridisk: stale jump in INPUT; chain rebuilt but jumps not re-added" >&2
-		pridisk_state error "$allowed" "$denied"
+	diskacl_load
+	lrc=$?
+	case $lrc in
+	1)
+		diskacl_log "UNAVAILABLE: $MACFILTER missing, unreadable, or has no device section; firewall untouched"
+		echo "diskacl: unavailable ($MACFILTER); firewall left untouched" >&2
+		diskacl_state unavailable 0 0 unavailable
+		return 0
+		;;
+	2)
+		diskacl_log "refused: mode.lan missing; firewall untouched"
+		echo "diskacl: refused mode.lan=missing; firewall untouched" >&2
+		diskacl_state missing 0 0 refused
+		return 8
+		;;
+	3)
+		diskacl_log "refused: mode.lan='$DA_MODE' (only blacklist is enforced); firewall untouched"
+		echo "diskacl: refused mode.lan=$DA_MODE (only blacklist is enforced); firewall untouched" >&2
+		diskacl_state "$DA_MODE" 0 0 refused
+		return 8
+		;;
+	esac
+
+	denied=$(diskacl_count "$DA_NO")
+	diskacl_log "mode=blacklist source=$DA_MODE_SRC allow=$DA_ALLOWED deny=$denied entries=$DA_ENTRIES unset=$DA_UNSET"
+	[ "$DA_BAD" -eq 0 ] || diskacl_log "ignored $DA_BAD macfilter entr(ies) with an invalid mac"
+
+	# A blacklist with nothing to drop is a no-op.  If an old chain still
+	# exists, rebuild it as RETURN-only so a stale DROP disappears; otherwise
+	# do not create an empty chain at all.
+	if [ "$denied" -eq 0 ] && ! diskacl_chain_exists; then
+		diskacl_state blacklist "$DA_ALLOWED" 0 applied
+		if [ "$DISKACL_PRINT" = 1 ]; then
+			echo "diskacl: dry run, nothing to deny"
+		else
+			diskacl_log "applied chain=absent deny=0 (nothing to drop)"
+			echo "diskacl: applied mode=blacklist allow=$DA_ALLOWED deny=0"
+		fi
+		return 0
+	fi
+
+	if ! diskacl_chain_exists; then
+		if ! ipt_run -N "$DISKACL_CHAIN" && [ "$DISKACL_PRINT" = 0 ]; then
+			diskacl_log "cannot create chain $DISKACL_CHAIN"
+			echo "diskacl: cannot create chain $DISKACL_CHAIN" >&2
+			diskacl_state error 0 0 error
+			return 1
+		fi
+	fi
+	ipt_run -F "$DISKACL_CHAIN"
+	for m in $DA_NO; do
+		ipt_run -A "$DISKACL_CHAIN" -m mac --mac-source "$m" -j DROP
+	done
+	ipt_run -A "$DISKACL_CHAIN" -j RETURN
+
+	diskacl_jump_remove "$DISKACL_CHAIN"
+	if [ "$DISKACL_PRINT" = 0 ] &&
+		ipt_out -S INPUT 2>/dev/null | grep -qF -- "-j $DISKACL_CHAIN"; then
+		diskacl_log "stale $DISKACL_CHAIN jump survived deletion; refusing to add duplicates"
+		echo "diskacl: stale jump in INPUT; chain rebuilt but jumps not re-added" >&2
+		diskacl_state error "$DA_ALLOWED" "$denied" error
 		return 1
 	fi
 
 	# Position 1/2: the vendor has an any-interface ACCEPT for
 	# 22,80,135:139,445 early in INPUT; our jump must precede it or the
 	# per-device decision never runs.  Two rules, both scoped to the LAN.
-	ipt_run -I INPUT 1 -i "$PRIDISK_IFACE" -p tcp \
-		-m multiport --dports "$PRIDISK_TCP_PORTS" -j "$PRIDISK_CHAIN"
-	ipt_run -I INPUT 2 -i "$PRIDISK_IFACE" -p udp \
-		-m multiport --dports "$PRIDISK_UDP_PORTS" -j "$PRIDISK_CHAIN"
+	ipt_run -I INPUT 1 -i "$DISKACL_IFACE" -p tcp \
+		-m multiport --dports "$DISKACL_TCP_PORTS" -j "$DISKACL_CHAIN"
+	ipt_run -I INPUT 2 -i "$DISKACL_IFACE" -p udp \
+		-m multiport --dports "$DISKACL_UDP_PORTS" -j "$DISKACL_CHAIN"
 
-	pridisk_state "$PD_MODE" "$allowed" "$denied"
-	if [ "$PRIDISK_PRINT" = 1 ]; then
-		echo "pridisk: dry run, $( [ "$PD_MODE" = whitelist ] && echo "allow=$allowed" || echo "deny=$denied" ) rule(s)"
+	diskacl_state blacklist "$DA_ALLOWED" "$denied" applied
+	if [ "$DISKACL_PRINT" = 1 ]; then
+		echo "diskacl: dry run, $denied DROP rule(s) + RETURN"
 	else
-		pridisk_log "applied chain=$PRIDISK_CHAIN iface=$PRIDISK_IFACE"
-		echo "pridisk: applied mode=$PD_MODE allow=$allowed deny=$denied"
+		diskacl_log "applied chain=$DISKACL_CHAIN iface=$DISKACL_IFACE deny=$denied"
+		echo "diskacl: applied mode=blacklist allow=$DA_ALLOWED deny=$denied"
 	fi
 	return 0
 }
 
-pridisk_clear() {
-	mkdir -p "$ROOT/var/log" "$ROOT/var/state" 2>/dev/null
-	pridisk_jump_remove
-	if pridisk_chain_exists; then
-		ipt_run -F "$PRIDISK_CHAIN"
-		if ! ipt_run -X "$PRIDISK_CHAIN" && [ "$PRIDISK_PRINT" = 0 ]; then
-			pridisk_log "chain $PRIDISK_CHAIN still present after -X"
-			echo "pridisk: chain $PRIDISK_CHAIN still present" >&2
+diskacl_clear() {
+	[ "$DISKACL_PRINT" = 1 ] ||
+		mkdir -p "$ROOT/var/log" "$ROOT/var/state" 2>/dev/null
+	if ! legacy_clear; then
+		return 1
+	fi
+	diskacl_jump_remove "$DISKACL_CHAIN"
+	if diskacl_chain_exists; then
+		ipt_run -F "$DISKACL_CHAIN"
+		if ! ipt_run -X "$DISKACL_CHAIN" && [ "$DISKACL_PRINT" = 0 ]; then
+			diskacl_log "chain $DISKACL_CHAIN still present after -X"
+			echo "diskacl: chain $DISKACL_CHAIN still present" >&2
 			return 1
 		fi
 	fi
-	pridisk_state cleared 0 0
-	if [ "$PRIDISK_PRINT" = 1 ]; then
-		echo "pridisk: dry run, chain removed"
+	diskacl_state cleared 0 0 cleared
+	if [ "$DISKACL_PRINT" = 1 ]; then
+		echo "diskacl: dry run, chain removed"
 	else
-		pridisk_log "cleared chain=$PRIDISK_CHAIN"
-		echo "pridisk: cleared"
+		diskacl_log "cleared chain=$DISKACL_CHAIN"
+		echo "diskacl: cleared"
 	fi
 	return 0
 }
 
-pridisk_status() {
+diskacl_status() {
 	chain=absent
-	pridisk_chain_exists && chain=present
-	jumps=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "-j $PRIDISK_CHAIN")
-	echo "pridisk_chain=$chain"
-	echo "pridisk_jumps=$jumps"
-	if [ -f "$ROOT/var/state/pridisk.state" ]; then
-		sed 's/^/pridisk_/' "$ROOT/var/state/pridisk.state"
+	diskacl_chain_exists && chain=present
+	jumps=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "-j $DISKACL_CHAIN")
+	legacy=absent
+	ipt_out -S "$LEGACY_CHAIN" >/dev/null 2>&1 && legacy=present
+	legacy_jumps=$(ipt_out -S INPUT 2>/dev/null | grep -cF -- "-j $LEGACY_CHAIN")
+	echo "diskacl_chain=$chain"
+	echo "diskacl_jumps=$jumps"
+	echo "diskacl_legacy_chain=$legacy"
+	echo "diskacl_legacy_jumps=$legacy_jumps"
+	if [ -f "$ROOT/var/state/diskacl.state" ]; then
+		sed 's/^/diskacl_/' "$ROOT/var/state/diskacl.state"
 	else
-		echo "pridisk_state=absent"
+		echo "diskacl_state=absent"
 	fi
 }
 
@@ -1046,7 +1139,7 @@ cmd_check() {
 		return 1
 	fi
 	echo "isolation=OK"
-	pridisk_status
+	diskacl_status
 	cmd_status || true
 	[ $drift -eq 1 ] && return 7
 	return 0
@@ -1201,7 +1294,7 @@ while getopts "r:c:p:b:n:B:PNRh" opt; do
 	B) SNAPSHOT=$OPTARG ;;
 	P) ALLOW_STOCK=1 ;;
 	N) NO_GENERATE=1 ;;
-	R) PRIDISK_PRINT=1 ;;
+	R) DISKACL_PRINT=1 ;;
 	h) usage; exit 0 ;;
 	*) usage; exit 2 ;;
 	esac
@@ -1222,8 +1315,13 @@ tm-register) cmd_tm_register ;;
 tm-unregister) cmd_tm_unregister ;;
 vendor-stop) cmd_vendor_stop ;;
 vendor-start) cmd_vendor_start ;;
-pridisk-apply) pridisk_apply ;;
-pridisk-clear) pridisk_clear ;;
-pridisk-status) pridisk_status ;;
+diskacl-apply) diskacl_apply "$@" ;;
+diskacl-clear) diskacl_clear ;;
+diskacl-status) diskacl_status ;;
+# Deprecated aliases kept for the 1.0.4 installer's uninstall path.  They no
+# longer read 'pridisk' at all; every one of them maps to macfilter.lan.
+pridisk-apply) diskacl_apply "$@" ;;
+pridisk-clear) diskacl_clear ;;
+pridisk-status) diskacl_status ;;
 *) usage; exit 2 ;;
 esac
