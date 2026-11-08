@@ -1,0 +1,27 @@
+b19d355c8f5c1fa0f3f67e542b15876d  /userdisk/data/release/miwifi-smb-1.0.6-r2d.tar.gz
+tar: warning: skipping header 'x'
+tar: warning: skipping header 'x'
+tar: warning: skipping header 'x'
+== payload
+version=1.0.6-r2d
+tree_md5=0f6001010c84a016cd46f129dbe47388
+README-INSTALL.txt: OK
+VERSION: OK
+compat/90-s8-mounts: OK
+compat/hook.sh: OK
+compat/install.sh: OK
+compat/samba.init.wrapper: OK
+compat/xiaomi-smb-adapter.sh: OK
+compat/diskacl-sync.sh: OK
+install-release.sh: OK
+payload/samba-tree.tar.gz: OK
+xiaomi-smb-install.sh: OK
+OK
+== installed v1 manifest ==
+19fa4ad37729cf4d663d06f0a77d493f  hook.sh
+65bb092e458f01094a40dcd02447d5f6  xiaomi-smb-adapter.sh
+03e596af3763e1164b5426cfe56fa25d  samba.init.wrapper
+6621b1c531717e4c0b86d9d0752a7021  diskacl-sync.sh
+== installed adapter md5 ==
+65bb092e458f01094a40dcd02447d5f6  /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh
+65bb092e458f01094a40dcd02447d5f6  /userdisk/data/s7root/xiaomi-smb-adapter.sh

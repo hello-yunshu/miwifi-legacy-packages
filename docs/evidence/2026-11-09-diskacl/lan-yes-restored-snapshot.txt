@@ -1,0 +1,80 @@
+Mon Nov  9 02:45:22 CST 2026
+== macfilter ==
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter
+5042 1794163480
+== S ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== L -v -n ==
+Chain s8-diskacl (2 references)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC F0:D5:BF:40:1D:2A
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 18:BC:5A:19:B9:16
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 80:A5:89:86:B7:E5
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC E2:54:2E:FB:8B:75
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:5C:9A:3F:B4:4C
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC D4:35:38:57:FD:80
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 5A:3D:A1:E4:04:E8
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+   14  1858 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+== INPUT ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+== legacy ==
+none
+== state ==
+mode=blacklist
+decision=applied
+mode_source=explicit
+allowed=32
+denied=8
+entries=40
+unset=0
+iface=br-lan
+chain=s8-diskacl
+macfilter=/etc/config/macfilter
+updated=1794163502
+== sync log ==
+diskacl: applied mode=blacklist allow=32 deny=8
+diskacl: applied mode=blacklist allow=31 deny=9
+diskacl: applied mode=blacklist allow=32 deny=8
+== cron ==
+*/3 * * * * /usr/sbin/ntpsetclock rand once >/dev/null 2>&1
+5 2 * * * /usr/sbin/crontab_record_camera.lua
+* * * * * /usr/sbin/startscene_crontab.lua `/bin/date "+%u %H:%M"`
+0 12 * * * /usr/sbin/recordscene_crontab.lua
+45 23 * * * /usr/sbin/points_sysset_pro.lua >/dev/null 2>&1
+0 20 * * * /usr/bin/stat_lan
+0 18 * * 1 /sbin/hdd_stat.sh sda
+0 10 * * * /usr/sbin/regularScanDiskDir.sh
+*/5 * * * * /sbin/disklogger.sh
+0 10 * * 1 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 636, \"push\": true}" >/dev/null 2>&1
+0 10 * * 6 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 104, \"push\": true}" >/dev/null 2>&1
+0 5 * * 3 /etc/init.d/web_filter_record restart >/dev/null 2>&1
+0 3 * * * /etc/init.d/sysapihttpd restart >/dev/null 2>&1
+5 3 * * * /usr/sbin/reset_svc.sh "etm" "20" "/etc/init.d/xunlei restart"
+0 8,19 * * * /usr/sbin/netdig.sh >/dev/null 2>&1
+
+49 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1
+*/1 * * * * /usr/sbin/ap_mode.sh check_gw
+10 22 * * * /usr/sbin/quarkd >/dev/null 2>&1
+0 */1 * * * /usr/sbin/qactive.sh >/dev/null 2>&1
+0 6 * * * /etc/mixbox/apps/filebrowser/scripts/filebrowser.sh restart #mixbox-cru
+*/10 * * * * /etc/mixbox/scripts/monitor.sh #mixbox-cru
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== pid main ==
+23178 root     27360 S <  ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/lo
+== sections ==
+9
+== conns ==
+tcp        0      0 192.168.3.2:445         192.168.3.63:60894      ESTABLISHED  1114 1758 

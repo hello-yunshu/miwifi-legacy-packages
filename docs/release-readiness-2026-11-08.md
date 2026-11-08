@@ -491,4 +491,52 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
 | 采集工装 | `s8-usb-test` 采集进程 **已停止**（pid 21094 已退出，`ps` 无残留）；`collect.log` 522 KiB 定稿于 22:56:42 后不再增长；证据归档见 `docs/evidence/2026-11-08-hotplug/` |
 | 测试残留 | 无半装状态；`/userdisk/data/release` 保留 `1.0.1-r2d` / `1.0.2-r2d` 旧包（历史对照）；`/tmp` 仅留 `s8-backup-adapter.sh`、`s8-backup-install.sh` 两个回滚备份 |
 
+## 7. 按设备磁盘访问拦截真机验证（2026-11-09，`1.0.6-r2d` 第二版）
+
+设备继续运行 `1.0.6-r2d` 第二版（tar sha256 `f2285da6…`，已装 v1 载荷未变），本轮只读验证，
+证据全部落盘在 [evidence/2026-11-09-diskacl](evidence/2026-11-09-diskacl)。实现说明见
+[diskacl.md](diskacl.md)，决策见 [decisions.md](decisions.md) 的 D-S9-01…07。
+
+### 7.1 装机与自检
+
+| 步骤 | 时间 | 结果 | 证据 |
+| --- | --- | --- | --- |
+| 装机前基线比对 | 02:26 | 与旧快照一致（1.0.4-r2d、adapter `53a5ba4e…`、无 s8 链） | `preflight-before-install.txt` |
+| `verify → install` | 02:26–02:27 | `current -> versions/1.0.6-r2d/root`、`previous=1.0.4-r2d` | `install-run.txt`、`install-postcheck.txt` |
+| 装完核验 | 02:27 | 8 DROP + RETURN、INPUT 1/2 跳转、无 `s8-pridisk`、cron 行/权限/语法 OK、pid 13855、`smb.conf` 9 段 | `install-postcheck.txt` |
+| 自检 `samba restart` | 02:29 | 重启后仍 8 DROP + RETURN，无无条件 DROP；本机挂载正常 | `restart-selfcheck.txt`、`smb-access-after-restart.txt` |
+| 装机故障 | 02:31–02:36 | 误发 `SIGHUP` 使 crond 退出，已 `start`/`restart` 恢复；补丁 `compat/install.sh` 后重打包并重新 `verify` | `rollback-and-incident.txt`、`package-reverify-cronfix.txt` |
+
+### 7.2 `yes→no`（App 关闭 `00:15:5d:03:00:23` 的全盘访问）
+
+* 02:41:27 原厂 `tm-unregister` → 02:41:28 `diskacl: cleared` → 02:41:36 新实例 pid 23178 →
+  02:41:37 `applied allow=31 deny=9`；`macfilter` md5 `1fa7f1d5…`→`45421091…`。
+* 链变为 **9 DROP + 1 RETURN**，新增项为 `00:15:5D:03:00:23`；`diskacl.state` `denied=8→9`。
+* 拦截有效性：该 MAC 规则 pkts `22→26→48→70`（约每 15 秒 +11 包），全部 DROP；
+  同 `netstat` 无该 IP 的 445 连接。
+* 对照：本机 `smbutil view` + `mount_smbfs` 成功，其余 31 台 `lan=yes` 未被误伤。
+* 证据：[`lan-no-rules.txt`](evidence/2026-11-09-diskacl/lan-no-rules.txt)、
+  [`lan-no-pkts-growth.txt`](evidence/2026-11-09-diskacl/lan-no-pkts-growth.txt)、
+  [`lan-no-state.txt`](evidence/2026-11-09-diskacl/lan-no-state.txt)、
+  [`lan-no-logs.txt`](evidence/2026-11-09-diskacl/lan-no-logs.txt)、
+  [`control-access-during-lan-no.txt`](evidence/2026-11-09-diskacl/control-access-during-lan-no.txt)。
+
+### 7.3 `no→yes`（App 打开同一设备，仅 cron 兜底）
+
+* `macfilter` mtime 02:44:40 → 链重建 02:45:02，**实测延迟 22 秒**（上限 60 秒）；
+  `adapter.log` 在 02:44:40–02:45:01 无 `cleared`/`started`，证明纯 cron 路径。
+* 链回到 **8 DROP + 1 RETURN**，该 MAC 消失；`diskacl.state` `denied=9→8`、`allowed=31→32`。
+* **samba 主进程未重启**：`samba-s5d -D` 仍为 pid 23178（`pidof` 首值 25929 是
+  `{smbd[192.168.3.63]}` 连接子进程，非主进程）。
+* 恢复证据：RETURN 命中 `14 pkts / 1858 B`；`netstat` 显示
+  `192.168.3.2:445 ESTABLISHED 192.168.3.63:60894`，对应子进程存在。
+* 对照：本机 `smbutil view` + `mount_smbfs` 再次成功。
+* 证据：[`lan-yes-restored-snapshot.txt`](evidence/2026-11-09-diskacl/lan-yes-restored-snapshot.txt)、
+  [`control-access-after-restore.txt`](evidence/2026-11-09-diskacl/control-access-after-restore.txt)。
+
+### 7.4 结论
+
+黑名单语义、拒绝策略、legacy 清理、cron 兜底与重启安全性均在真机闭环；
+两方向延迟与"名单外不误伤"有实测数字。剩余仅发布收口（`1.0.7-r2d`）与文档/包作废标注。
+
 

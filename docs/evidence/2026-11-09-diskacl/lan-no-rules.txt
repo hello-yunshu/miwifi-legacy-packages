@@ -1,0 +1,37 @@
+Mon Nov  9 02:42:32 CST 2026
+== S ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -m mac --mac-source 00:15:5D:03:00:23 -j DROP
+-A s8-diskacl -j RETURN
+== L -v -n ==
+Chain s8-diskacl (2 references)
+ pkts bytes target     prot opt in     out     source               destination         
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC F0:D5:BF:40:1D:2A
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 18:BC:5A:19:B9:16
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 80:A5:89:86:B7:E5
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC E2:54:2E:FB:8B:75
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:5C:9A:3F:B4:4C
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC D4:35:38:57:FD:80
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 5A:3D:A1:E4:04:E8
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+   22  1320 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 00:15:5D:03:00:23
+    0     0 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+== INPUT ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+== legacy ==
+none
+== mac count ==
+9
+== arp ==
+192.168.3.63     0x1         0x2         00:15:5d:03:00:23     *        br-lan

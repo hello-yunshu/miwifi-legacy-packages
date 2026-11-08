@@ -1,0 +1,58 @@
+Mon Nov  9 02:38:50 CST 2026
+== current/previous ==
+versions/1.0.6-r2d/root
+1.0.4-r2d
+== pid ==
+15281 15279 15278 15267
+== smb.conf sections ==
+9
+== diskacl ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== input ==
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+== legacy ==
+none
+== state ==
+mode=blacklist
+decision=applied
+mode_source=explicit
+allowed=32
+denied=8
+entries=40
+unset=0
+iface=br-lan
+chain=s8-diskacl
+macfilter=/etc/config/macfilter
+updated=1794163082
+== sync state ==
+1fa7f1d59410e81415c1eee07ee9a25b
+diskacl: applied mode=blacklist allow=32 deny=8
+== cron ==
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== crond ==
+19284
+== adapter log tail ==
+2026-11-09 02:29:13 config drift accepted explicitly
+2026-11-09 02:29:13 generated from /etc/config md5=f94e2f5caf29375e075c48d566301e07
+2026-11-09 02:29:15 started pid=15267 port=139 445 via sbin/samba-s5d
+2026-11-09 02:29:15 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 02:29:16 diskacl: applied chain=s8-diskacl iface=br-lan deny=8
+2026-11-09 02:29:16 tm-registered samba-s5d pid=15267
+2026-11-09 02:31:23 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 02:31:23 diskacl: applied chain=s8-diskacl iface=br-lan deny=8
+2026-11-09 02:34:01 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 02:34:01 diskacl: applied chain=s8-diskacl iface=br-lan deny=8
+2026-11-09 02:38:02 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 02:38:02 diskacl: applied chain=s8-diskacl iface=br-lan deny=8

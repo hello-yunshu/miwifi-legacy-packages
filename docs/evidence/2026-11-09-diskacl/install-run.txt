@@ -1,0 +1,41 @@
+== stop current service
+== install tree 1.0.6-r2d
+installed 1.0.6-r2d
+  tree:   /userdisk/data/s7root/versions/1.0.6-r2d/root
+  baked:  /userdisk/data/samba-s2/root
+  smbd:   52e105576e190ab6b977be419b3144fe
+== activate 1.0.6-r2d
+activated 1.0.6-r2d
+  prefix: /userdisk/data/samba-s2/root -> /userdisk/data/s7root/versions/1.0.6-r2d/root
+== install adapter + compat layer
+installed v1; current -> versions/v1
+== init md5 ==
+03e596af3763e1164b5426cfe56fa25d  /etc/init.d/samba
+a26f32ce175be65ba4613c1aac72b4e1  /etc/init.d/samba.vendor
+a26f32ce175be65ba4613c1aac72b4e1  /userdisk/data/s8compat/versions/v0-vendor/samba.init
+== version manifest ==
+19fa4ad37729cf4d663d06f0a77d493f  hook.sh
+65bb092e458f01094a40dcd02447d5f6  xiaomi-smb-adapter.sh
+03e596af3763e1164b5426cfe56fa25d  samba.init.wrapper
+6621b1c531717e4c0b86d9d0752a7021  diskacl-sync.sh
+hook.sh: OK
+xiaomi-smb-adapter.sh: OK
+samba.init.wrapper: OK
+diskacl-sync.sh: OK
+== current ==
+versions/v1
+== listeners ==
+no listener
+== start
+5
+2
+started pid=13855 port=139 445
+registered samba-s5d (pid=13855)
+running pid=13855 port=139 445
+0
+== listeners
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 13855/samba-s5d
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 60 13855/samba-s5d
+== installed 1.0.6-r2d
+running pid=13855 port=139 445
+0

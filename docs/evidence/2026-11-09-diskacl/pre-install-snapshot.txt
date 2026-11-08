@@ -1,0 +1,35 @@
+captured_at=Mon Nov  9 02:19:55 CST 2026
+== macfilter ==
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter
+5042 /etc/config/macfilter
+== mode ==
+config mode 'mode'
+	option wan 'blacklist'
+	option lan 'blacklist'
+	option admin 'blacklist'
+	option pridisk 'whitelist'
+
+config lanports 'lanports'
+
+config adminports 'adminports'
+	option tcp '80,443,23,22'
+== chains ==
+none
+== INPUT head ==
+-P INPUT ACCEPT
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== samba ==
+20401 root     27356 S <  ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/lo
+20415 root     26420 S <  {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root
+20416 root     26424 S <  {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7roo
+25222 root     27432 S <  {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7r
+== smb.conf sections ==
+9
+== cron ==
+no-diskacl-cron
+== active version ==
+versions/1.0.4-r2d/root
+== installed adapter ==
+53a5ba4ebeb5c750777f8da4da5856e5  /userdisk/data/s7root/xiaomi-smb-adapter.sh
+53a5ba4ebeb5c750777f8da4da5856e5  /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh

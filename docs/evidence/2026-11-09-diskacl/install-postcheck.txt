@@ -1,0 +1,69 @@
+Mon Nov  9 02:27:52 CST 2026
+== current ==
+versions/1.0.6-r2d/root
+== previous ==
+1.0.4-r2d
+== versions ==
+1.0.1-r2d
+1.0.2-r2d
+1.0.3-r2d
+1.0.4-r2d
+1.0.6-r2d
+v1
+== pid ==
+14254 13868 13867 13855
+== smb.conf sections ==
+9
+== chains ==
+-N s8-diskacl
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== diskacl chain ==
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== counts ==
+8
+== legacy ==
+no-s8-pridisk
+== cron ==
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== sync perms ==
+-rwxr-xr-x    1 root     root          3112 Nov  9 02:27 /userdisk/data/s8compat/versions/v1/diskacl-sync.sh
+sync-syntax-ok
+== state file ==
+mode=blacklist
+decision=applied
+mode_source=explicit
+allowed=32
+denied=8
+entries=40
+unset=0
+iface=br-lan
+chain=s8-diskacl
+macfilter=/etc/config/macfilter
+updated=1794162465
+== adapter log tail ==
+2026-11-09 02:27:40 generated from /etc/config md5=f94e2f5caf29375e075c48d566301e07
+2026-11-09 02:27:44 started pid=13855 port=139 445 via sbin/samba-s5d
+2026-11-09 02:27:45 diskacl: mode=blacklist source=explicit allow=32 deny=8 entries=40 unset=0
+2026-11-09 02:27:45 diskacl: applied chain=s8-diskacl iface=br-lan deny=8
+2026-11-09 02:27:45 tm-registered samba-s5d pid=13855

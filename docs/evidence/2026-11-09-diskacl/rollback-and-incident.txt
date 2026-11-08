@@ -1,0 +1,71 @@
+# 1.0.6-r2d 装机后回滚点（2026-11-09）
+
+## 设备侧备份（已创建，未验证前请勿删除）
+
+```
+/userdisk/data/backup/pre-1.0.6-r2d-20261109/
+  s8compat-v1.tar.gz        md5 7887f88ebfaf294b98ac6be70791057b（旧 compat v1 整树）
+  xiaomi-smb-adapter.sh     md5 53a5ba4ebeb5c750777f8da4da5856e5（1.0.4 适配器）
+  init.samba                md5 03e596af3763e1164b5426cfe56fa25d
+  init.samba.vendor         md5 a26f32ce175be65ba4613c1aac72b4e1
+  crontab-root              装机前 /etc/crontabs/root（无 diskacl 行）
+  current-link.txt          versions/1.0.4-r2d/root
+  state-previous            1.0.3-r2d
+  macfilter.md5             1fa7f1d59410e81415c1eee07ee9a25b
+  iptables-S.txt            装机前完整规则
+```
+
+版本树 `versions/1.0.4-r2d` 未被删除；`state/previous = 1.0.4-r2d`，
+所以 `install-release.sh rollback` 的版本回退目标是确定的。
+
+## 回滚方式 A：只回退 Samba 版本（保留 diskacl 链）
+
+```
+sh /userdisk/data/release/miwifi-smb-1.0.6-r2d/install-release.sh rollback
+```
+效果：停新实例 → `current -> versions/1.0.4-r2d/root` → 用 1.0.4 树启动。
+链仍在（8 DROP + RETURN），语义不变；若也要清链，用方式 B。
+
+## 回滚方式 B：完整回到装机前状态（软件 + 防火墙 + cron）
+
+```
+B=/userdisk/data/backup/pre-1.0.6-r2d-20261109
+# 1) 先清链（此时新适配器仍在，命令可用）
+/userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh \
+    -r /userdisk/data/s7root/current diskacl-clear
+# 2) 回退版本
+sh /userdisk/data/release/miwifi-smb-1.0.6-r2d/install-release.sh rollback
+# 3) 恢复旧 compat v1 / 适配器 / init / crontab
+cp -a $B/xiaomi-smb-adapter.sh /userdisk/data/s7root/xiaomi-smb-adapter.sh
+rm -rf /userdisk/data/s8compat/versions/v1
+tar -xzf $B/s8compat-v1.tar.gz -C /userdisk/data/s8compat/versions
+cp -a $B/init.samba       /etc/init.d/samba
+cp -a $B/init.samba.vendor /etc/init.d/samba.vendor
+cp -a $B/crontab-root     /etc/crontabs/root
+/etc/init.d/cron restart
+# 4) 复核
+iptables -S | grep s8-            # 期望 none
+readlink /userdisk/data/s7root/current
+pidof samba-s5d
+```
+
+## 应急（无备份可用）
+
+- 仅需让 SMB 恢复：`iptables -F s8-diskacl; iptables -D INPUT -i br-lan -p tcp ... -j s8-diskacl`（两条跳转各删一次），链存在但不是无条件 DROP，不会全员断网。
+- 说明：`s8-diskacl` 无无条件 DROP，最坏情况是"名单内 8 台被拦"。
+
+## 装机中发现的故障与修复（必须记录）
+
+1. 02:31 对 crond 发 `SIGHUP` 试图重载表，**该固件的 busybox crond 直接退出**（不是 reload）。
+   已于 02:33 用 `/etc/init.d/cron start` 恢复，02:36 再次 `restart` 收敛，pid 19284。
+   重载 crontab 只能用 `/etc/init.d/cron restart`，禁止 SIGHUP。
+2. 装机后旧 crond（pid 1173）在 3 分钟内**未拾取新增的 diskacl cron 行**（无 cache/log）。
+   新增行只有在新起 crond 后才生效（02:34 首次自动执行成功）。
+   因此补丁 `compat/install.sh`：追加 cron 行后执行 `/etc/init.d/cron restart`，
+   失败仅告警（不中断安装）。
+   该补丁只改安装器，**未改已安装的 v1 载荷**；设备上 v1 MANIFEST 仍为
+   hook 19fa4ad3… / adapter 65bb092e… / wrapper 03e596af… / sync 6621b1c5…。
+3. 重新打包后 tarball：
+   sha256 `f2285da6cb6c236cf6ea9c8754c62e3788e88f8acbeb2af005bb3d4401b372c1`
+   md5    `b19d355c8f5c1fa0f3f67e542b15876d`
+   已在设备上重新解包 `verify` = OK。
