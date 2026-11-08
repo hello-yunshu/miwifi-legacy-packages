@@ -1,0 +1,17 @@
+== payload
+version=1.0.6-r2d
+tree_md5=0f6001010c84a016cd46f129dbe47388
+README-INSTALL.txt: OK
+VERSION: OK
+compat/90-s8-mounts: OK
+compat/hook.sh: OK
+compat/install.sh: OK
+compat/samba.init.wrapper: OK
+compat/xiaomi-smb-adapter.sh: OK
+compat/diskacl-sync.sh: OK
+install-release.sh: OK
+payload/samba-tree.tar.gz: OK
+xiaomi-smb-install.sh: OK
+OK
+== artifact ==
+689dfc423f1e6489a7ea4714d5c43698bebed1435cbe591826971a5d34c2dac6  ../miwifi-smb-1.0.6-r2d.tar.gz

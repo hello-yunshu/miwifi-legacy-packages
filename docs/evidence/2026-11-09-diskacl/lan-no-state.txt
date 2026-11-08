@@ -1,0 +1,27 @@
+Mon Nov  9 02:42:26 CST 2026
+45421091d8e36fee8b09907e819bb17b  /etc/config/macfilter
+5041 /etc/config/macfilter
+== state ==
+mode=blacklist
+decision=applied
+mode_source=explicit
+allowed=31
+denied=9
+entries=40
+unset=0
+iface=br-lan
+chain=s8-diskacl
+macfilter=/etc/config/macfilter
+updated=1794163322
+== pid ==
+23192 23191 23178
+== state mtime ==
+-rw-r--r--    1 root     root           173 Nov  9 02:42 /userdisk/data/s7root/current/var/state/diskacl.state
+== sync log ==
+diskacl: applied mode=blacklist allow=32 deny=8
+diskacl: applied mode=blacklist allow=31 deny=9
+== sync dir ==
+-rw-r--r--    1 root     root            33 Nov  9 02:42 macfilter.md5
+-rw-r--r--    1 root     root            96 Nov  9 02:42 sync.log
+== crond ==
+19284 root      1608 S    /usr/sbin/crond -c /etc/crontabs -l 5

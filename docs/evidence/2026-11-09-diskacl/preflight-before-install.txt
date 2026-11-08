@@ -1,0 +1,196 @@
+Mon Nov  9 02:26:41 CST 2026
+== current ==
+versions/1.0.4-r2d/root
+== previous ==
+1.0.3-r2d
+== versions ==
+1.0.1-r2d
+1.0.2-r2d
+1.0.3-r2d
+1.0.4-r2d
+v1
+== pid ==
+25222 20416 20415 20401
+== smb.conf sections ==
+grep: bad regex '^[': Unmatched [ or [^
+== iptables -S ==
+-P INPUT ACCEPT
+-P FORWARD DROP
+-P OUTPUT ACCEPT
+-N MINIUPNPD
+-N delegate_forward
+-N delegate_input
+-N delegate_output
+-N forwarding_guest_rule
+-N forwarding_lan_rule
+-N forwarding_ready_rule
+-N forwarding_rule
+-N forwarding_wan_rule
+-N input_guest_rule
+-N input_lan_rule
+-N input_ready_rule
+-N input_rule
+-N input_wan_rule
+-N macfilter_input
+-N macfilter_wan
+-N output_guest_rule
+-N output_lan_rule
+-N output_ready_rule
+-N output_rule
+-N output_wan_rule
+-N parentalctl_device_filter
+-N parentalctl_host_filter
+-N reject
+-N zone_guest_dest_ACCEPT
+-N zone_guest_dest_REJECT
+-N zone_guest_forward
+-N zone_guest_input
+-N zone_guest_output
+-N zone_guest_src_REJECT
+-N zone_lan_dest_ACCEPT
+-N zone_lan_dest_REJECT
+-N zone_lan_forward
+-N zone_lan_input
+-N zone_lan_output
+-N zone_lan_src_ACCEPT
+-N zone_ready_dest_ACCEPT
+-N zone_ready_dest_DROP
+-N zone_ready_forward
+-N zone_ready_input
+-N zone_ready_output
+-N zone_ready_src_DROP
+-N zone_wan_dest_ACCEPT
+-N zone_wan_dest_REJECT
+-N zone_wan_forward
+-N zone_wan_input
+-N zone_wan_output
+-N zone_wan_src_REJECT
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+-A FORWARD -j delegate_forward
+-A OUTPUT -j delegate_output
+-A delegate_forward -m comment --comment "user chain for forwarding" -j forwarding_rule
+-A delegate_forward -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A delegate_forward -m conntrack --ctstate INVALID -j DROP
+-A delegate_forward -i br-lan -j zone_lan_forward
+-A delegate_forward -i br-guest -j zone_guest_forward
+-A delegate_forward -j reject
+-A delegate_input -i lo -j ACCEPT
+-A delegate_input -m comment --comment "user chain for input" -j input_rule
+-A delegate_input -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A delegate_input -m conntrack --ctstate INVALID -j DROP
+-A delegate_input -p tcp -m tcp --dport 9000 -m comment --comment "xunlei_port_limit_localhost 9000" -j reject
+-A delegate_input -i br-lan -j zone_lan_input
+-A delegate_input -i br-guest -j zone_guest_input
+-A delegate_output -o lo -j ACCEPT
+-A delegate_output -m comment --comment "user chain for output" -j output_rule
+-A delegate_output -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A delegate_output -m conntrack --ctstate INVALID -j DROP
+-A delegate_output -o br-lan -j zone_lan_output
+-A delegate_output -o br-guest -j zone_guest_output
+-A forwarding_rule -j macfilter_wan
+-A input_lan_rule -j macfilter_input
+-A reject -p tcp -j REJECT --reject-with tcp-reset
+-A reject -j REJECT --reject-with icmp-port-unreachable
+-A zone_guest_dest_ACCEPT -o br-guest -j ACCEPT
+-A zone_guest_dest_REJECT -o br-guest -j reject
+-A zone_guest_forward -m comment --comment "user chain for forwarding" -j forwarding_guest_rule
+-A zone_guest_forward -m comment --comment "forwarding guest -> wan" -j zone_wan_dest_ACCEPT
+-A zone_guest_forward -m conntrack --ctstate DNAT -m comment --comment "Accept port forwards" -j ACCEPT
+-A zone_guest_forward -j zone_guest_dest_REJECT
+-A zone_guest_input -m comment --comment "user chain for input" -j input_guest_rule
+-A zone_guest_input -p tcp -m tcp --dport 8999 -m comment --comment "Hello wifi 8999" -j ACCEPT
+-A zone_guest_input -p tcp -m tcp --dport 8300 -m comment --comment "Hello wifi 8300" -j ACCEPT
+-A zone_guest_input -p tcp -m tcp --dport 7080 -m comment --comment "Hello wifi 7080" -j ACCEPT
+-A zone_guest_input -p tcp -m tcp --dport 53 -m comment --comment "Allow Guest DNS Queries" -j ACCEPT
+-A zone_guest_input -p udp -m udp --dport 53 -m comment --comment "Allow Guest DNS Queries" -j ACCEPT
+-A zone_guest_input -p udp -m udp --sport 67:68 --dport 67:68 -m comment --comment "Allow Guest DHCP request" -j ACCEPT
+-A zone_guest_input -m conntrack --ctstate DNAT -m comment --comment "Accept port redirections" -j ACCEPT
+-A zone_guest_input -j zone_guest_src_REJECT
+-A zone_guest_output -m comment --comment "user chain for output" -j output_guest_rule
+-A zone_guest_output -j zone_guest_dest_ACCEPT
+-A zone_guest_src_REJECT -i br-guest -j reject
+-A zone_lan_dest_ACCEPT -o br-lan -j ACCEPT
+-A zone_lan_dest_REJECT -o br-lan -j reject
+-A zone_lan_forward -j parentalctl_device_filter
+-A zone_lan_forward -j parentalctl_host_filter
+-A zone_lan_forward -m comment --comment "user chain for forwarding" -j forwarding_lan_rule
+-A zone_lan_forward -m comment --comment "forwarding lan -> wan" -j zone_wan_dest_ACCEPT
+-A zone_lan_forward -m conntrack --ctstate DNAT -m comment --comment "Accept port forwards" -j ACCEPT
+-A zone_lan_forward -j zone_lan_dest_REJECT
+-A zone_lan_input -m comment --comment "user chain for input" -j input_lan_rule
+-A zone_lan_input -m conntrack --ctstate DNAT -m comment --comment "Accept port redirections" -j ACCEPT
+-A zone_lan_input -j zone_lan_src_ACCEPT
+-A zone_lan_output -m comment --comment "user chain for output" -j output_lan_rule
+-A zone_lan_output -j zone_lan_dest_ACCEPT
+-A zone_lan_src_ACCEPT -i br-lan -j ACCEPT
+-A zone_ready_forward -m comment --comment "user chain for forwarding" -j forwarding_ready_rule
+-A zone_ready_forward -m conntrack --ctstate DNAT -m comment --comment "Accept port forwards" -j ACCEPT
+-A zone_ready_forward -j zone_ready_dest_DROP
+-A zone_ready_input -m comment --comment "user chain for input" -j input_ready_rule
+-A zone_ready_input -p udp -m udp --sport 67:68 --dport 67:68 -m comment --comment "DHCP for ready" -j ACCEPT
+-A zone_ready_input -p tcp -m tcp --dport 784 -m comment --comment "tbus for ready" -j ACCEPT
+-A zone_ready_input -p tcp -m tcp --sport 784 -m comment --comment "tbus for ready" -j ACCEPT
+-A zone_ready_input -p tcp -m tcp --dport 786 -m comment --comment "minet ready" -j ACCEPT
+-A zone_ready_input -p tcp -m tcp --sport 786 -m comment --comment "minet ready" -j ACCEPT
+-A zone_ready_input -m conntrack --ctstate DNAT -m comment --comment "Accept port redirections" -j ACCEPT
+-A zone_ready_input -j zone_ready_src_DROP
+-A zone_ready_output -m comment --comment "user chain for output" -j output_ready_rule
+-A zone_ready_output -p udp -m udp --sport 67:68 --dport 67:68 -m comment --comment "DHCP for ready" -j zone_ready_dest_ACCEPT
+-A zone_ready_output -j zone_ready_dest_DROP
+-A zone_wan_forward -j MINIUPNPD
+-A zone_wan_forward -m comment --comment "user chain for forwarding" -j forwarding_wan_rule
+-A zone_wan_forward -m conntrack --ctstate DNAT -m comment --comment "Accept port forwards" -j ACCEPT
+-A zone_wan_forward -j zone_wan_dest_REJECT
+-A zone_wan_input -m comment --comment "user chain for input" -j input_wan_rule
+-A zone_wan_input -p udp -m udp --dport 68 -m comment --comment Allow-DHCP-Renew -j ACCEPT
+-A zone_wan_input -p icmp -m icmp --icmp-type 8 -m comment --comment Allow-Ping -j ACCEPT
+-A zone_wan_input -p tcp -m tcp --dport 51413 -m comment --comment "ingress port for PT download" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 51413 -m comment --comment "ingress port for PT download" -j ACCEPT
+-A zone_wan_input -p tcp -m tcp --dport 1080 -m comment --comment "xunlei wan accept tcp port 1080 4662 2080 2062" -j ACCEPT
+-A zone_wan_input -p tcp -m tcp --dport 4662 -m comment --comment "xunlei wan accept tcp port 1080 4662 2080 2062" -j ACCEPT
+-A zone_wan_input -p tcp -m tcp --dport 2080 -m comment --comment "xunlei wan accept tcp port 1080 4662 2080 2062" -j ACCEPT
+-A zone_wan_input -p tcp -m tcp --dport 2062 -m comment --comment "xunlei wan accept tcp port 1080 4662 2080 2062" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 4661 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 3027 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 888 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 666 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 2037 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 2061 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 2048 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -p udp -m udp --dport 2066 -m comment --comment "xunlei wan accept udp port 4661 3027 888 666 2037 2061 2048 2066" -j ACCEPT
+-A zone_wan_input -m conntrack --ctstate DNAT -m comment --comment "Accept port redirections" -j ACCEPT
+-A zone_wan_input -j zone_wan_src_REJECT
+-A zone_wan_output -m comment --comment "user chain for output" -j output_wan_rule
+-A zone_wan_output -j zone_wan_dest_ACCEPT
+== cron ==
+*/3 * * * * /usr/sbin/ntpsetclock rand once >/dev/null 2>&1
+5 2 * * * /usr/sbin/crontab_record_camera.lua
+* * * * * /usr/sbin/startscene_crontab.lua `/bin/date "+%u %H:%M"`
+0 12 * * * /usr/sbin/recordscene_crontab.lua
+45 23 * * * /usr/sbin/points_sysset_pro.lua >/dev/null 2>&1
+0 20 * * * /usr/bin/stat_lan
+0 18 * * 1 /sbin/hdd_stat.sh sda
+0 10 * * * /usr/sbin/regularScanDiskDir.sh
+*/5 * * * * /sbin/disklogger.sh
+0 10 * * 1 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 636, \"push\": true}" >/dev/null 2>&1
+0 10 * * 6 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 104, \"push\": true}" >/dev/null 2>&1
+0 5 * * 3 /etc/init.d/web_filter_record restart >/dev/null 2>&1
+0 3 * * * /etc/init.d/sysapihttpd restart >/dev/null 2>&1
+5 3 * * * /usr/sbin/reset_svc.sh "etm" "20" "/etc/init.d/xunlei restart"
+0 8,19 * * * /usr/sbin/netdig.sh >/dev/null 2>&1
+
+49 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1
+*/1 * * * * /usr/sbin/ap_mode.sh check_gw
+10 22 * * * /usr/sbin/quarkd >/dev/null 2>&1
+0 */1 * * * /usr/sbin/qactive.sh >/dev/null 2>&1
+0 6 * * * /etc/mixbox/apps/filebrowser/scripts/filebrowser.sh restart #mixbox-cru
+*/10 * * * * /etc/mixbox/scripts/monitor.sh #mixbox-cru
+== macfilter ==
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter
+5042 /etc/config/macfilter
+== s8compat current ==
+versions/v1
+== adapter md5 ==
+53a5ba4ebeb5c750777f8da4da5856e5  /userdisk/data/s7root/xiaomi-smb-adapter.sh
+53a5ba4ebeb5c750777f8da4da5856e5  /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh

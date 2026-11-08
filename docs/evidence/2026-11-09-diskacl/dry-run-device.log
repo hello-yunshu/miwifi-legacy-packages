@@ -1,0 +1,17 @@
+iptables -N s8-diskacl
+iptables -F s8-diskacl
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:03 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:04 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:05 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:06 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:07 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:08 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:09 -j DROP
+iptables -A s8-diskacl -m mac --mac-source 02:00:5e:00:00:0a -j DROP
+iptables -A s8-diskacl -j RETURN
+iptables -I INPUT 1 -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+iptables -I INPUT 2 -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+diskacl: dry run, 8 DROP rule(s) + RETURN
+== after dry-run: chains ==
+none
+ls: /userdisk/data/s7root/current/var/state/diskacl.state: No such file or directory

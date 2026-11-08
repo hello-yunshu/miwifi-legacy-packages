@@ -1,0 +1,16 @@
+captured_at=2026-11-09 02:45:34 CST
+control=macOS host, not in DROP list
+== smbutil view -N //guest@192.168.3.2 ==
+Share                                           Type    Comments
+-------------------------------
+homes                                           Disk    Home Directories
+XiaoMi                                          Disk    
+XiaoMi-usb0                                     Disk    
+
+3 shares listed
+== mount_smbfs ==
+mount-ok
+cost-dashboard.zip
+H
+备份 杂
+umount-ok

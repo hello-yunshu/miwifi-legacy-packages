@@ -1,0 +1,15 @@
+== after restart, from macOS (not in DROP list) ==
+Share                                           Type    Comments
+-------------------------------
+homes                                           Disk    Home Directories
+XiaoMi                                          Disk    
+XiaoMi-usb0                                     Disk    
+
+3 shares listed
+mount-ok
+cost-dashboard.zip
+H
+备份 杂
+错误的ip.png
+工作备份
+umount-ok
