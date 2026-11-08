@@ -350,8 +350,12 @@ pid_is_ours() {
 	pid=$1
 	[ -d "/proc/$pid" ] || return 1
 	exe=$(readlink "/proc/$pid/exe" 2>/dev/null) || return 1
+	# S7 activates versions through a symlink, so compare the resolved tree
+	# as well; otherwise an instance started via the link looks foreign and
+	# stop/status would refuse to touch a process they actually own.
+	real=$(readlink -f "$ROOT" 2>/dev/null || echo "$ROOT")
 	case "$exe" in
-	"$ROOT"/sbin/*) return 0 ;;
+	"$ROOT"/sbin/*|"$real"/sbin/*) return 0 ;;
 	esac
 	return 1
 }

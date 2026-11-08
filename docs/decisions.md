@@ -97,4 +97,19 @@
 - D-S6-13 持久化只验证“写入 → stop → start → 读回”，md5 一致；设备重启持久性标 BLOCKED，因为重启生产路由器会中断联网和管理，不符合本轮约束。`/userdisk` 是 ubifs、`/userdisk/data` 是 ext4，测试文件只落在 ext4 合成目录。
 - D-S6-14 遗留 BLOCKED 逐项处置：Finder/`mount_smbfs` 非 445 仍 BLOCKED（`smbutil` 报 socket 未连接、`mount_smbfs` 挂起且未挂载）；原厂撤销对照 BLOCKED（需改原厂 MAC/配置）；IPv6 BLOCKED（`br-lan` 只有 fe80 链路本地，无全局地址）；SMB1 RAP BLOCKED（无真实 RAP 客户端）；真实摄像机 BLOCKED（无硬件）；Emby 非标端口 BLOCKED（设备上无 Emby 进程）；MiniDLNA/电视通知、USB 热插拔、supervisord 匹配、App 集成沿用 S5 的 BLOCKED，不以近似场景代替。跨版本 `smbcontrol` 继续规避，不做跨版本调用。
 - D-S6-15 清理只按 PID 文件与精确路径：stop 校验 `/proc/<pid>/exe` 在 `ROOT/sbin/` 下，随后删除 `/userdisk/data/samba-s6`、`/userdisk/data/s6`、`samba-s2` 符号链接、`共享/s6perf.bin` 硬链接及 `/tmp/s6*` 临时文件；未用 `pidof`/`pkill`/通配杀进程。核对：四个原厂 md5 不变、139/445 仍为 1448、137/138 仍为 8469、`pidof smbd` 仍为 `26994 1448`、根分区可用 20588 KB 不变、1445 无监听、无测试进程与目录。
-- D-S6-16 S6 开始时 `/etc/config/samba` 的 md5 是 `8556a19b…`，与 S5 记录的 `244eb53e…` 不同，mtime 为 11-08 05:05，早于本轮开始（12:45），期间未再变化。该差异属外部改动，不归因于 S6，也不回滚它；S6 的恢复基线以本轮动手前状态为准。
+- D-S6-16 S6 开始时 `/etc/config/samba` 的 md5 是 `8556a19b…`，与 S5 记录的 `244eb53e…` 不同，mtime 为 11-08 05:05，早于本轮开始（12:45），期间未再变化。该差异与 S6 无关，也不回滚它；S6 的恢复基线以本轮动手前状态为准。后续取证见 [2026-11-08 05:05 变更取证](s6-config-change-forensics.md)：同秒为原厂 `TaskMonitorServer` 执行 `wrsst stop`/`ustackd stop` 的幂等重放，`samba`/`misc`/`crontabs` 被整文件重写，共享语义未变（无 `updateconfig`、`smb.conf` 未重新生成），具体发起任务因无访问日志不可判定。
+
+## S7（切换与回滚演练）
+
+- D-S7-01 本轮不切 139/445：停原厂 smbd 并改端口归属属于生产切换，必须单独授权。S7 在 1445 上完成安装布局、切换、回滚与故障演练，原厂二进制/配置/端口全程未动；真实切换清单已写入报告，但状态为未执行。
+- D-S7-02 激活方式为“重指编译前缀符号链接”，不重编译、不改 `SBINDIR`：`smbd -b` 报的前缀是 `/userdisk/data/samba-s2/root`，安装器把该路径做成指向 `versions/<name>/root` 的链接并断言 `readlink -f` 一致。这样避免重定位后 VFS/auth 模块静默加载失败。
+- D-S7-03 切换前必须停实例：PID 文件位于当前版本树内，切换前缀后新树无法定位旧进程。`activate` 检测到旧版本仍在运行即返回 1 并给出停止命令，不自动杀进程。
+- D-S7-04 幂等安装以 payload md5 为准：同一 tar 重复 `install` 返回 `already-installed` 且 rc=0；同名不同 payload 直接拒绝（rc=3），不覆盖已有版本。
+- D-S7-05 busybox 无 `sha256sum`，安装器摘要改用 `md5sum`。这是真机演练暴露的缺陷：此前摘要为空导致重复安装被误判为“payload 不同”。
+- D-S7-06 busybox `mv` 会把“新符号链接”移动进“指向目录的旧符号链接”内部，导致前缀没有切换。改为 `ln -sfn` 原地替换并做生效断言；这是演练中发现并修复的第二个安装器缺陷。
+- D-S7-07 适配器 `pid_is_ours` 增加解析后路径比较：通过符号链接启动时，`/proc/<pid>/exe` 是真实路径，旧实现会把自家进程判为外来 PID，出现“启动报失败但进程存活、stop 拒绝”的孤儿。修复后仍只依据 PID 文件 + exe 前缀，不做进程名匹配。
+- D-S7-08 配置损坏演练用非法布尔值（`read_only=maybe`）触发 `testparm` 拒绝：`generate` 返回 3，`smb.conf` md5 保持不变。部署目录暂时缺失用删除合成共享根目录模拟，客户端得到 `NT_STATUS_BAD_NETWORK_NAME`，恢复目录后立即可读；该模拟不等价于真实 USB 热插拔，热插拔继续 BLOCKED。
+- D-S7-09 厂商覆盖检测采用“首次安装记录基线 + `verify` 比对”：`/usr/sbin/samba_multicall` 与 `/etc/config/samba` 漂移返回 5；本轮用伪造基线验证了检测逻辑，未经历真实固件 OTA，真实覆盖恢复流程标 BLOCKED。
+- D-S7-10 本轮 v1/v2 使用同一 payload，只验证布局、激活、回滚与故障路径，不声称验证了跨二进制版本升级；真实不同版本升级因缺少第二份构建标 BLOCKED。
+- D-S7-11 设备重启持久性、真实 139/445 切换、真实 USB 拔出、固件 OTA 覆盖均标 BLOCKED，理由分别是中断生产网络、需授权、生产盘不可拔、无可用 OTA；不以 stop/start 或目录缺失代替。
+- D-S7-12 清理只按 PID 文件与精确路径：删除 `/userdisk/data/s7root` 与空的 `/userdisk/data/samba-s2`，核对四个原厂 md5、139/445 与 137/138 归属、1445 无监听、根分区可用 20588 KB 与动手前一致。
