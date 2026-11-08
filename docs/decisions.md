@@ -119,3 +119,4 @@
 - D-S7-16 macOS 在 SMB3 下共享枚举挂起的根因是 Samba 4.25 默认广播 multi-channel：客户端完成 SESSION_SETUP（AuthZ 为 `nobody`）后 18 秒内不发 TREE_CONNECT 只发 LOGOFF；`SMB2_02`/`SMB2_10` 正常，`SMB3_02` 仍挂起，`server multi channel support = no` 后 SMB3_11 恢复。适配器渲染配置固定加入该行并注明原因；不回退到 SMB1，也不通过限制协议上限规避。
 - D-S7-17 第一次真实切换（新版 PID 22144）在服务端自检通过但 macOS 枚举挂起时判定失败，立即回滚：适配器按 PID 文件 + exe 停新版 → `/usr/sbin/smbd -D` 恢复原厂 → 复核 PID/exe/端口/md5，并确认 macOS `smbutil view` 与 `mount_smbfs` 恢复。异常判定以真实客户端行为为准，不以设备侧 `smbclient` 正常代替。
 - D-S7-18 第二次真实切换通过：原厂 TERM 15:08:36、新版停止 15:08:47，停机窗口约 11 秒，原厂 15:08:51 前恢复；期间 macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，回滚后四个原厂 md5 与切换前完全一致，139/445 归 PID 2282、137/138 归 8469。测试树 `/userdisk/data/s7root`、`s7-root.tar.gz`、`samba-s2` 保留但无新版进程，根分区可用 20588 KB 未变。
+- D-S7-19 S6 遗留的“Finder/`mount_smbfs` 非 445 BLOCKED”随之关闭：关闭 multi-channel 后，macOS 可用 `smbutil view -N //guest@192.168.3.2:1445` 枚举，并用 `mount_smbfs -N //guest@192.168.3.2:1445/XiaoMi` 挂载读取；根因与 139/445 挂起同源，不是端口语法或客户端不支持非标准端口。
