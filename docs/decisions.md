@@ -120,3 +120,18 @@
 - D-S7-17 第一次真实切换（新版 PID 22144）在服务端自检通过但 macOS 枚举挂起时判定失败，立即回滚：适配器按 PID 文件 + exe 停新版 → `/usr/sbin/smbd -D` 恢复原厂 → 复核 PID/exe/端口/md5，并确认 macOS `smbutil view` 与 `mount_smbfs` 恢复。异常判定以真实客户端行为为准，不以设备侧 `smbclient` 正常代替。
 - D-S7-18 第二次真实切换通过：原厂 TERM 15:08:36、新版停止 15:08:47，停机窗口约 11 秒，原厂 15:08:51 前恢复；期间 macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，回滚后四个原厂 md5 与切换前完全一致，139/445 归 PID 2282、137/138 归 8469。测试树 `/userdisk/data/s7root`、`s7-root.tar.gz`、`samba-s2` 保留但无新版进程，根分区可用 20588 KB 未变。
 - D-S7-19 S6 遗留的“Finder/`mount_smbfs` 非 445 BLOCKED”随之关闭：关闭 multi-channel 后，macOS 可用 `smbutil view -N //guest@192.168.3.2:1445` 枚举，并用 `mount_smbfs -N //guest@192.168.3.2:1445/XiaoMi` 挂载读取；根因与 139/445 挂起同源，不是端口语法或客户端不支持非标准端口。
+
+## S8（TaskMonitor 共存与候选发布准备）
+
+- D-S8-01 修正 D-S7-15：`taskmonitorTool` 不是整体不可用。缺 `-p` 时 `-t stop -b <name>` 段错误 rc 139；缺完整可选项时 `-t start -p ... -b ...` 也 rc 139；按 `supervisord` 的完整参数集（`-C 0 -M 1 -r -1 -L none -D none -g none -d off -v -1 --vmzdata -1 --fastreboot 0 --delay 0`）调用 `start`/`stop` 均 rc 0。`-t list` 可用，`ubus call taskmonitor debug` 可用，`status` 不可用（`Invalid command`）。因此“合法登记/注销”是存在的，只是没有文档化用法。
+- D-S8-02 任务表 `/tmp/taskmonitor/taskmonitor.conf` 是二进制变长记录，由 `taskmonitorServer` 在任务变更时写回（实测 mtime 15:21/15:22）；`/tmp` 为 tmpfs，重启丢失，开机由各服务 init 经 `supervisord` → `taskmonitorTool` 重新注册。禁止手改任务表；共存只走 API。
+- D-S8-03 新版 smbd 以独立别名（`samba-s5d`）注册给 TaskMonitor 是可行且不影响原厂条目的：stop 只注销自己的记录，注销后手工启动同命令行进程不会再被接管。但注册不解决 445 竞争，原厂条目仍会在任何 `init.d/samba start` 时抢端口。
+- D-S8-04 445 接管的协作方式：先用完整参数调用 `taskmonitorTool -t stop -p "/usr/sbin/smbd -D" -b "/usr/sbin/smbd -D" -i smbd` 注销原厂条目并确认 PID 消失、端口释放，再以 `-P` 启动新版；回滚停新版后执行 `/etc/init.d/samba start` 让原厂重新注册。禁止 kill `taskmonitorServer`/`pluginTaskmonitor`，禁止停 wrsst/ustackd。
+- D-S8-05 TaskMonitor 的拉起重试周期为 5 s，实测异常退出后 3 s 拉起。因此新版注册条目在计划性停止前必须先注销，否则会被拉回；适配器 `stop` 里先 `tm-unregister` 再按 PID 文件停止。
+- D-S8-06 UCI 整文件重写无法从写入端阻止（属原厂管理栈行为），只能隔离消费端：S7 的配置源守卫（md5+size+mtime+inode 基线、漂移返回 7、`S5_ACCEPT_CONFIG=1` 显式接受）作为唯一入口，重写后默认拒绝重渲染。新增防护不改变这一边界。
+- D-S8-07 受影响服务观察点：`wrsst`/`ustackd`（当前未运行，`ustack.enabled=0`）、OTA 预下载（无进程，cron `49 3,4,5`）、MiniDLNA（未运行）、`messagingagent` 6943、管理界面 `sysapihttpd` 6702/13108、被看护的 `datacenter` 7594/`netapi` 7523/`indexservice` 7495/`trafficd` 7402/`tunnelserver` 7254/`stunserver` 7282。改造前后逐项核对 PID 与监听。
+- D-S8-08 未证明项：任务表 03:00 的日级重写触发者；原厂条目被注销后 App“SMB 开关/共享修改”是否会自动重新注册并抢 445；设备重启后的注册顺序与 445 归属。三项分别标 BLOCKED，需真实 App 操作或重启验证，不在本轮授权内。
+- D-S8-09 原厂 `start` 路径自带 UCI 回写：`/etc/init.d/samba` 的 `start_impl` 调 `/usr/sbin/shareUpdate -s`，后者经 `libuci` 重写 `/etc/config/samba` 与 `/var/etc/smb.conf`。实测（15:27）mtime 变、md5 不变，`misc`/`crontabs` 不动。因此“samba 单文件整文件重写”不必然是云端/App 事件；05:05 的三文件同秒变化才是更高层配置应用。
+- D-S8-10 配置源守卫保持严格 `md5+size+mtime+inode`：原厂 `vendor-start` 的幂等回写也会让 `generate/check/start` 返回 7。这是预期的 fail-closed，不改成“只看内容”；需要切换时先 `S5_ACCEPT_CONFIG=1` 显式接受并留存可读副本。本轮已按此流程在设备上复测通过。
+- D-S8-11 445 接管正式流程改为“`vendor-stop`（TaskMonitor 注销原厂条目）→ `start -P -p "139 445"` → 客户端验证 → `stop` → `vendor-start`（原厂 init 全链路）”。不再用 TERM/强杀原厂进程；任何一步失败按原顺序回滚并停止后续动作。
+- D-S8-12 S8 进入候选发布草案：清单、散列、矩阵、验证与回滚说明已成文；干净环境复建与发布签名未完成，重启/OTA/USB/摄像机/Emby 仍为 BLOCKED，因此不得对外声明 supported。

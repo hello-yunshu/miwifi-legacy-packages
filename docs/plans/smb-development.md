@@ -158,6 +158,8 @@
 - 在干净环境复建后发布 release-candidate；经过限定设备组合的实机验证再声明 supported。
 - 上游新版本迁移重复 S1/S2；认证、策略、VFS、管理或内核变化触发相应 S3—S7 回归。维护版本支持状态，不能一次构建后长期无更新。
 
+**状态（2026-11-08，S8 开始）**：候选发布清单草案见 [S8 候选发布](s8-candidate-release.md)。已落地：版本/源码/依赖/补丁/散列/矩阵/资源摘要/验证与回滚说明。同期完成 TaskMonitor 共存改造与真机复测，见 [S8 共存研究](s8-taskmonitor-coexistence.md)：新版可按独立别名注册并由原厂监督栈自愈；445 接管改为“API 注销原厂条目 + 原厂 init 回滚”，实测 macOS 枚举/挂载/回滚通过，四个原厂哈希不变，其它服务 PID/监听不变。另查明 `shareUpdate -s` 会在任何原厂 `start` 时对 `/etc/config/samba` 与 `/var/etc/smb.conf` 做同内容回写（mtime 变、md5 不变），守卫按预期 fail-closed，需显式接受。未达成：本轮干净环境复建、发布签名、重启/OTA/USB/摄像机/Emby 场景。
+
 ## 决策与阻断记录
 
 | 阻断 | 要做的判断 | 不可省略的证据 |
