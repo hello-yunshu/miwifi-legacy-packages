@@ -29,9 +29,9 @@
 | nmbd | 2026-11-09 14:29 快照已确认：PID 2071，`/proc/2071/exe` → `/usr/sbin/samba_multicall`，`nmbd -V` = 4.0.21，持有 UDP 137/138 | **身份已结案**；开放问题只剩“是否切换到私有 4.25.1 nmbd” | 仅在决定切换时补测发现功能（电视/旧客户端） |
 | Dropbear | 2026-11-08 清点为 2011.54、TCP 22；访客可达来自历史快照 | 候选价值仍高；当前状态未复核 | 当前进程/监听、启动入口和回滚入口 |
 | curl | 2026-11-08 清点为 7.33.0 + PolarSSL 1.3.16；客户端工具 | 仓库内没有发现调用点，但仓库外厂商脚本/用户脚本调用者未盘完 | 设备上全路径搜索及 `curl --version` 能力集 |
-| MiniDLNA | 2026-11-08 清点为 1.1.0、当时未运行；后续记录证明 App/shareUpdate 可生成配置并由 supervisord 拉起 | 用户是否实际使用未知，条件候选 | 先确认是否使用；若使用，再采集生成配置、进程、索引和调用链 |
-| dnsmasq | 2.71；未运行、无 53 监听 | **明确不做**：本机不承担 DNS/DHCP，升级未运行的服务没有收益 | 仅在未来单独立项改变网络拓扑时重做审计 |
-| WebDAV | 设备清点未报告 WebDAV 服务 | **未立项**，详见 [WebDAV 立项材料（未立项）](webdav-proposal-unfiled-2026-11-09.md) | 立项批准后再采集端口占用、磁盘路径/属主与接口 |
+| MiniDLNA | 2026-11-08 清点为 1.1.0、当时未运行；后续记录证明 App/shareUpdate 可生成配置并由 supervisord 拉起 | 用户口径按在用处理，正式候选（B4） | 采集生成配置、进程、索引和调用链 |
+| dnsmasq | 2.71；未运行、无 53 监听 | **低优先级候选（B5）**：本机不承担 DNS/DHCP，未触发前不构建 | 本机承担 DNS/DHCP 或出现明确解析需求时重做审计 |
+| WebDAV | 设备清点未报告 WebDAV 服务 | **B6 计划内候选**，详细设计见 [WebDAV 候选详细设计](webdav-proposal-unfiled-2026-11-09.md) | 前置未决项解决后采集端口占用、磁盘路径/属主与接口 |
 | `macfilter` 开关 | 2026-11-09 已有 App 将设备 `option lan` 在 yes/no 间切换的证据；兼容层只对 SMB 端口接入 | WebDAV 必须额外接入设备规则和 guest/WAN 拒绝 | 现场当前模式、目标设备条目与撤权时延复采 |
 
 仓库级 `rg` 没有找到 curl 调用点；该结果仅覆盖此仓库，不能推断设备固件或用户磁盘上的脚本没有调用 curl。
@@ -80,17 +80,17 @@ Dropbear / curl / lighttpd 的本地 GPG 检查均报告 `Good signature`；GPG 
 |---|---|---|
 | Samba 本体 | 不重复构建 4.25.1；当前官方 stable 仍为 4.25.1 | 仅在上游出现更新 stable 或安全修复时重锁源/依赖/补丁；1.0.7 是兼容层版本，不是新 Samba payload |
 | `nmbd` | 不做构建：复用已验证的私有 Samba 4.25.1 树 | 运行身份已结案（PID 2071 / `/usr/sbin/samba_multicall` / 4.0.21）；是否切换留待发现功能评估 |
-| MiniDLNA / ReadyMedia | 条件暂停；候选上游为 1.3.3 | SF 记录 SHA-256 `39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4`；只有用户确认实际使用后才下载/锁依赖并准备构建 |
-| dnsmasq | 本计划内不做，不准备源码 | 本机未运行且无 53 监听；只有未来单独立项改变网络拓扑时才重新评估（届时选经 2026 安全修复的 2.92rel2） |
+| MiniDLNA / ReadyMedia | 正式候选（B4），按在用处理；候选上游为 1.3.3 | SF 记录 SHA-256 `39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4`；下一步锁依赖并准备构建 |
+| dnsmasq | 低优先级候选（B5）；未触发前不下载源码 | 本机未运行且无 53 监听；只有本机承担 DNS/DHCP 或出现明确解析需求时才构建（届时选经 2026 安全修复的 2.92rel2） |
 | 内核、uClibc、BusyBox、iptables/ipset、系统 OpenSSL、管理 Web 栈 | 排除 | 固件/BSP/模块耦合，不属于可安全单包构建候选 |
-| rclone WebDAV | 排除为本机首选 | 官方 Go Linux/ARM 支持要求高于 Linux 2.6.36；WebDAV 未立项，见 [立项材料](webdav-proposal-unfiled-2026-11-09.md) |
+| rclone WebDAV | 排除为本机首选 | 官方 Go Linux/ARM 支持要求高于 Linux 2.6.36；WebDAV 为 B6 候选，见 [详细设计](webdav-proposal-unfiled-2026-11-09.md) |
 
 ## 3. 回滚/部署设计已固定的约束
 
 - 新候选只能装在 `/userdisk/data` 的版本化私有目录；不覆盖 `/usr/bin`、`/usr/sbin`、系统库或小米管理 Web 文件。
 - 每个服务保留原厂入口，使用单独的启动/停止/状态命令、PID/log/state/config 路径和 MANIFEST；候选不在阶段 2/3 自动改成开机默认。
 - Dropbear 必须先用备用端口并行测试，不能在没有恢复入口时接管 TCP 22；接管点是可写的 `/etc/init.d/dropbear`（`/` 为只读 ubifs），需保留原文件副本与原厂二进制，并配超时回退脚本。
-- WebDAV 未立项；若未来立项，须使用独立端口、root 只映射到批准的硬盘目录，并解决与 SMB 撤销时延的语义差异。
+- WebDAV 为 B6 候选；部署前须使用独立端口、root 只映射到批准的硬盘目录，并解决与 SMB 撤销时延的语义差异。
 - 一次只部署一个组件；回滚以版本目录/原厂入口为目标，不改内核、无线和网络核心配置。
 - 设备至少保留 N-1 一棵完整树加 `previous` 指针；删树先清指针，安装器在指针悬空时拒绝升级。
 
