@@ -1,0 +1,90 @@
+--- /tmp/b1-backup-local/backup-dropbear-v2011.54/files/etc/init.d/dropbear	2018-10-16 19:45:07
++++ /Users/yunshu/Documents/GitHub/miwifi-legacy-packages/recipes/stage2/dropbear-22/dropbear.init.new	2026-11-10 01:41:15
+@@ -1,6 +1,8 @@
+ #!/bin/sh /etc/rc.common
+ # Copyright (C) 2006-2010 OpenWrt.org
+ # Copyright (C) 2006 Carlos Sobrinho
++# 本文件由原厂 /etc/init.d/dropbear 派生，仅新增“私有 2026.94 优先、缺失/未验证即回退原厂”的选择逻辑。
++# 原厂逐字节副本：/userdisk/data/dropbear-state/backup-dropbear-v2011.54/files/etc/init.d/dropbear
+ 
+ START=50
+ STOP=50
+@@ -13,6 +15,15 @@
+ EXTRA_COMMANDS="killclients"
+ EXTRA_HELP="	killclients Kill ${NAME} processes except servers and yourself"
+ 
++# 私有候选：仅在二进制可执行且存在成功标记时启用；否则保持原厂路径。
++NEWPROG=/userdisk/data/dropbear-2026.94/sbin/dropbear
++NEWMARK=/userdisk/data/dropbear-2026.94/run/takeover.ok
++if [ -x "$NEWPROG" ] && [ -f "$NEWMARK" ]; then
++	PROG="$NEWPROG"
++	DROPBEAR_RELAX_AUTHKEYS=1
++	export DROPBEAR_RELAX_AUTHKEYS
++fi
++
+ dropbear_start()
+ {
+ 	append_ports()
+@@ -53,6 +64,8 @@
+ 	# prepare parameters (initialise with pid file)
+ 	local pid_file="/var/run/${NAME}.${PIDCOUNT}.pid"
+ 	local args="-P $pid_file"
++	# 私有候选默认从 /etc/dropbear 读取 authorized_keys（上游默认是 ~/.ssh）
++	[ "$PROG" = "$NEWPROG" ] && append args "-D /etc/dropbear"
+ 	local val
+ 	# A) password authentication
+ 	config_get_bool val "${section}" PasswordAuth 1
+@@ -98,7 +111,7 @@
+ 			[ -x /usr/bin/dropbearkey ] && {
+ 				/usr/bin/dropbearkey -t $keytype -f /tmp/$key 2>&- >&- && exec /etc/rc.common "$initscript" start
+ 			} &
+-		exit 0
++			exit 0
+ 		}
+ 	done
+ 
+@@ -130,16 +143,37 @@
+ 
+ stop()
+ {
+-	local pid_file pid_files
+-	
++	local pid_file pid pid_files exe i
++
+ 	pid_files=`ls /var/run/${NAME}.*.pid 2>/dev/null`
+-	
++
+ 	[ -z "$pid_files" ] && return 1
+-	
++
++	# 按 pidfile 停止，并校验目标确为原厂或私有 dropbear，避免误杀。
+ 	for pid_file in $pid_files; do
+-		SERVICE_PID_FILE="$pid_file" service_stop ${PROG} && {
+-			rm -f ${pid_file}
+-		}
++		pid=`cat "$pid_file" 2>/dev/null`
++		if [ -z "$pid" ]; then
++			rm -f "$pid_file"
++			continue
++		fi
++		exe=`readlink "/proc/$pid/exe" 2>/dev/null`
++		case "$exe" in
++			/usr/sbin/dropbear|"$NEWPROG") ;;
++			*)
++				echo "${initscript}: skip pid $pid ($exe)"
++				rm -f "$pid_file"
++				continue
++				;;
++		esac
++		kill -TERM "$pid" 2>/dev/null
++		i=0
++		while [ -d "/proc/$pid" ] && [ "$i" -lt 5 ]; do
++			sleep 1
++			i=$((i + 1))
++		done
++		[ -d "/proc/$pid" ] && kill -KILL "$pid" 2>/dev/null
++		sleep 1
++		rm -f "$pid_file"
+ 	done
+ }
+ 

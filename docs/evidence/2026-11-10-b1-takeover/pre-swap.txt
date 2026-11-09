@@ -1,0 +1,17 @@
+== pre-swap identity ==
+Tue Nov 10 01:39:59 CST 2026
+17502
+/usr/sbin/dropbear
+/usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22 
+c2cd6355107bfffb32c8d773c2c8ad25  /usr/sbin/dropbear
+b010c10c00d12dec35b8ab4d2e88e2bb  /etc/init.d/dropbear
+4ff9c827d4f95ca5082a5520c03e1419  /etc/config/dropbear
+2b25ef3311bbec3c3a16426834d1a38f  /etc/dropbear/authorized_keys
+7b335b01de340c26de923e6e5770c13b  /etc/dropbear/dropbear_rsa_host_key
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 420 6236/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 120 17502/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 17502/dropbear
+== banner ==
+SSH-2.0-dropbear_2011.54
