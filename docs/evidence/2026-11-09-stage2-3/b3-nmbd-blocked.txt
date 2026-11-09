@@ -1,0 +1,29 @@
+== nmbd identity ==
+14349 root      5760 S    /usr/sbin/nmbd -D
+pid=14349 exe=/usr/sbin/samba_multicall
+== version ==
+Version 4.25.1
+== help options (port knobs) ==
+  -H, --hosts=STRING                 Load a netbios hosts file
+  -p, --port=INT                     Listen on the specified port
+  -d, --debuglevel=DEBUGLEVEL        Set debug level
+  -s, --configfile=CONFIGFILE        Use alternative configuration file
+  -l, --log-basename=LOGFILEBASE     Basename for log/debug files
+      --leak-report                  enable talloc leak reporting on exit
+      --leak-report-full             enable full talloc leak reporting on exit
+  -D, --daemon                       Become a daemon (default)
+  -i, --interactive                  Run interactive (not a daemon) and log to
+  -F, --foreground                   Run daemon in foreground (for
+  -V, --version                      Print version
+== hash ==
+-rwxr-xr-x    1 root     root        253126 Nov  8 18:18 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+2283bda9f01dfa719ad276af28b655a0  /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+== ports now ==
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            3608 0 14349/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            2520 4728 14349/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            3608 0 14349/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            7474 0 14349/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 3642 14349/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            7474 0 14349/nmbd
+== netns support ==
+ls: /proc/self/ns: No such file or directory

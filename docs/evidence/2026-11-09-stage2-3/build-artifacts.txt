@@ -1,0 +1,75 @@
+### b1-dropbear/root/userdisk/data/r2d-cand/b1-dropbear/root/sbin/dropbear
+size=320075
+920648dd000fcfe570fd3c3239417f42eaf67452522f36679481fe70d2f04cba
+libutil.so.0 libcrypt.so.0 libc.so.0 
+### b1-dropbear/root/userdisk/data/r2d-cand/b1-dropbear/root/bin/dropbearkey
+size=182463
+e8645f65e02c0bba0cdfc92c1fd5fd74c22f4828994d9eaf9bf6a6e77dc9af3b
+libutil.so.0 libc.so.0 
+### b2-curl/root/userdisk/data/r2d-cand/b2-curl/root/bin/curl
+size=539272
+1d32283974e07c8c2f97dc9f821d1ff889c4ac18edfb0157adde5b5ba4a105d1
+libpthread.so.0 libc.so.0 
+### b5-dnsmasq/root/userdisk/data/r2d-cand/b5-dnsmasq/root/sbin/dnsmasq
+size=368926
+d4ed2c8aa1b2d12d769dab4098089048c501d7af3a18879ef7a23358337104e9
+libc.so.0 
+### b6-webdav/root/userdisk/data/r2d-cand/b6-webdav/root/sbin/lighttpd
+size=358859
+3dae50006dfcb60da04fe3f852c79bcafea48e9165e791c5c3eaefc541ec90d8
+libdl.so.0 libc.so.0 
+### b6-webdav/root/userdisk/data/r2d-cand/b6-webdav/root/lib/mod_webdav.so
+size=57634
+0a9228a4e0946045a288b0800a0c6570ae4d4e2918d5ac22537d47641b0570e7
+libxml2.so.16 libsqlite3.so libc.so.0 
+### b4-dlna/root/userdisk/data/r2d-cand/b4-dlna/root/sbin/minidlnad
+size=2955291
+5db5b6d705c394fbe51c326f946a0eb8130894aaba909324f41cd7a4789a1fc5
+libjpeg.so.62 libid3tag.so.0 libz.so.1 libsqlite3.so libexif.so.12 libvorbis.so.0 libogg.so.0 libpthread.so.0 libm.so.0 libc.so.0 
+=== timings ===
+build=dropbear-2026.94 cold_rc=0 cold_seconds=25
+install_rc=0
+warm_rc=0 warm_seconds=23
+build=curl-8.23.0 cold_rc=0 cold_seconds=60
+install_rc=0
+warm_rc=0 warm_seconds=62
+zlib cold_rc=0 cold_seconds=2
+libjpeg-turbo cold_rc=0 cold_seconds=35
+libexif cold_rc=0 cold_seconds=7
+libid3tag cold_rc=0 cold_seconds=2
+libogg cold_rc=0 cold_seconds=1
+libvorbis cold_rc=0 cold_seconds=5
+flac cold_rc=0 cold_seconds=13
+sqlite cold_rc=0 cold_seconds=15
+ffmpeg cold_rc=0 cold_seconds=17
+minidlna cold_rc=0 cold_seconds=3
+minidlna warm_rc=0 warm_seconds=3
+build=dnsmasq-2.92rel2 cold_rc=0 cold_seconds=5
+install_rc=0
+warm_rc=0 warm_seconds=4
+sqlite cold_rc=0 cold_seconds=16
+libxml2 cold_rc=0 cold_seconds=9
+lighttpd cold_rc=0 cold_seconds=30
+=== device re-verify (2026-11-09, ssh miwifi-r2d) ===
+version: Dropbear v2026.94
+version: curl 8.23.0 (arm-xiaomi-linux-uclibcgnueabi) libcurl/8.23.0
+version: Dnsmasq version 2.92rel2
+version: lighttpd/1.4.85
+version: Version 1.3.3
+sha256 on-device (sha256 of ssh cat):
+920648dd000fcfe570fd3c3239417f42eaf67452522f36679481fe70d2f04cba  dropbear
+e8645f65e02c0bba0cdfc92c1fd5fd74c22f4828994d9eaf9bf6a6e77dc9af3b  dropbearkey
+1d32283974e07c8c2f97dc9f821d1ff889c4ac18edfb0157adde5b5ba4a105d1  curl
+d4ed2c8aa1b2d12d769dab4098089048c501d7af3a18879ef7a23358337104e9  dnsmasq
+3dae50006dfcb60da04fe3f852c79bcafea48e9165e791c5c3eaefc541ec90d8  lighttpd
+0a9228a4e0946045a288b0800a0c6570ae4d4e2918d5ac22537d47641b0570e7  mod_webdav.so
+5db5b6d705c394fbe51c326f946a0eb8130894aaba909324f41cd7a4789a1fc5  minidlnad
+fed9fd102260df44eeeb38312058a99414bd19e0196e9852588c75e733eabf9e  nmbd (1.0.7-r2d, reuse)
+RPATH (strings of ELF):
+dropbear -> /userdisk/data/r2d-cand/b1-dropbear/root/lib
+curl -> /userdisk/data/r2d-cand/b2-curl/root/lib
+dnsmasq -> NO-RPATH (only NEEDED libc.so.0)
+lighttpd -> /userdisk/data/r2d-cand/b6-webdav/root/lib
+mod_webdav.so -> /userdisk/data/r2d-cand/b6-webdav/root/lib
+minidlnad -> /userdisk/data/r2d-cand/b4-dlna/root/lib
+ldd: device has no ldd (ash: ldd: not found); dependency check uses readelf NEEDED + ELF RPATH instead

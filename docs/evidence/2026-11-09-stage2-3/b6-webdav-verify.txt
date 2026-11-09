@@ -1,0 +1,37 @@
+put_http=201
+get_http=200
+body=hello-webdav-r2d
+drwxr-xr-x    2 root     root          4096 Nov  9 17:50 .
+drwxr-xr-x    5 root     root          4096 Nov  9 17:50 ..
+-rw-r--r--    1 root     root            16 Nov  9 17:50 r2d.txt
+propfind_http=207
+<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:" xmlns:ns0="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">
+<D:response>
+<D:href>/r2d.txt</D:href>
+<D:propstat>
+<D:prop>
+<D:getcontentlength>16</D:getcontentlength><D:getcontenttype>text/plain</D:getcontenttype><D:getetag>"123857949"</D:getetag><D:getlastmodified ns0:dt="dateTime.rfc1123">Mon, 09 Nov 2026 09:50:49 GMT</D:getlastm
+181 /tmp/w_lock.xml
+lock_http=200
+Lock-Token: <urn:uuid:7026893c-9ca1-41dd-8be4-b88d695bdb48>
+<?xml version="1.0" encoding="utf-8"?>
+<D:prop xmlns:D="DAV:">
+<D:lockdiscovery>
+<D:activelock>
+<D:lockscope><D:exclusive/></D:lockscope>
+<D:locktype><D:write/></D:locktype>
+<D:depth>0</D:depth>
+<D:ti
+== DELETE ==
+delete_http=423
+get_after_delete=200
+== error log ==
+2026-11-09 17:50:34: (server.c.1973) server started (lighttpd/1.4.85)
+token=<urn:uuid:7026893c-9ca1-41dd-8be4-b88d695bdb48>
+unlock_http=204
+delete_http=204
+get_after_delete=404
+== dir ==
+drwxr-xr-x    2 root     root          4096 Nov  9 17:51 .
+drwxr-xr-x    5 root     root          4096 Nov  9 17:51 ..
