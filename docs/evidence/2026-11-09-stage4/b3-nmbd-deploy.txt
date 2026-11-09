@@ -1,0 +1,82 @@
+### after-nmbd-switch 2026年11月 9日 星期一 18时10分12秒 CST
+-- nmbd --
+26264 root     21660 S    {nmbd} /userdisk/data/s7root/versions/1.0.7-r2d/root
+26832 root      1588 S    ash -c echo "-- nmbd --"; ps | grep "[n]mbd"; echo "
+-- exe --
+/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+-- ports --
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1636 0 26264/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 2076 26264/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1636 0 26264/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            832 0 26264/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 246 26264/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            832 0 26264/nmbd
+-- smbd --
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 360 13985/samba-s5d
+13985 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+13996 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+13997 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+-- INPUT --
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+-- chain --
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+DROP_COUNT=8
+-- cron --
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+-- adapter status --
+diskacl_chain=present
+diskacl_jumps=2
+diskacl_legacy_chain=absent
+diskacl_legacy_jumps=0
+diskacl_guest=enforced
+diskacl_guest_iface=br-guest
+diskacl_mode=blacklist
+diskacl_decision=applied
+diskacl_mode_source=explicit
+diskacl_allowed=32
+diskacl_denied=8
+diskacl_entries=40
+diskacl_unset=0
+diskacl_iface=br-lan
+diskacl_chain=s8-diskacl
+diskacl_macfilter=/etc/config/macfilter
+diskacl_updated=1794212657
+### nmblookup
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+Looking up status of 192.168.3.2
+	XIAOMI_8041     <00> -         B <ACTIVE> 
+	XIAOMI_8041     <03> -         B <ACTIVE> 
+	XIAOMI_8041     <20> -         B <ACTIVE> 
+	WORKGROUP       <00> - <GROUP> B <ACTIVE> 
+	WORKGROUP       <1e> - <GROUP> B <ACTIVE> 
+
+	MAC Address = 00-00-00-00-00-00
+
+### smbclient
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+
+	Sharename       Type      Comment
+	---------       ----      -------
+	下载          Disk      
+	共享          Disk      
+	图片          Disk      
+	摄像机监控视频$ Disk      
+	文档          Disk      
+	IPC$            IPC       IPC Service (Share from router)
+	nobody          Disk      Home Directories
+SMB1 disabled -- no workgroup available
+### mac smbutil
+Share                                           Type    Comments
+-------------------------------
+homes                                           Disk    Home Directories
+XiaoMi                                          Disk    
+XiaoMi-usb0                                     Disk    
+
+3 shares listed

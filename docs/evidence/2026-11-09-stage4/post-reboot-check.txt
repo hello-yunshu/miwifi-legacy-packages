@@ -1,0 +1,84 @@
+### post-reboot 2026年11月 9日 星期一 18时15分09秒 CST
+-- uptime --
+ 18:15:09 up 1 min,  load average: 2.79, 0.87, 0.30
+-- listeners --
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 15175/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 60 6236/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 180 7152/dropbear
+tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6236/sysapihttpd.co
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 15175/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 7152/dropbear
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1752 0 15631/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            280 2232 15631/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1752 0 15631/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            452 0 15631/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 492 15631/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            452 0 15631/nmbd
+-- nmbd --
+pid=15631
+/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+-- smbd --
+15175 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+15223 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+-- INPUT --
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+-- chain --
+DROP_COUNT=8
+-A s8-diskacl -j RETURN
+-- cron --
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+-- previous --
+1.0.6-r2d
+-- miDebug --
+5:CURL=/userdisk/data/r2d-cand/b2-curl/root/bin/curl
+6:[ -x "$CURL" ] || CURL=/usr/bin/curl
+15:    data=`${CURL} -s ${VERIFY_URL}${verifyCode}`
+-- cand residue --
+none
+-- web --
+http80=200
+### post-reboot nmbd/browse
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+Looking up status of 192.168.3.2
+	XIAOMI_8041     <00> -         B <ACTIVE> 
+	XIAOMI_8041     <03> -         B <ACTIVE> 
+	XIAOMI_8041     <20> -         B <ACTIVE> 
+	WORKGROUP       <00> - <GROUP> B <ACTIVE> 
+	WORKGROUP       <1e> - <GROUP> B <ACTIVE> 
+
+	MAC Address = 00-00-00-00-00-00
+
+-- shares --
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+
+	Sharename       Type      Comment
+	---------       ----      -------
+	下载          Disk      
+	共享          Disk      
+	图片          Disk      
+	摄像机监控视频$ Disk      
+	文档          Disk      
+	IPC$            IPC       IPC Service (Share from router)
+	nobody          Disk      Home Directories
+SMB1 disabled -- no workgroup available
+### post-reboot mac smbutil
+Share                                           Type    Comments
+-------------------------------
+homes                                           Disk    Home Directories
+XiaoMi                                          Disk    
+
+2 shares listed
+### post-reboot curl binary
+curl 8.23.0 (arm-xiaomi-linux-uclibcgnueabi) libcurl/8.23.0
+200
+### cleanup
+tmp-clean
+no-temp-ports
+no-temp-procs
+prod: nmbd=15631 exe=/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+dropbear=25227

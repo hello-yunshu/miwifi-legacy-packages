@@ -1,0 +1,72 @@
+# 阶段 5 互校：版本目录 / 包清单 / MANIFEST / install.log / 设备日志
+# 采集时间 2026-11-09 18:17:30 CST
+
+## 1. 本地发布包
+$ md5sum s8-release/miwifi-smb-1.0.{7,6}-r2d.tar.gz
+02f6918e9bef88743dc78d7519a2ca7b  /Users/yunshu/Documents/GitHub/s8-release/miwifi-smb-1.0.7-r2d.tar.gz
+b19d355c8f5c1fa0f3f67e542b15876d  /Users/yunshu/Documents/GitHub/s8-release/miwifi-smb-1.0.6-r2d.tar.gz
+$ shasum -a 256 ...
+38c0cb1c14bedb88368a3d66172caca1e2430234a2fe534fe6324298e603fbf0  /Users/yunshu/Documents/GitHub/s8-release/miwifi-smb-1.0.7-r2d.tar.gz
+f2285da6cb6c236cf6ea9c8754c62e3788e88f8acbeb2af005bb3d4401b372c1  /Users/yunshu/Documents/GitHub/s8-release/miwifi-smb-1.0.6-r2d.tar.gz
+
+## 2. 设备版本目录与 state 载荷哈希
+drwxr-xr-x    3 root     root          4096 Nov  9 16:22 1.0.6-r2d
+drwxr-xr-x    3 root     root          4096 Nov  9 03:09 1.0.7-r2d
+/userdisk/data/s7root/versions/1.0.7-r2d/root
+-- state --
+-rw-r--r--    1 root     root            33 Nov  8 18:28 1.0.1-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 21:58 1.0.2-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 22:55 1.0.3-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 00:52 1.0.4-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 16:23 1.0.6-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 03:10 1.0.7-r2d.md5
+-rw-r--r--    1 root     root           752 Nov  9 16:24 install.log
+-rwxr-xr-x    1 root     root          2139 Oct 16  2018 miDebug.sh.pre-stage4.bak
+-rwxr-xr-x    1 root     root          2471 Oct 16  2018 mitvapp.pre-stage4.bak
+-rw-r--r--    1 root     root            10 Nov  9 16:24 previous
+-rwxr-xr-x    1 root     root          2145 Nov  9 03:10 samba.init.pre-stage4.bak
+-rw-r--r--    1 root     root           103 Nov  8 18:28 vendor-config.md5
+-rw-r--r--    1 root     root            60 Nov  8 18:28 vendor.md5
+-rwxr-xr-x    1 root     root          8432 Nov  8 14:45 xiaomi-smb-install.sh.pre-gate.bak
+-- 1.0.6-r2d.md5 --
+0f6001010c84a016cd46f129dbe47388
+-- 1.0.7-r2d.md5 --
+0f6001010c84a016cd46f129dbe47388
+
+## 3. 设备关键二进制哈希
+52e105576e190ab6b977be419b3144fe  /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/smbd
+2283bda9f01dfa719ad276af28b655a0  /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+52e105576e190ab6b977be419b3144fe  /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+
+## 4. 兼容层 MANIFEST
+19fa4ad37729cf4d663d06f0a77d493f  hook.sh
+00ca962470ad328081dc98fd0219f5af  xiaomi-smb-adapter.sh
+03e596af3763e1164b5426cfe56fa25d  samba.init.wrapper
+2a00da5e6c6288629d7e5c7436d62692  diskacl-sync.sh
+hook.sh: OK
+xiaomi-smb-adapter.sh: OK
+samba.init.wrapper: OK
+diskacl-sync.sh: OK
+
+## 5. install.log（完整）
+10 /userdisk/data/s7root/state/install.log
+2026-11-09 16:23:01 install 1.0.6-r2d tar_md5=0f6001010c84a016cd46f129dbe47388 tree=/userdisk/data/s7root/versions/1.0.6-r2d/root
+2026-11-09 16:23:01 rollback-target: none
+2026-11-09 16:23:13 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:14 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:15 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:23:16 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:32 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:33 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:24:12 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:24:12 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+
+## 6. nmbd 运行日志（重启后 4.25.1）
+drwx------    3 root     root          4096 Nov  9 18:10 cores
+-rw-r--r--    1 root     root          4628 Nov  9 18:15 log.nmbd
+  Attempting to become domain master browser on workgroup WORKGROUP on subnet 192.168.3.2
+[2026/11/09 18:15:00.971087,  0] ../../source3/nmbd/nmbd_become_dmb.c:307(become_domain_master_browser_bcast)
+  become_domain_master_browser_bcast: querying subnet 192.168.3.2 for domain master browser on workgroup WORKGROUP
+[2026/11/09 18:15:00.973706,  0] ../../source3/nmbd/nmbd_become_dmb.c:237(become_domain_master_query_success)
+  become_domain_master_query_success:
+  There is already a domain master browser at IP 192.168.3.1 for workgroup WORKGROUP registered on subnet 192.168.3.2.

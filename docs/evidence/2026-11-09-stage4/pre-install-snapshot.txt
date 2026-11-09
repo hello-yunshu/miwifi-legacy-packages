@@ -1,0 +1,196 @@
+### collected_at
+Mon Nov  9 18:08:24 CST 2026
+### uptime
+ 18:08:24 up 19:30,  load average: 0.02, 0.08, 0.20
+### current
+lrwxrwxrwx    1 root     root            23 Nov  9 16:24 /userdisk/data/s7root/current -> versions/1.0.7-r2d/root
+/userdisk/data/s7root/versions/1.0.7-r2d/root
+### previous
+1.0.6-r2d
+
+-rw-r--r--    1 root     root            33 Nov  8 18:28 1.0.1-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 21:58 1.0.2-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 22:55 1.0.3-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 00:52 1.0.4-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 16:23 1.0.6-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 03:10 1.0.7-r2d.md5
+-rw-r--r--    1 root     root           752 Nov  9 16:24 install.log
+-rw-r--r--    1 root     root            10 Nov  9 16:24 previous
+-rw-r--r--    1 root     root           103 Nov  8 18:28 vendor-config.md5
+-rw-r--r--    1 root     root            60 Nov  8 18:28 vendor.md5
+-rwxr-xr-x    1 root     root          8432 Nov  8 14:45 xiaomi-smb-install.sh.pre-gate.bak
+### versions
+drwxr-xr-x    3 root     root          4096 Nov  9 16:22 /userdisk/data/s7root/versions/1.0.6-r2d/
+drwxr-xr-x    3 root     root          4096 Nov  9 03:09 /userdisk/data/s7root/versions/1.0.7-r2d/
+### tree-checks
+1.0.6-smbd-ok
+1.0.7-smbd-ok
+### INPUT
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+### diskacl
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+DROP_COUNT=8
+### crontab
+*/3 * * * * /usr/sbin/ntpsetclock rand once >/dev/null 2>&1
+5 2 * * * /usr/sbin/crontab_record_camera.lua
+* * * * * /usr/sbin/startscene_crontab.lua `/bin/date "+%u %H:%M"`
+0 12 * * * /usr/sbin/recordscene_crontab.lua
+45 23 * * * /usr/sbin/points_sysset_pro.lua >/dev/null 2>&1
+0 20 * * * /usr/bin/stat_lan
+0 18 * * 1 /sbin/hdd_stat.sh sda
+0 10 * * * /usr/sbin/regularScanDiskDir.sh
+*/5 * * * * /sbin/disklogger.sh
+0 10 * * 1 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 636, \"push\": true}" >/dev/null 2>&1
+0 10 * * 6 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 104, \"push\": true}" >/dev/null 2>&1
+0 5 * * 3 /etc/init.d/web_filter_record restart >/dev/null 2>&1
+0 3 * * * /etc/init.d/sysapihttpd restart >/dev/null 2>&1
+5 3 * * * /usr/sbin/reset_svc.sh "etm" "20" "/etc/init.d/xunlei restart"
+0 8,19 * * * /usr/sbin/netdig.sh >/dev/null 2>&1
+
+49 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1
+*/1 * * * * /usr/sbin/ap_mode.sh check_gw
+10 22 * * * /usr/sbin/quarkd >/dev/null 2>&1
+0 */1 * * * /usr/sbin/qactive.sh >/dev/null 2>&1
+0 6 * * * /etc/mixbox/apps/filebrowser/scripts/filebrowser.sh restart #mixbox-cru
+*/10 * * * * /etc/mixbox/scripts/monitor.sh #mixbox-cru
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+### listeners
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       in out PID/Program name    
+tcp        0      0 0.0.0.0:8384            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8192            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9088          0.0.0.0:*               LISTEN       0 8280 6804/indexservice
+tcp        0      0 127.0.0.1:8960          0.0.0.0:*               LISTEN       0 0 5799/fcgi-cgi
+tcp        0      0 0.0.0.0:8385            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8193            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8194            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8098            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9090          0.0.0.0:*               LISTEN       0 18720 7002/datacenter
+tcp        0      0 0.0.0.0:8899            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8195            0.0.0.0:*               LISTEN       0 10860 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8387            0.0.0.0:*               LISTEN       0 0 18971/hiapk2
+tcp        0      0 127.0.0.1:9091          0.0.0.0:*               LISTEN       0 8940 9912/plugincenter
+tcp        0      0 0.0.0.0:8196            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8197            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:1990        0.0.0.0:*               LISTEN       0 52 7620/wps_monitor
+tcp        0      0 0.0.0.0:8198            0.0.0.0:*               LISTEN       0 0 5818/mihttpd.conf
+tcp        0      0 0.0.0.0:8999            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:7080            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9096          0.0.0.0:*               LISTEN       0 70080 11985/smartcontroll
+tcp        0      0 0.0.0.0:9097            0.0.0.0:*               LISTEN       0 0 6804/indexservice
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 1200 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN       0 60 7092/himan
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 41760 6121/dropbear
+tcp        0      0 127.0.0.1:8920          0.0.0.0:*               LISTEN       0 60 6513/fcgi-cgi
+tcp        0      0 0.0.0.0:5081            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:5916          0.0.0.0:*               LISTEN       0 0 7673/acsd
+tcp        0      0 0.0.0.0:8380            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8188            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 360 13985/samba-s5d
+tcp        0      0 0.0.0.0:8381            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8382            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8190            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8383            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8191            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6121/dropbear
+udp        0      0 0.0.0.0:42000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:42000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 127.0.0.1:42032         0.0.0.0:*                            0 0 7673/acsd
+udp        0      0 127.0.0.1:40500         0.0.0.0:*                            0 0 7620/wps_monitor
+udp        0      0 0.0.0.0:1900            0.0.0.0:*                            27267256 122670 7620/wps_monitor
+udp        0      0 0.0.0.0:38000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:38000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 32493598 7586/eapd
+udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 32510263 6364/eapd
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            3956 0 14349/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            2940 5196 14349/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            3956 0 14349/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            8372 0 14349/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 4134 14349/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            8372 0 14349/nmbd
+udp        0      0 127.0.0.1:38032         0.0.0.0:*                            0 0 7565/nas
+udp        0      0 0.0.0.0:3478            0.0.0.0:*                            0 0 6389/stunserver
+udp        0      0 127.0.0.1:37064         0.0.0.0:*                            58049156 0 7620/wps_monitor
+udp        0      0 0.0.0.0:45000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:45000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 0.0.0.0:988             0.0.0.0:*                            248 453 12549/xqbc
+udp        0      0 127.0.0.1:45032         0.0.0.0:*                            0 0 7601/bcm_bsd
+udp        0      0 0.0.0.0:43000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:43000           0.0.0.0:*                            0 0 6364/eapd
+### processes
+ 5818 root      4120 S    {sysapihttpd} nginx: master process /usr/sbin/sysapi
+ 5819 root      4168 S    {sysapihttpd} nginx: worker process
+ 5820 root      4168 S    {sysapihttpd} nginx: worker process
+ 6121 root      1140 S    /usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22
+ 6728 root      9056 S    {sysapihttpd} nginx: master process /usr/sbin/sysapi
+ 6729 root      9056 S <  {sysapihttpd} nginx: worker process
+ 6730 root      9056 S <  {sysapihttpd} nginx: worker process
+13996 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+13997 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+14349 root      5760 S    /usr/sbin/nmbd -D
+14367 root     37764 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+19458 root     27440 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+25194 root      1208 S    /usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22
+32547 root      1612 S    /usr/sbin/crond -c /etc/crontabs -l 5
+### md5
+5e422d3463f40b4405ef8325ce3603e8  /usr/sbin/samba_multicall
+5e422d3463f40b4405ef8325ce3603e8  /usr/sbin/nmbd
+c2cd6355107bfffb32c8d773c2c8ad25  /usr/sbin/dropbear
+244eb53e5019b95a408aebe49602561a  /etc/config/samba
+731ebecdfb56528599cdc4b09bf0f0f0  /etc/config/misc
+4ff9c827d4f95ca5082a5520c03e1419  /etc/config/dropbear
+075046935eacb17d070f40110658f695  /etc/config/minidlna
+bcad8b90869688b7982a50aaa891cf99  /var/etc/smb.conf
+95ad7d4146de73a50fb33e823d495b94  /etc/samba/smb.conf.template
+03e596af3763e1164b5426cfe56fa25d  /etc/init.d/samba
+a26f32ce175be65ba4613c1aac72b4e1  /etc/init.d/samba.vendor
+b010c10c00d12dec35b8ab4d2e88e2bb  /etc/init.d/dropbear
+f9aa802946c415cc523107eee533b151  /etc/init.d/minidlna
+2b25ef3311bbec3c3a16426834d1a38f  /etc/dropbear/authorized_keys
+### df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+rootfs                  110440     89852     20588  81% /
+/dev/sda1            976458860 508850960 467607900  52% /userdisk/data
+### app-status
+status = "6";
+use_status = "1";
+### cand-sizes
+1052	/userdisk/data/r2d-cand/b1-dropbear
+1740	/userdisk/data/r2d-cand/b2-curl
+30996	/userdisk/data/r2d-cand/b4-dlna
+548	/userdisk/data/r2d-cand/b5-dnsmasq
+6416	/userdisk/data/r2d-cand/b6-webdav
+### ifaces
+br-guest  Link encap:Ethernet  HWaddr 46:F5:0D:AE:70:0D  
+br-lan    Link encap:Ethernet  HWaddr F0:B4:29:2B:80:41  
+eth0      Link encap:Ethernet  HWaddr F0:B4:29:2B:80:41  
+eth0.1    Link encap:Ethernet  HWaddr F0:B4:29:2B:80:41  
+wl0       Link encap:Ethernet  HWaddr F0:B4:29:2B:80:43  
+wl1       Link encap:Ethernet  HWaddr F0:B4:29:2B:80:42  
+### install.log
+2026-11-09 16:23:01 install 1.0.6-r2d tar_md5=0f6001010c84a016cd46f129dbe47388 tree=/userdisk/data/s7root/versions/1.0.6-r2d/root
+2026-11-09 16:23:01 rollback-target: none
+2026-11-09 16:23:13 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:14 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:15 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:23:16 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:32 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:33 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:24:12 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:24:12 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started

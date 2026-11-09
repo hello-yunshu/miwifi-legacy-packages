@@ -1,0 +1,79 @@
+--- samba.init.orig	2026-11-09 18:09:22
++++ samba.init.new	2026-11-09 18:09:34
+@@ -20,6 +20,7 @@
+ . /etc/init.d/samba.vendor
+ 
+ S8COMPAT_HOOK=/userdisk/data/s8compat/current/hook.sh
++S8ROOT=/userdisk/data/s7root/current
+ 
+ # rc.common shifts its own argv before sourcing this file, so the action is in
+ # $action, not in $@.  Pass it explicitly or the vendor script sees no command.
+@@ -31,6 +32,39 @@
+ 	"$S8COMPAT_HOOK" "$@"
+ }
+ 
++# B3 (stage 4): prefer the private Samba 4.25.1 nmbd from the active version
++# tree, fall back to the vendor binary when the tree is unavailable.  The four
++# browser/master options mirror the vendor /var/etc/smb.conf semantics so that
++# switching binaries does not change NetBIOS browsing behaviour.
++# Revert = restore state/samba.init.pre-stage4.bak and restart this service.
++nmbd_private() {
++	[ -x "$S8ROOT/sbin/nmbd" ] && [ -r "$S8ROOT/etc/smb.conf" ]
++}
++
++nmbd_start() {
++	if nmbd_private; then
++		local bin
++		bin=$(readlink -f "$S8ROOT/sbin/nmbd")
++		LD_LIBRARY_PATH=$(dirname "$bin")/../lib:$(dirname "$bin")/../lib/private
++		export LD_LIBRARY_PATH
++		service_start "$bin" -D -s "$S8ROOT/etc/smb.conf" \
++			-l "$S8ROOT/var/log/nmbd" \
++			--option="interfaces=br-lan" \
++			--option="local master=yes" \
++			--option="preferred master=yes" \
++			--option="domain master=yes"
++		return $?
++	fi
++	service_start /usr/sbin/nmbd -D
++}
++
++nmbd_stop() {
++	if nmbd_private; then
++		service_stop "$(readlink -f "$S8ROOT/sbin/nmbd")"
++	fi
++	service_stop /usr/sbin/nmbd
++}
++
+ start_impl() {
+ 	/usr/sbin/shareUpdate -s
+ 	updateconfig
+@@ -42,7 +76,7 @@
+ 		return 1
+ 	fi
+ 
+-	service_start /usr/sbin/nmbd -D
++	nmbd_start
+ 
+ 	smbid=$(pidof samba-s5d)
+ 	[ -z "$smbid" ] && {
+@@ -53,8 +87,8 @@
+ 
+ 	if [ -n "$smbid" -a -n "$nmbid" ]; then
+ 		if [ -f /dev/cgroup/cpu/samba/tasks ]; then
+-			echo $smbid >/dev/cgroup/cpu/samba/tasks
+-			echo $nmbid >/dev/cgroup/cpu/samba/tasks
++			echo $smbid > /dev/cgroup/cpu/samba/tasks
++			echo $nmbid > /dev/cgroup/cpu/samba/tasks
+ 		fi
+ 		return 0
+ 	fi
+@@ -64,7 +98,7 @@
+ stop() {
+ 	rc=0
+ 	s8compat stop || rc=$?
+-	service_stop /usr/sbin/nmbd
++	nmbd_stop
+ 	# A foreign listener (e.g. the vendor smbd started while the hook was
+ 	# hidden) is not ours to kill: report it instead of a silent success.
+ 	return $rc

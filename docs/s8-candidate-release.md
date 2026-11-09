@@ -74,8 +74,10 @@
 | `install-release.sh` | 5 263 B | `90644f0f18e6df24aad5079ca75fefd2` | `6bd05049962118469a3c3ff09ee4173073fffc679d34b33af6ac0bd4f9fcc9e6` |
 | `xiaomi-smb-install.sh` | 8 761 B | `11b16106a9f7a610503883f4f46dbefe` | `8b5d928e0ddc7fe7fa9683600ae1bcc83348427b3e5f4ad2e86e8b2eb0c9cd58` |
 
-设备端无 `sha256sum`，设备侧只核对 MD5；SHA-256 以仓库内文件为准。兼容层 `MANIFEST.md5`
-本次未逐项核对覆盖范围（**待补**），不能把“`md5sum -c` 通过”当作整棵运行树校验通过。
+设备端无 `sha256sum`，设备侧只核对 MD5；SHA-256 以仓库内文件为准。兼容层 `MANIFEST`
+已于 2026-11-09 阶段 5 在设备上 `md5sum -c` 核对 4/4 通过（`xiaomi-smb-adapter.sh`、`diskacl-sync.sh`、
+`hook.sh`、`samba.init.wrapper`），并与仓库副本一致；该结果只覆盖兼容层文件，不等于整棵运行树校验通过。
+证据：`docs/evidence/2026-11-09-stage4/cross-check.txt`。
 
 ## 6. 客户端与设备矩阵（已知）
 
@@ -134,9 +136,9 @@ LD_LIBRARY_PATH=<root>/lib:<root>/lib/private <root>/sbin/samba-s5d --version
 | 按设备磁盘访问（`macfilter.lan`） | **已生效**：`s8-diskacl` 8 条 DROP + `RETURN`，两条 INPUT 跳转；`yes→no` 约 10 秒、`no→yes` cron 约 22 秒（上限 60 秒），见 [diskacl.md](diskacl.md) |
 | 访客网 SMB（TCP 139/445） | **规则已强制**：`-i br-guest -p tcp -m multiport --dports 139,445 -j DROP` 位于原厂无接口限定 ACCEPT 之前；删除后 cron 约 50 秒重建。**端到端未验证（BLOCKED）**：Broadcom 驱动 `WLC_SET_VAR(bss)` 失败，`wl1.2` 无法创建，`br-guest` 无成员 |
 | 访客 UDP 137/138 | 由原厂 `zone_guest` 拒绝，本项目未重复添加规则 |
-| 1.0.7 安装后整机冷启动 | **未验证（待补）**：现有证据覆盖安装、`samba restart`、cron 同步，不覆盖重启后的 `br-guest` 创建顺序、cron 行持久与 iptables 恢复 |
-| 回滚目标 | **已移除**：`state/previous` 于 2026-11-09 删除；旧版本目录与 `release/` 旧包已清理，回滚改为本地 1.0.6 重装（见 §9） |
-| 设备重启后的 139/445 归属 | 1.0.6 时代两次重启后均为 `samba-s5d` 监听；1.0.7 载荷未变，但未重跑 |
+| 1.0.7 安装后整机冷启动 | **已验证（2026-11-09 阶段 4）**：重启后 139/445 归 `samba-s5d`；链 8 DROP + RETURN；访客 DROP 位次不变；cron 行持久；22/80 可达。证据 `docs/evidence/2026-11-09-stage4/post-reboot-check.txt` |
+| 回滚目标 | **已恢复**：`state/previous=1.0.6-r2d`，`versions/1.0.6-r2d/root/sbin/smbd` 可执行；1.0.7 树同时保留（见 §9） |
+| 设备重启后的 139/445 归属 | **已验证（2026-11-09 阶段 4）**：冷启动后仍为 `samba-s5d` 监听；137/138 同时切到私有 `nmbd` 4.25.1 并在冷启动后保持 |
 | 已有挂载的 USB 共享识别 | 1.0.6 时代已修（挂载派生层 + `90-s8-mounts`），1.0.7 载荷未变，未重跑 |
 | 真实 USB 热插拔 | 1.0.6 时代已通过（单口设备 + SanDisk 128 G 双分区）；1.0.7 未重跑 |
 | 固件 OTA 覆盖适配路径 | BLOCKED（2.24.11 rootfs 无 SSH 服务端，会自我锁死） |
@@ -157,7 +159,7 @@ LD_LIBRARY_PATH=<root>/lib:<root>/lib/private <root>/sbin/samba-s5d --version
 - [x] 离线回归：32 cases / 135 assertions / 0 failures（sh、dash、busybox 1.36、设备 busybox 1.19.4）
 - [x] 发布包散列：设备 tar MD5 与本地一致；`install-release.sh verify` 通过
 - [ ] 访客端到端（真实访客客户端访问 139/445 被拒）
-- [ ] 1.0.7 安装后整机冷启动
+- [x] 1.0.7 安装后整机冷启动（2026-11-09 阶段 4，含 139/445、链、访客位次、cron、22/80 核对）
 - [ ] 签名与验证链
 - [ ] 真实 App/云端、OTA、摄像机、Emby 场景
 
