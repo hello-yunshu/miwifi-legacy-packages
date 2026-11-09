@@ -70,3 +70,51 @@ drwx------    3 root     root          4096 Nov  9 18:10 cores
 [2026/11/09 18:15:00.973706,  0] ../../source3/nmbd/nmbd_become_dmb.c:237(become_domain_master_query_success)
   become_domain_master_query_success:
   There is already a domain master browser at IP 192.168.3.1 for workgroup WORKGROUP registered on subnet 192.168.3.2.
+
+## 7. 发布包成员清单与 MANIFEST/SHA256SUMS（本地解包）
+$ tar -tzf s8-release/miwifi-smb-1.0.7-r2d.tar.gz
+miwifi-smb-1.0.7-r2d/
+miwifi-smb-1.0.7-r2d/MANIFEST.md5
+miwifi-smb-1.0.7-r2d/compat/
+miwifi-smb-1.0.7-r2d/install-release.sh
+miwifi-smb-1.0.7-r2d/payload/
+miwifi-smb-1.0.7-r2d/VERSION
+miwifi-smb-1.0.7-r2d/xiaomi-smb-install.sh
+miwifi-smb-1.0.7-r2d/SHA256SUMS
+miwifi-smb-1.0.7-r2d/README-INSTALL.txt
+miwifi-smb-1.0.7-r2d/payload/samba-tree.tar.gz
+miwifi-smb-1.0.7-r2d/compat/xiaomi-smb-adapter.sh
+miwifi-smb-1.0.7-r2d/compat/install.sh
+miwifi-smb-1.0.7-r2d/compat/samba.init.wrapper
+miwifi-smb-1.0.7-r2d/compat/90-s8-mounts
+miwifi-smb-1.0.7-r2d/compat/diskacl-sync.sh
+miwifi-smb-1.0.7-r2d/compat/hook.sh
+$ cat VERSION
+1.0.7-r2d
+$ md5sum -c MANIFEST.md5
+README-INSTALL.txt: OK
+VERSION: OK
+compat/90-s8-mounts: OK
+compat/hook.sh: OK
+compat/install.sh: OK
+compat/samba.init.wrapper: OK
+compat/xiaomi-smb-adapter.sh: OK
+compat/diskacl-sync.sh: OK
+install-release.sh: OK
+payload/samba-tree.tar.gz: OK
+xiaomi-smb-install.sh: OK
+$ shasum -a 256 -c SHA256SUMS
+MANIFEST.md5: OK
+README-INSTALL.txt: OK
+VERSION: OK
+compat/90-s8-mounts: OK
+compat/hook.sh: OK
+compat/install.sh: OK
+compat/samba.init.wrapper: OK
+compat/xiaomi-smb-adapter.sh: OK
+compat/diskacl-sync.sh: OK
+install-release.sh: OK
+payload/samba-tree.tar.gz: OK
+xiaomi-smb-install.sh: OK
+
+结论：11/11 成员 MD5 与 SHA-256 全部 OK；install-release.sh 与 xiaomi-smb-install.sh 的 SHA-256 与发布文档 §5 一致。
