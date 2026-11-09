@@ -1,0 +1,23 @@
+Tue Nov 10 07:18:28 CST 2026
+ 07:18:28 up  1:58,  load average: 0.01, 0.06, 0.06
+--- status ---
+binary: /userdisk/data/.dev/live/webdav/current/sbin/lighttpd ok
+pid: 7888
+watch_pid: 7513
+listen:
+tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 0 
+shares:
+  下载 mounted
+  共享 mounted
+  图片 mounted
+  文档 mounted
+--- listeners ---
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 14099/samba-s5d
+tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 0 7888/lighttpd
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 3720 6120/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 420 14099/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6120/dropbear
+--- current ---
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root
+--- rc.d ---
+lrwxrwxrwx    1 root     root            16 Nov 10 07:17 /etc/rc.d/S99webdav -> ../init.d/webdav

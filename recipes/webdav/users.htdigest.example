@@ -1,0 +1,4 @@
+# 部署时复制为 conf/users.htdigest，属主 nobody:nogroup，权限 0600。
+# 格式： user:realm:md5(user:realm:password)
+# 本仓库不保存真实部署使用的哈希。
+r2d:r2d-webdav:<md5-of-your-password>

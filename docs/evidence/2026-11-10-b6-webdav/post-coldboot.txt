@@ -1,0 +1,37 @@
+Tue Nov 10 07:20:33 CST 2026
+ 07:20:33 up 1 min,  load average: 2.86, 0.88, 0.31
+--- webdav ---
+binary: /userdisk/data/.dev/live/webdav/current/sbin/lighttpd ok
+pid: 14296
+watch_pid: 14323
+listen:
+tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 240 
+shares:
+  下载 mounted
+  共享 mounted
+  图片 mounted
+  文档 mounted
+--- tcp ---
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 10641/samba-s5d
+tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 240 14296/lighttpd
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 180 7086/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 10641/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 7086/dropbear
+--- udp ---
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1636 0 12262/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 2076 12262/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1636 0 12262/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            1640 0 12262/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 690 12262/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            1640 0 12262/nmbd
+--- homes ---
+0
+--- homes-fix log tail ---
+[uptime 55] homes already 0, no-op
+[uptime 70] recheck@+15s: homes=1, re-applying
+[uptime 71] uci commit ok: homes 1 -> 0
+[uptime 75] samba reload rc=0
+--- acl ---
+9
+--- leftovers ---
+none

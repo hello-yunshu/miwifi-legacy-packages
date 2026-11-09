@@ -1,0 +1,33 @@
+# Mac client test 2026-11-10 07:27:06 CST
+# endpoint http://192.168.3.2:5005/ (digest, user r2d)
+
+## unauthenticated PROPFIND /
+HTTP 401
+
+## authenticated PROPFIND / (Depth 1)
+<D:href>/
+<D:href>/%E4%B8%8B%E8%BD%BD/
+<D:href>/%E5%85%B1%E4%BA%AB/
+<D:href>/%E5%9B%BE%E7%89%87/
+<D:href>/%E6%96%87%E6%A1%A3/
+
+## PUT /图片/__wdev_client.txt
+HTTP 201
+
+## GET
+mac-client-1794266826
+
+## MOVE -> /图片/__wdev_client2.txt
+HTTP 201
+
+## MKCOL /图片/__wdev_dir
+HTTP 201
+
+## DELETE file
+HTTP 204
+
+## DELETE dir
+HTTP 204
+
+## /.dev/LAYOUT.txt (must be 404)
+HTTP 404
