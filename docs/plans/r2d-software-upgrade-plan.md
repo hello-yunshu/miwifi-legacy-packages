@@ -117,7 +117,9 @@ cp -p /userdisk/data/s7root/state/dropbear.init.orig /etc/init.d/dropbear
 
 设备 curl 7.33.0 链接 PolarSSL 1.3.16 与 zlib 1.2.7。上游当前为 8.23.0，其变更记录注明 8.23.0 删除 SMB 协议支持，8.18.0 起提高了 TLS 后端最低版本，因此**不能照抄“curl 8.x + 现有系统 TLS”**。[版本表](https://curl.se/docs/versions.html) · [变更记录](https://curl.se/changes.html)
 
-**第一条动作是盘点调用方**：`/etc/init.d`、hotplug 脚本、cron、rpc/服务脚本、以及 `/userdisk/data` 下的脚本中所有 `curl` 引用，形成清单后再决定升级范围。仓库内未见调用点不等于设备上没有调用方；当前结论仅限已扫描范围（设备侧只见 `/etc/init.d/miDebug.sh` 引用）。
+**第一条动作是盘点调用方**：`/etc/init.d`、hotplug 脚本、cron、rpc/服务脚本、以及 `/userdisk/data` 下的脚本中所有 `curl` 引用，形成清单后再决定升级范围。仓库内未见调用点不等于设备上没有调用方。
+
+**盘点结论（2026-11-09 16:33，只读）**：脚本调用方为 `/etc/init.d/miDebug.sh`、`/etc/init.d/mitvapp`、`/usr/sbin/wifishare.sh`、`/usr/bin/netspeed`、`/etc/mixbox/scripts/helper.sh`，全部只用 HTTP；`/etc/mixbox/scripts/helper.sh` 已优先 `/opt/bin/curl`（该文件当前不存在）。另有一批厂商 ELF（`app_status`、`indexservice`、`mediaservice`、`datacenter`、`quarkd`、`plugin*` 等）经 `libcurl.so.4` 使用 curl，不属 CLI 替换范围。证据见[调用方清单](../evidence/2026-11-09-stage0-rollback/curl-callers.txt)。
 
 **范围判定**：
 
@@ -141,7 +143,7 @@ cp -p /userdisk/data/s7root/state/dropbear.init.orig /etc/init.d/dropbear
 
 按**在用**处理：配置已启用，管理链可拉起服务，`shareUpdate` 会生成配置。因此构建候选是正式排期项。
 
-**依赖**：私有 libexif、libjpeg、libid3tag、flac、vorbis 与 SQLite（如启用元数据索引），全部落 `/userdisk/data` 私有树；上游 1.3.3 发布记录 SHA-256 `39026c6d…f96afa4`。
+**依赖**：私有 libexif 0.6.24、libjpeg-turbo 3.0.4、libid3tag 0.16.3、flac 1.4.3、libogg 1.3.5、libvorbis 1.3.7 与 SQLite 3.54.1，全部落 `/userdisk/data` 私有树；上游 1.3.3 发布记录 SHA-256 `39026c6d…f96afa4`。源码与校验值已锁定（见[阶段 0/1 执行记录](stage-0-1-execution-2026-11-09.md)）。**构建环境缺口**：容器缺 `cmake`（libjpeg-turbo 3.x）与 `libtool`（libid3tag 归档），补齐前不进入阶段 2。
 
 **验收要点**（与 App / 电视相关）：
 
@@ -157,7 +159,7 @@ cp -p /userdisk/data/s7root/state/dropbear.init.orig /etc/init.d/dropbear
 
 设备当前未运行 dnsmasq、无 53 监听；DNS/DHCP 由上游提供。条目保留为正式候选，优先级最低：**只有在本机承担 DNS/DHCP，或出现必须由本机解析的明确需求时才构建**。
 
-**触发后的范围**：选经 2026 安全修复的 2.92rel2，不选未经修复的 2.92；配置与租约目录放持久可写分区；验收覆盖 DNS 转发/缓存、DHCP 地址池与租约、IPv6（RA/DHCPv6）、与小米管理面联动、断网与重启恢复。
+**触发后的范围**：选经 2026 安全修复的 2.92rel2，不选未经修复的 2.92；源码已锁定（SHA-256 `43d72b8c…a32ce06a`，`.asc` 用键 `15CDDA6AE19135A2` 验签通过）。配置与租约目录放持久可写分区；验收覆盖 DNS 转发/缓存、DHCP 地址池与租约、IPv6（RA/DHCPv6）、与小米管理面联动、断网与重启恢复。
 
 **未触发时**：不构建、不部署，但在候选表中保留，不视为“明确不做”。
 
@@ -192,20 +194,24 @@ cp -p /userdisk/data/s7root/state/dropbear.init.orig /etc/init.d/dropbear
 
 ### 4.1 阶段 0 硬前置：恢复回滚资产并实测 `rollback`
 
-**现状（2026-11-09 清理后）**
+**现状（2026-11-09 16:24 已通过）**
 
-- `s7root/versions/` 只剩 `1.0.7-r2d`；`release/` 只剩 1.0.7 tar；`state/previous` 已删除 → `rollback` 立即返回 6（`no previous version recorded`）。
+- 恢复前：`versions/` 只剩 `1.0.7-r2d`，`previous` 不存在 → `rollback` 返回 6。
+- 已用方式 A 恢复并实测：`install` 1.0.6 树 → 两次 `activate` → 真实 `rollback` 到 1.0.6 并启动复核 → 切回 1.0.7。
+- 终态：`current -> 1.0.7-r2d`，`previous = 1.0.6-r2d`，两棵树均存在，回滚目标前缀可解析。
+- 证据与逐项判定：[阶段 0/1 执行记录](stage-0-1-execution-2026-11-09.md)、[证据目录](../evidence/2026-11-09-stage0-rollback/)。
 - 本地 `s8-release/` 保留 1.0.6 包：14 307 338 B，MD5 `b19d355c8f5c1fa0f3f67e542b15876d`，SHA-256 `f2285da6cb6c236cf6ea9c8754c62e3788e88f8acbeb2af005bb3d4401b372c1`。
-- 结论：**当前部署不可回滚到上一版**，这是所有写入/重启类动作的硬阻塞。
 
-**恢复方式 A（首选，字节可核对）**：把本地 1.0.6 包上传到设备，安装但不启动，再用两次 `activate` 交换，使 `previous` 指向 1.0.6。
+**恢复方式 A（首选，字节可核对）**：把本地 1.0.6 包上传到设备，安装树载荷但**不启动**，再用两次 `activate` 交换，使 `previous` 指向 1.0.6。
 
 ```sh
 # 1) 上传前后核对：应为 b19d355c8f5c1fa0f3f67e542b15876d
 md5sum /userdisk/data/release/miwifi-smb-1.0.6-r2d.tar.gz
-# 2) 只建树，不激活、不启动
+# 2) 解包并只建树（安装器接受树载荷，不是整包），不激活、不启动
+mkdir -p /tmp/p106 && tar -xzf /userdisk/data/release/miwifi-smb-1.0.6-r2d.tar.gz -C /tmp/p106
+md5sum /tmp/p106/miwifi-smb-1.0.6-r2d/payload/samba-tree.tar.gz   # 应与 state/1.0.6-r2d.md5 一致
 sh /userdisk/data/s7root/xiaomi-smb-install.sh install \
-   /userdisk/data/release/miwifi-smb-1.0.6-r2d.tar.gz 1.0.6-r2d
+   /tmp/p106/miwifi-smb-1.0.6-r2d/payload/samba-tree.tar.gz 1.0.6-r2d
 # 3) 两次切换把 previous 指向 1.0.6（切换要求先停实例，属窗口动作）
 sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.6-r2d
 sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
@@ -256,10 +262,10 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 1 | A0 Samba 兼容层 | 1.0.7 已交付 | 回滚资产 | 无新构建（仅兼容层包） | 可执行（仅收尾验证） |
 | 2 | B3 `nmbd` | 复用现役树 4.25.1 产物 | 无 | 零构建 | 可执行（待决策） |
 | 3 | B1 Dropbear 2026.94 | SHA-256 `e098034a…b1ae81`，`.asc` 已验签 | 回退通道设计 | 私有树 + 并行端口测试包 | 可执行 |
-| 4 | B4 MiniDLNA 1.3.3 | SHA-256 `39026c6d…f96afa4` | 私有依赖链（exif/jpeg/id3tag/flac/vorbis/sqlite） | 私有树 + 索引测试 | 可执行，依赖最多 |
-| 5 | B2 curl 8.23.0 | SHA-256 `8dadd7d2…e6c5`，`.asc` 已验签 | 调用方盘点结论 | 私有树 + 显式路径 | 条件：取决于盘点 |
-| 6 | A1 Samba 新 stable | 上游当前仍 4.25.1 | A0 验收 | 新 payload | BLOCKED：无新上游版本 |
-| 7 | B5 dnsmasq 2.92rel2 | 未下载 | 网络拓扑变更决定 | 私有树 | BLOCKED：未触发（低优先级） |
+| 4 | B4 MiniDLNA 1.3.3 | SHA-256 `39026c6d…f96afa4`；依赖全部锁定 | 补齐 cmake/libtool | 私有树 + 索引测试 | BLOCKED：构建环境缺 cmake/libtool |
+| 5 | B2 curl 8.23.0 | SHA-256 `8dadd7d2…e6c5`，`.asc` 已验签；调用方已盘点 | 选定逐调用方范围 | 私有树 + 显式路径 | 可执行（HTTP-only） |
+| 6 | A1 Samba 新 stable | 上游当前仍 4.25.1（4.25.2 = 404） | A0 验收 | 新 payload | BLOCKED：无新上游版本 |
+| 7 | B5 dnsmasq 2.92rel2 | SHA-256 `43d72b8c…a32ce06a`，`.asc` 已验签 | 网络拓扑变更决定 | 私有树 | BLOCKED：未触发（低优先级） |
 | 8 | B6 WebDAV（lighttpd 1.4.85 + libxml2/SQLite） | 记录在案 | 前置未决项（§2.8） | 独立实例 | BLOCKED：撤权语义/看护/端口未决 |
 
 构建环境固定为容器 `miwifi-s1`（Ubuntu 24.04，镜像 ID `sha256:fe8156…6ef852`），工具链 GCC 4.8.2 / uClibc 0.9.33.2，QEMU `qemu-arm-static`。容器当前没有 Dockerfile，可复现性缺口见 [阶段 0–1 记录](stage-0-1-preparation-2026-11-09.md)。
@@ -268,12 +274,12 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 
 | 序 | 动作 | 不可逆性 | 失败会阻塞什么 | 影响面 | 窗口量级 | 回滚时限 | 状态 |
 |---|---|---|---|---|---|---|---|
-| 0 | §4.1 恢复回滚资产 + 实测 rollback | —（前置门） | 全部后续部署 | SMB | 30–45 min | 失败即停，不改包 | 未开始 |
+| 0 | §4.1 恢复回滚资产 + 实测 rollback | —（前置门） | 全部后续部署 | SMB | 30–45 min | 失败即停，不改包 | PASS（2026-11-09 16:24） |
 | 1 | A0 升级后整机冷启动核对 | 低（可重复重启） | 整机：所有入口同时不可用 | 整机 / SMB / SSH / 管理面 / 无线 | 10–15 min | 无代码回滚；失败走本地 1.0.7 重装，≤30 min | 可执行 |
 | 2 | B3 `nmbd` 切换 | 中（发现功能退化不易察觉） | NetBIOS 发现、电视/旧客户端、App 发现 | SMB / 管理面（发现） | 15–30 min | 改回包装器原厂路径 + restart，≤5 min | BLOCKED：发现功能无设备证据 |
 | 3 | B1 Dropbear 接管 22 | 高（唯一维护入口） | SSH，进而所有远程维护 | SSH / 管理面 | 30–60 min | 超时脚本自动回退 ≤5 min | BLOCKED：无带外恢复通道 |
 | 4 | B4 MiniDLNA 切换 | 中（索引与发现） | 电视播放/媒体索引 | 应用 / 管理面（App 开关） | 30–45 min | 切回原厂服务，≤10 min | BLOCKED：私有依赖链未构建 |
-| 5 | B2 curl 显式路径（逐调用方） | 低（旧二进制保留） | 无服务阻塞 | 仅调用方 | 每调用方 5–15 min | 改回原命令，即时 | BLOCKED：调用方未盘点 |
+| 5 | B2 curl 显式路径（逐调用方） | 低（旧二进制保留） | 无服务阻塞 | 仅调用方 | 每调用方 5–15 min | 改回原命令，即时 | 可进入：调用方已盘点（HTTP 脚本） |
 | 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | BLOCKED：前置未决项（§2.8） |
 | 7 | B5 dnsmasq | 高（DNS/DHCP 是联网控制面） | 全网解析/DHCP | 无线 / 整机联网 | 30–60 min | 恢复上游 DNS/DHCP，≤10 min | BLOCKED：未触发 |
 | 8 | A1 新 Samba payload | 中 | SMB 全量 | SMB | 30–45 min | 切回上一树，≤5 min | BLOCKED：无新上游版本 |

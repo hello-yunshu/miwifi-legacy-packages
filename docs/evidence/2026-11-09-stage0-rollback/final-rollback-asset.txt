@@ -1,0 +1,9 @@
+-rwxr-xr-x    1 root     root         43299 Nov  8 18:18 /userdisk/data/s7root/versions/1.0.6-r2d/root/bin/testparm
+-rwxr-xr-x    1 root     root         81546 Nov  8 18:18 /userdisk/data/s7root/versions/1.0.6-r2d/root/sbin/smbd
+/userdisk/data/samba-s2/root/sbin
+Version 4.25.1
+== final
+versions/1.0.7-r2d/root
+1.0.6-r2d
+/userdisk/data/s7root/versions/1.0.6-r2d/
+/userdisk/data/s7root/versions/1.0.7-r2d/

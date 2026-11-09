@@ -1,0 +1,63 @@
+== curl version
+curl 7.33.0 (arm-xiaomi-linux-uclibcgnueabi) libcurl/7.33.0 PolarSSL/1.3.16 zlib/1.2.7
+Protocols: file ftp ftps http https imap imaps pop3 pop3s rtsp smtp smtps tftp 
+== script dirs
+/etc/init.d/miDebug.sh
+/etc/init.d/mitvapp
+/etc/mixbox/scripts/helper.sh
+/usr/sbin/app_status
+/usr/sbin/StatPoints
+/usr/sbin/apk_query
+/usr/sbin/ad_filter_client
+/usr/sbin/plugin_action
+/usr/sbin/wifishare.sh
+/usr/sbin/copy_plugin_chroot_file
+/usr/sbin/indexservice
+/usr/sbin/smartcontroller
+/usr/sbin/mediaservice
+/usr/sbin/installplugin
+/usr/sbin/eventservice
+/usr/sbin/pluginTaskmonitor
+/usr/sbin/securitypage
+/usr/sbin/datacenter
+/usr/sbin/ecos_pair_verify
+/usr/sbin/uaq-agent
+/usr/sbin/rule_mgr
+/usr/sbin/mtd_crash_log
+/usr/sbin/quark
+/usr/sbin/quarkd
+/usr/sbin/pluginControllor
+/usr/sbin/statisticsservice
+/usr/sbin/plugincenter
+/usr/sbin/plugin_download
+/usr/sbin/cachecenter
+/usr/sbin/ustackd
+/usr/sbin/sec_clt
+/usr/bin/curl
+/usr/bin/perl
+/usr/bin/hiapk2
+/usr/bin/matool
+/usr/bin/himan
+/usr/bin/perl5.10.0
+/usr/bin/wrsst
+/usr/bin/messagingagent
+/usr/bin/netspeed
+== userdisk shallow
+== miDebug
+12:    data=`curl -s ${VERIFY_URL}${verifyCode}`
+== mitvapp
+49:          result=`curl localhost:/cgi-bin/luci/api/xqsystem/sdev|xargs`
+== wifishare
+636:    if ! (curl --connect-timeout 2 http://api.miwifi.com/data/wifishare/config/md5 > ${config_md5_file}) ; then
+653:    if ! (curl --connect-timeout 2 http://api.miwifi.com/data/wifishare/config > ${config_json_file}) ; then
+1468:    local get_url="curl -I ${index_cdn_addr} -m 5 --connect-timeout 5 -s --header If-None-Match:\"${last_etag}\""
+1480:      curl ${index_cdn_addr} -o ${html_path}"/"${html_name}
+1482:          wifishare_log "curl get cdn wifishare.html error, at date:$date_tag"
+== netspeed
+38:local url = execl(string.format("curl -s --connect-timeout 2 -I  '%s'| grep Location | awk '{print $2}'", cfg.geturl))
+== ldd curl
+	libcurl.so.4 => /usr/lib/libcurl.so.4 (0x40113000)
+	libmbedtls.so.9 => /usr/lib/libmbedtls.so.9 (0x4008a000)
+	libz.so.1 => /usr/lib/libz.so.1 (0x400ce000)
+	libc.so.0 => /lib/libc.so.0 (0x4016a000)
+	ld-uClibc.so.0 => /lib/ld-uClibc.so.0 (0x4007a000)
