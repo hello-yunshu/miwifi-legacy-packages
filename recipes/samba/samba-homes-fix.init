@@ -1,0 +1,127 @@
+#!/bin/sh /etc/rc.common
+# 在 datacenter(START=80)/indexservice(START=78) 重写 /etc/config/samba 之后，
+# 把 homes 压回 0 并 reload samba，使 [homes] 不再出现在共享枚举里。
+# 幂等：已经是 0 时不做任何写入、不 reload。
+#
+# 实测两点：
+#  1) datacenter 的配置重写是“异步”的，S97 一次检查可能早于重写；
+#     因此后台做有界复检（+15/+30/+45/+60/+90 秒），发现被改回 1 就再压一次。
+#  2) 复检时点可能与 sda1 热插拔触发的 samba reload 撞车，reload 会失败并把服务带停；
+#     因此 reload 后必须校验 smbd 是否还在，若已消失则 stop+start 兜底。
+START=97
+STOP=10
+USE_PROCD=0
+EXTRA_COMMANDS="dryrun restore check"
+EXTRA_HELP="	dryrun	Show what would be done, change nothing
+	restore	Set homes back to 1 and reload (rollback)
+	check	Re-check once and fix if needed (idempotent, for cron)"
+
+LOG=/userdisk/data/.dev/live/samba-homes-fix.log
+
+log() {
+	case "$LOG" in
+	/userdisk/*) [ -d "${LOG%/*}" ] || LOG=/tmp/samba-homes-fix.log ;;
+	esac
+	echo "[uptime $(cut -d. -f1 /proc/uptime 2>/dev/null)] $*" >> "$LOG" 2>/dev/null
+}
+
+homes_val() { uci -q get samba.@samba[0].homes 2>/dev/null; }
+smbd_running() { pidof samba-s5d >/dev/null 2>&1 || pidof smbd >/dev/null 2>&1; }
+
+apply() {
+	mode=$1
+	cur=$(homes_val)
+
+	if [ "$cur" = "0" ]; then
+		log "homes already 0, no-op"
+		[ "$mode" = "dry" ] && echo "[dry-run] homes already 0 -> no action, no reload"
+		return 0
+	fi
+	if [ -z "$cur" ]; then
+		log "ABORT: samba.@samba[0].homes unset (section missing?)"
+		[ "$mode" = "dry" ] && echo "[dry-run] ABORT: samba.@samba[0].homes unset"
+		return 1
+	fi
+
+	if [ "$mode" = "dry" ]; then
+		echo "[dry-run] current homes=$cur"
+		echo "[dry-run] would run: uci set samba.@samba[0].homes=0 && uci commit samba"
+		if smbd_running; then
+			echo "[dry-run] would run: /etc/init.d/samba reload   (smbd running)"
+		else
+			echo "[dry-run] would SKIP reload             (smbd not running)"
+		fi
+		return 0
+	fi
+
+	uci set samba.@samba[0].homes=0 || { log "FAIL: uci set"; return 1; }
+	uci commit samba || { log "FAIL: uci commit"; return 1; }
+	log "uci commit ok: homes $cur -> 0"
+
+	was_running=0
+	smbd_running && was_running=1
+	if [ "$was_running" = "1" ]; then
+		/etc/init.d/samba reload
+		rc=$?
+		log "samba reload rc=$rc"
+		if ! smbd_running; then
+			log "smbd gone after reload, recovering (stop+start)"
+			/etc/init.d/samba stop >/dev/null 2>&1
+			sleep 1
+			/etc/init.d/samba start >/dev/null 2>&1
+			sleep 3
+			if smbd_running; then log "recover ok"; else log "recover FAILED"; fi
+		fi
+	else
+		log "smbd not running, skip reload"
+	fi
+	return 0
+}
+
+start() {
+	apply ${HOMES_FIX_DRY:+dry}
+	[ -n "$HOMES_FIX_DRY" ] && return 0
+
+	# 有界复检：累计 +240 秒后自行结束
+	(
+		acc=0
+		for d in 15 30 45 60 90; do
+			sleep "$d"
+			acc=$((acc + d))
+			cur=$(homes_val)
+			if [ "$cur" != "0" ]; then
+				log "recheck@+${acc}s: homes=${cur:-unset}, re-applying"
+				apply real
+			else
+				log "recheck@+${acc}s: ok"
+			fi
+			# smbd 意外掉线时的兜底恢复
+			if ! smbd_running; then
+				log "recheck@+${acc}s: smbd absent, starting"
+				/etc/init.d/samba start >/dev/null 2>&1
+				sleep 2
+			fi
+		done
+	) &
+}
+
+dryrun() { apply dry; }
+check() { apply real; }
+
+restore() {
+	cur=$(homes_val)
+	if [ "$cur" = "1" ]; then
+		log "restore: homes already 1, no-op"
+		echo "homes already 1, nothing to do"
+		return 0
+	fi
+	uci set samba.@samba[0].homes=1 && uci commit samba
+	log "restore: homes $cur -> 1"
+	if smbd_running; then
+		/etc/init.d/samba reload
+		log "restore: samba reload rc=$?"
+	fi
+	echo "homes restored to 1"
+}
+
+stop() { :; }

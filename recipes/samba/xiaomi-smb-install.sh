@@ -32,7 +32,7 @@
 
 set -u
 
-BASE=${S7_BASE:-/userdisk/data/s7root}
+BASE=${S7_BASE:-/userdisk/data/.dev/live/samba}
 ADAPTER=${S7_ADAPTER:-$BASE/xiaomi-smb-adapter.sh}
 PORT=${S7_PORT:-1445}
 BIND=${S7_BIND:-192.168.3.2}

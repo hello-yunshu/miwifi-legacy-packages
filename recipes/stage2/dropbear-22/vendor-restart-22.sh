@@ -1,7 +1,7 @@
 #!/bin/sh
 # 演练原厂 stop/start 链：验证回退时 /etc/init.d/dropbear start 能把 22 拉回原厂。
 # 若 start 失败，脚本自行用原厂二进制兜底，避免把维护者关在门外。
-LOG=/userdisk/data/dropbear-2026.94/log/vendor-restart.log
+LOG=/userdisk/data/.dev/live/dropbear/log/vendor-restart.log
 V=/usr/sbin/dropbear
 exec >>"$LOG" 2>&1
 echo "[$(date)] vendor stop/start dry-run start"

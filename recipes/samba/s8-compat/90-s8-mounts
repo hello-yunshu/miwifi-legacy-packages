@@ -7,9 +7,9 @@ case "${ACTION:-}" in
 add|remove) ;;
 *) exit 0 ;;
 esac
-HOOK=/userdisk/data/s8compat/current/hook.sh
+HOOK=/userdisk/data/.dev/live/s8compat/current/hook.sh
 [ -x "$HOOK" ] || exit 0
-LOG=/userdisk/data/s8compat/logs/hotplug.log
+LOG=/userdisk/data/.dev/live/s8compat/logs/hotplug.log
 dev=${DEVPATH##*/}
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 logger -t s8compat -p daemon.info "block ${ACTION:-?} ${DEVPATH:-?} -> reload" 2>/dev/null || true
