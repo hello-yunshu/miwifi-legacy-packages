@@ -1,0 +1,43 @@
+== stop
+stopped (no live pidfile)
+== activate 1.0.7
+activated 1.0.7-r2d
+  prefix: /userdisk/data/samba-s2/root -> /userdisk/data/s7root/versions/1.0.7-r2d/root
+  rollback: 1.0.6-r2d (tree ok, not started)
+rc=0
+== start
+5
+2
+adapter: configuration drift accepted (S5_ACCEPT_CONFIG=1)
+started pid=13985 port=139 445
+registered samba-s5d (pid=13985)
+start rc=0
+== state
+/userdisk/data/s7root/versions/1.0.7-r2d/root
+previous=1.0.6-r2d
+/userdisk/data/s7root/versions/1.0.7-r2d/root
+== listen
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 13985/samba-s5d
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 13985/samba-s5d
+== chain
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== input
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== cron
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== diskacl
+diskacl_chain=present
+diskacl_jumps=2
+diskacl_legacy_chain=absent
+diskacl_legacy_jumps=0
+diskacl_guest=enforced
+diskacl_chain=s8-diskacl
+== rollback check
+already-installed 1.0.6-r2d

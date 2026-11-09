@@ -1,0 +1,85 @@
+== date
+Mon Nov  9 16:21:47 CST 2026
+== uptime -s
+ 16:21:47 up 17:44,  load average: 0.08, 0.05, 0.08
+== current
+/userdisk/data/s7root/versions/1.0.7-r2d/root
+== versions
+drwxr-xr-x    3 root     root          4096 Nov  9 03:09 /userdisk/data/s7root/versions/1.0.7-r2d/
+== previous
+(absent)
+== state
+-rw-r--r--    1 root     root            33 Nov  8 18:28 1.0.1-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 21:58 1.0.2-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  8 22:55 1.0.3-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 00:52 1.0.4-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 02:27 1.0.6-r2d.md5
+-rw-r--r--    1 root     root            33 Nov  9 03:10 1.0.7-r2d.md5
+-rw-r--r--    1 root     root           103 Nov  8 18:28 vendor-config.md5
+-rw-r--r--    1 root     root            60 Nov  8 18:28 vendor.md5
+== release
+-rw-r--r--    1 root     root      14308996 Nov  9 03:09 miwifi-smb-1.0.7-r2d.tar.gz
+== chain
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+== input
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+== input-v
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+ 9840 1329K s8-diskacl  tcp  --  br-lan *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445
+  861  105K s8-diskacl  udp  --  br-lan *       0.0.0.0/0            0.0.0.0/0            multiport dports 137,138
+    0     0 DROP       tcp  --  br-guest *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445
+ 533K  166M ACCEPT     tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 22,80,135:139,445 /* mixbox-firewall */
+ 617K  114M delegate_input  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+== cron
+*/3 * * * * /usr/sbin/ntpsetclock rand once >/dev/null 2>&1
+5 2 * * * /usr/sbin/crontab_record_camera.lua
+* * * * * /usr/sbin/startscene_crontab.lua `/bin/date "+%u %H:%M"`
+0 12 * * * /usr/sbin/recordscene_crontab.lua
+45 23 * * * /usr/sbin/points_sysset_pro.lua >/dev/null 2>&1
+0 20 * * * /usr/bin/stat_lan
+0 18 * * 1 /sbin/hdd_stat.sh sda
+0 10 * * * /usr/sbin/regularScanDiskDir.sh
+*/5 * * * * /sbin/disklogger.sh
+0 10 * * 1 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 636, \"push\": true}" >/dev/null 2>&1
+0 10 * * 6 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 104, \"push\": true}" >/dev/null 2>&1
+0 5 * * 3 /etc/init.d/web_filter_record restart >/dev/null 2>&1
+0 3 * * * /etc/init.d/sysapihttpd restart >/dev/null 2>&1
+5 3 * * * /usr/sbin/reset_svc.sh "etm" "20" "/etc/init.d/xunlei restart"
+0 8,19 * * * /usr/sbin/netdig.sh >/dev/null 2>&1
+
+49 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1
+*/1 * * * * /usr/sbin/ap_mode.sh check_gw
+10 22 * * * /usr/sbin/quarkd >/dev/null 2>&1
+0 */1 * * * /usr/sbin/qactive.sh >/dev/null 2>&1
+0 6 * * * /etc/mixbox/apps/filebrowser/scripts/filebrowser.sh restart #mixbox-cru
+*/10 * * * * /etc/mixbox/scripts/monitor.sh #mixbox-cru
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+== smbd
+ 1687 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+ 1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
+ 1699 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
+ 3683 root     27808 S    {smbd-scavenger} ./sbin/samba-s5d -D -s /userdisk/da
+ 4040 root     35576 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 7856 root     27612 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+== listen
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 7020 1687/samba-s5d
+== df
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sda1               931.2G    485.2G    446.0G  52% /userdisk/data
+rootfs                  107.9M     87.7M     20.1M  81% /
