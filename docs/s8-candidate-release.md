@@ -1,19 +1,23 @@
-# S8 候选发布清单（draft）
+# S8 候选发布清单
 
-日期：2026-11-08。状态：**release-candidate 草案，未签名**；本轮已完成干净环境复建（A/B 哈希一致）
-与发布包 install/upgrade/rollback/uninstall 实机验证。不对外发布。
+日期：2026-11-09。状态：**1.0.7-r2d 已实机安装并运行，未签名，不对外发布**。
+1.0.7 由 1.0.6 派生，Samba 载荷字节不变，只更新兼容层（访客网 SMB 拦截与自愈）。
+发布流程本身沿用 1.0.3 时代的结构；本文只把过期数据换成 1.0.7 的实测值，取不到的标注“未记录/待补”。
 
 ## 1. 版本与目标
 
 | 项 | 值 |
 | --- | --- |
 | 上游 | Samba 4.25.1 |
-| 发布版本 | `1.0.3-r2d`（包 `miwifi-smb-1.0.3-r2d.tar.gz`，SHA-256 `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848`；已构建并已实机安装） |
+| 发布版本 | `1.0.7-r2d`（包 `miwifi-smb-1.0.7-r2d.tar.gz`，14 308 996 B，SHA-256 `38c0cb1c14bedb88368a3d66172caca1e2430234a2fe534fe6324298e603fbf0`，MD5 `02f6918e9bef88743dc78d7519a2ca7b`；已实机安装） |
+| 与上一版差异 | 仅兼容层：`xiaomi-smb-adapter.sh`（新增 `br-guest` 的 TCP 139/445 无条件 DROP）、`diskacl-sync.sh`（每分钟健康检查与自愈）、`README-INSTALL.txt`；`payload/samba-tree.tar.gz` 字节不变（SHA-256 `0101e0a7d786c5b6ca5740720ff03cb6ba48ce0d45dd5473f54318f2e6eb2d58`，MD5 `0f6001010c84a016cd46f129dbe47388`） |
 | 源码 SHA-256 | `7f367545bca69aa96897628f82f0f04d4b66b3bcb36cb978b9bb952c4b4c428d`（43 590 836 B，`.tar.asc` 已用上游公钥验签） |
 | 目标设备 | 小米路由器 R2D，ROM 2.25.209，Linux 2.6.36 / uClibc 0.9.33.2 / ARMv7 soft-float |
-| 设备端安装前缀 | 设备当前 `versions/1.0.3-r2d/root`（2026-11-08 已安装，`previous=1.0.2-r2d`）；激活链接 `/userdisk/data/samba-s2/root` |
-| 运行态 | 独立树、独立 PID/锁/状态/日志；不覆盖 `/usr/sbin/samba_multicall` |
-| 适配器 | `recipes/samba/xiaomi-smb-adapter.sh` |
+| 设备端安装前缀 | `current -> /userdisk/data/s7root/versions/1.0.7-r2d/root`（2026-11-09 03:09 安装）；兼容层 `s8compat/current -> versions/v1` |
+| 版本标识 | 版本目录内只有 `root/`；包内 `VERSION` 不随载荷安装，设备侧以版本目录名与 `state/1.0.7-r2d.md5`（载荷 tar 的 MD5）识别 |
+| 运行态 | 独立树、独立 PID/锁/状态/日志；`samba-s5d` 监听 `192.168.3.2:139,445`，不覆盖 `/usr/sbin/samba_multicall` |
+| 适配器 | `recipes/samba/xiaomi-smb-adapter.sh`（设备 `versions/v1` 副本 MD5 `00ca962470ad328081dc98fd0219f5af`） |
+| 同步脚本 | `recipes/samba/s8-compat/diskacl-sync.sh`（设备副本 MD5 `2a00da5e6c6288629d7e5c7436d62692`，cron 每分钟） |
 
 ## 2. 构建环境
 
@@ -25,7 +29,7 @@
 | 编译参数 | `-Os -fPIC -march=armv7-a -mfloat-abi=soft` |
 | 关键开关 | `--disable-python --without-ad-dc --without-ads --without-ldap --without-pam --without-winbind --without-gpgme --without-regedit --without-systemd --bundled-libraries=ALL --disable-warnings-as-errors` |
 
-完整参数与失败处置见 [S1 干净构建记录](s1-clean-build.md)。
+`1.0.7-r2d` 未重新编译 Samba，直接复用 1.0.6 的载荷；构建参数与产物见 [S1 干净构建记录](s1-clean-build.md)。
 
 ## 3. 依赖与许可证
 
@@ -49,32 +53,29 @@
 | `samba-sdk-spawn.patch` | `sdk_spawn.h` / `local_np.c` / `queue_process.c` 进程创建适配 |
 | `gnutls-sdk-thread-local.patch` | 仅作用于 GnuTLS 源码，不在 Samba 树内 |
 
+补丁集合与 1.0.6 相同；1.0.7 未改 Samba 源码。
+
 ## 5. 发布产物与散列
 
-设备端可核对值（2026-11-08 15:3x）：
-
-| 产物 | 大小 | MD5 | SHA-256（仓库内文件） |
+| 产物 | 大小 | MD5 | SHA-256 |
 | --- | --- | --- | --- |
-| `miwifi-smb-1.0.3-r2d.tar.gz`（当前交付，已实机安装） | 14 299 319 B | `f305a1b94637afc8b4a9cd9b359d6c32` | `bbb6ff924c799f0b419d46e4e24e593deb2fd5a746c194f7c31c2dfa75131848` |
-| `miwifi-smb-1.0.2-r2d.tar.gz`（**已作废/被 1.0.3-r2d 取代**） | 14 299 118 B | `bc10176f3d66aa9a412a4882f94f57e4` | `07d5eb5083bf3817e177b9135b0dfe32ddbeae6ed5014326cfeec593a5f037d3` |
-| `miwifi-smb-1.0.1-r2d.tar.gz`（**已作废/被 1.0.2-r2d 取代**） | — | — | `cf4491148c47964619509a01865f25c0c8a1f5549c20181caf732d46ee8085ff` |
-| `miwifi-smb-1.0.0-r2d.tar.gz`（**已作废/被取代**） | — | — | `ce4684b20472191da1debe647fe18f39b69ce78f578b31556affa61b5151fe9b` |
+| `miwifi-smb-1.0.7-r2d.tar.gz`（当前交付，已实机安装） | 14 308 996 B | `02f6918e9bef88743dc78d7519a2ca7b`（本地与设备一致） | `38c0cb1c14bedb88368a3d66172caca1e2430234a2fe534fe6324298e603fbf0` |
+| `payload/samba-tree.tar.gz` | 14 397 433 B | `0f6001010c84a016cd46f129dbe47388`（设备 `state/1.0.7-r2d.md5` 同值） | `0101e0a7d786c5b6ca5740720ff03cb6ba48ce0d45dd5473f54318f2e6eb2d58` |
+| `miwifi-smb-1.0.6-r2d.tar.gz`（回滚用，仅本地保留） | 14 307 338 B | `b19d355c8f5c1fa0f3f67e542b15876d` | `f2285da6cb6c236cf6ea9c8754c62e3788e88f8acbeb2af005bb3d4401b372c1` |
 | `<root>/sbin/smbd` | 81 546 B | `52e105576e190ab6b977be419b3144fe` | 设备无 sha256sum，未记录 |
-| `<root>/sbin/samba-s5d` | 81 546 B | `52e105576e190ab6b977be419b3144fe` | 由适配器在首次 start 时从 `smbd` 复制生成 |
+| `<root>/sbin/samba-s5d` | 81 546 B | `52e105576e190ab6b977be419b3144fe` | 由适配器首次 start 时从 `smbd` 复制生成 |
 | `<root>/sbin/nmbd` | 253 126 B | `2283bda9f01dfa719ad276af28b655a0` | 设备无 sha256sum，未记录 |
-| `xiaomi-smb-adapter.sh` | 26 800 B | `f106c788052402fc4fb7dc2614543fd3` | `0357f7eb2c0aa48cfb9a5e10e83762b2a7d9193326e1551ef4b7e43609da2b42` |
-| `s8-compat/hook.sh` | 2 143 B | `19fa4ad37729cf4d663d06f0a77d493f` | `7a455c2d9c4860d48ffc2a7796652cc7210530af308fa109f6c2461dba4da989` |
-| `s8-compat/samba.init.wrapper` | 2 145 B | `03e596af3763e1164b5426cfe56fa25d` | `e21a1f1ef23baefce8138a09cd35f0159150300a2f80dc969ff646011804ec97` |
-| `s8-compat/install.sh` | 5 544 B | `b5d4e0049500b8a2d68941339d893c6c` | `fff4f6b97cbd4e7c41353927293c1702e57374603f9d648be75f75e71fd1a191` |
-| `s8-compat/90-s8-mounts` | 995 B | `861b98d819203e239228478f52fb8a5f` | `2d579477336ca52905d2b0656e6cb0ae15143b8ab55c225a704fc48cf66bc944` |
-| `install-release.sh` | 4 683 B | `80e9fffe4216f76298a1e5d46508cfd4` | `821bef98863140b289cf7957f82bb7c66ceff47986cb4e546dd6c4871a9b8339` |
+| `compat/xiaomi-smb-adapter.sh` | 44 433 B | `00ca962470ad328081dc98fd0219f5af` | `dae67b6ecbbf02faf5a5625153e2c2d13b737ca58483dd1f8e7a04e66c3efac9` |
+| `compat/diskacl-sync.sh` | 4 274 B | `2a00da5e6c6288629d7e5c7436d62692` | `53ffbf6d568c84fe83d21f5906934a0d8d342d4c5f9207ef1ebd98279723ef0c` |
+| `compat/hook.sh` | 2 143 B | `19fa4ad37729cf4d663d06f0a77d493f` | `7a455c2d9c4860d48ffc2a7796652cc7210530af308fa109f6c2461dba4da989` |
+| `compat/samba.init.wrapper` | 2 145 B | `03e596af3763e1164b5426cfe56fa25d` | `e21a1f1ef23baefce8138a09cd35f0159150300a2f80dc969ff646011804ec97` |
+| `compat/install.sh` | 7 146 B | `46c8350493d7382dcd43a1c45527746c` | `907022c1d29c98f3d279a7fc77e2e5cdec8cdab26995a214c24ea4351afa4814` |
+| `compat/90-s8-mounts` | 995 B | `861b98d819203e239228478f52fb8a5f` | `2d579477336ca52905d2b0656e6cb0ae15143b8ab55c225a704fc48cf66bc944` |
+| `install-release.sh` | 5 263 B | `90644f0f18e6df24aad5079ca75fefd2` | `6bd05049962118469a3c3ff09ee4173073fffc679d34b33af6ac0bd4f9fcc9e6` |
+| `xiaomi-smb-install.sh` | 8 761 B | `11b16106a9f7a610503883f4f46dbefe` | `8b5d928e0ddc7fe7fa9683600ae1bcc83348427b3e5f4ad2e86e8b2eb0c9cd58` |
 
-`smbd` 的 MD5 在 2026-11-08 的干净复建（A 构建）中与设备值一致；`samba-s5d` 是适配器
-启动时从 `smbd` 复制出来的同内容文件，不是独立产物。
-
-设备端无 `sha256sum`，只记录 MD5；发布包附 SHA-256 时以仓库内文件为准。
-
-兼容层的 `MANIFEST` 只覆盖 `hook.sh`、`xiaomi-smb-adapter.sh`、`samba.init.wrapper` 三项，**不覆盖** `samba-s5d`、`nmbd` 与私有库；“`md5sum -c` 三项 OK”不能当作整棵运行树校验通过。
+设备端无 `sha256sum`，设备侧只核对 MD5；SHA-256 以仓库内文件为准。兼容层 `MANIFEST.md5`
+本次未逐项核对覆盖范围（**待补**），不能把“`md5sum -c` 通过”当作整棵运行树校验通过。
 
 ## 6. 客户端与设备矩阵（已知）
 
@@ -85,6 +86,7 @@
 | Linux `smbclient` | SMB2/3 | 合成读写、签名、加密通过 |
 | 真实摄像机 | SMB1/固定 445 | **未验证** |
 | Emby | 非标端口 | **未验证** |
+| 访客网客户端 | SMB | **BLOCKED**（本机无法创建访客 BSS，详见 §10） |
 
 ## 7. 资源观测（摘要）
 
@@ -95,9 +97,11 @@
 ## 8. 验证方式
 
 ```sh
-# 1. 散列
-md5sum <root>/sbin/samba-s5d        # 52e105576e190ab6b977be419b3144fe
-md5sum xiaomi-smb-adapter.sh        # f106c788052402fc4fb7dc2614543fd3
+# 1. 散列（设备端）
+md5sum <root>/sbin/samba-s5d                        # 52e105576e190ab6b977be419b3144fe
+md5sum /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh   # 00ca962470ad328081dc98fd0219f5af
+md5sum /userdisk/data/s8compat/versions/v1/diskacl-sync.sh         # 2a00da5e6c6288629d7e5c7436d62692
+md5sum /userdisk/data/release/miwifi-smb-1.0.7-r2d.tar.gz           # 02f6918e9bef88743dc78d7519a2ca7b
 
 # 2. 二进制版本（必须带上私有库路径）
 LD_LIBRARY_PATH=<root>/lib:<root>/lib/private <root>/sbin/samba-s5d --version
@@ -105,47 +109,56 @@ LD_LIBRARY_PATH=<root>/lib:<root>/lib/private <root>/sbin/samba-s5d --version
 # 3. 隔离与配置
 ./xiaomi-smb-adapter.sh -r <root> check      # isolation=OK, config_drift=no
 
-# 4. 实例状态
-./xiaomi-smb-adapter.sh -r <root> -p 1445 status
+# 4. 实例与磁盘访问状态（生产用 139/445，不是默认 1445）
+./xiaomi-smb-adapter.sh -r <root> -p "139 445" status
+./xiaomi-smb-adapter.sh -r <root> diskacl-status
 ```
 
-`status` 退出码：0 运行、1 degraded、3 未运行、4 PID 文件异常/不属于本树、5 端口被其它进程占用。`stop` 在无 pidfile、stale PID 或正常 kill 后都会等待端口释放，仍占用返回 5（2026-11-08 审计修复）。
+`status` 退出码：0 运行、1 degraded、3 未运行、4 PID 文件异常/不属于本树、5 端口被其它进程占用。
+`diskacl-status` 应给出 `chain=present jumps=2 legacy_chain=absent guest=enforced`。
 
 ## 9. 安装 / 升级 / 卸载 / 回滚
 
-- 安装与升级：`recipes/samba/xiaomi-smb-install.sh`（版本目录 + 激活链接 + 编译前缀断言 + 幂等）。
-- 版本号：包名与 `VERSION` 使用 `<semver>-r2d`（如 `1.0.2-r2d`），版本目录名与之一致；同版本号不同字节禁止复用。
-- 从 `1.0.1-r2d` 就地升级到 `1.0.2-r2d` 已验证：`/etc/config/samba` 未改、UCI 段未重写、hotplug 入口 md5 一致、兼容层仍为 `versions/v1`、`MANIFEST.md5` 校验通过。
+- 安装与升级：`install-release.sh upgrade`（版本目录 + 激活链接 + 编译前缀断言 + 幂等），底层调用 `xiaomi-smb-install.sh`。
+- 版本号：包名与 `VERSION` 使用 `<semver>-r2d`，版本目录名与之一致；同版本号不同字节禁止复用。
+- 已测升级链：`1.0.1→1.0.2→1.0.3→1.0.4→1.0.6→1.0.7`，其中 1.0.6→1.0.7 是就地升级，`/etc/config/samba` 未改、UCI 段未重写、兼容层仍为 `versions/v1`。
 - 卸载：`xiaomi-smb-install.sh uninstall`，保留 `/etc/config` 与原厂二进制。
-- 回滚：`/userdisk/data/s8compat/install.sh rollback`（停止新版 → `current -> v0-vendor` → 原厂 init 全链路）。原厂哈希基线见 [S7](s7-switch-rollback.md)。
+- **回滚（现状已变化）**：2026-11-09 清理后，设备只保留现役 1.0.7；`state/previous` 已删除，旧版本目录与 `release/` 旧包均已移除。因此 `install-release.sh rollback` 与 `xiaomi-smb-install.sh rollback` 会直接返回 6（`no previous version recorded`），不会切换 `current`。**当前回滚 = 从本地 `s8-release/miwifi-smb-1.0.6-r2d.tar.gz` 重新上传并安装**（哈希见 §5），再用 `activate` 指回。
+- 原厂回退：`/userdisk/data/s8compat/install.sh rollback`（停止新版 → `current -> v0-vendor` → 原厂 init 全链路）。原厂哈希基线见 [S7](s7-switch-rollback.md)。
 - 139/445 接管：开机与 App 入口由兼容层负责，见 [S8 替换与接管](s8-taskmonitor-replacement.md)；手动演练仍可用 `adapter vendor-stop` → `adapter -P -p "139 445" start`。
 
 ## 10. 已知限制与阻断
 
 | 项 | 状态 |
 | --- | --- |
-| 设备重启后的持久性与 445 归属 | **已关闭**：两次重启后均为 `samba-s5d` 监听 139/445（6336、6377；审计复测 6861、6216，收尾 23809），**没有原厂 smbd 进程**（`/usr/sbin/smbd` 是 `samba_multicall` 的符号链接，判据为 cmdline + exe），见 [S8 替换与接管](s8-taskmonitor-replacement.md#62-两次重启结果) |
-| 已有挂载的 USB 共享识别 | **已修**：`render()` 增加挂载派生层（读 `/proc/mounts` 的 `/extdisks/<dev>`，UCI 优先、幂等、不回写 UCI），新增 `/etc/hotplug.d/block/90-s8-mounts` 独立触发 reload；离线 14 用例/31 断言、设备 busybox 同样 0 失败，设备 live 模式 1 用例/5 断言合成 `[XiaoMi-usb0]`。证据见 [发布就绪复核](release-readiness-2026-11-08.md) §2.7 / 决策 D-S8-33、D-S8-34 |
-| 真实 USB 热插拔 | **已通过**（2026-11-08，单口设备 + SanDisk Extreme Pro 128 G / Ventoy 双分区）：插入 5 s/5 s（≤15 s）、拔出 9.6 s（≤15 s）、重插 14 s（≤20 s，物理插入起 18 s）；`samba-s5d` pid 8906 三次事件未换；无重复段/悬空路径/半更新；六次 hotplug 均为 `90-s8-mounts` 幂等跟随、原厂 `shareUpdate` 实际生效。证据见 [发布就绪复核](release-readiness-2026-11-08.md) §2.7 / 决策 D-S8-38 |
-| 固件 OTA 覆盖适配路径 | BLOCKED |
-| 真实跨版本升级 | 已实测包内升级：1.0.0→1.0.1、1.0.1→1.0.2（`upgrade → rollback → install`，UCI 未变、hotplug/兼容层无漂移）；设备不在真实旧固件上，不涉及固件侧升级 |
+| 按设备磁盘访问（`macfilter.lan`） | **已生效**：`s8-diskacl` 8 条 DROP + `RETURN`，两条 INPUT 跳转；`yes→no` 约 10 秒、`no→yes` cron 约 22 秒（上限 60 秒），见 [diskacl.md](diskacl.md) |
+| 访客网 SMB（TCP 139/445） | **规则已强制**：`-i br-guest -p tcp -m multiport --dports 139,445 -j DROP` 位于原厂无接口限定 ACCEPT 之前；删除后 cron 约 50 秒重建。**端到端未验证（BLOCKED）**：Broadcom 驱动 `WLC_SET_VAR(bss)` 失败，`wl1.2` 无法创建，`br-guest` 无成员 |
+| 访客 UDP 137/138 | 由原厂 `zone_guest` 拒绝，本项目未重复添加规则 |
+| 1.0.7 安装后整机冷启动 | **未验证（待补）**：现有证据覆盖安装、`samba restart`、cron 同步，不覆盖重启后的 `br-guest` 创建顺序、cron 行持久与 iptables 恢复 |
+| 回滚目标 | **已移除**：`state/previous` 于 2026-11-09 删除；旧版本目录与 `release/` 旧包已清理，回滚改为本地 1.0.6 重装（见 §9） |
+| 设备重启后的 139/445 归属 | 1.0.6 时代两次重启后均为 `samba-s5d` 监听；1.0.7 载荷未变，但未重跑 |
+| 已有挂载的 USB 共享识别 | 1.0.6 时代已修（挂载派生层 + `90-s8-mounts`），1.0.7 载荷未变，未重跑 |
+| 真实 USB 热插拔 | 1.0.6 时代已通过（单口设备 + SanDisk 128 G 双分区）；1.0.7 未重跑 |
+| 固件 OTA 覆盖适配路径 | BLOCKED（2.24.11 rootfs 无 SSH 服务端，会自我锁死） |
+| 真实跨版本升级 | 已实测包内升级；设备不在真实旧固件上，不涉及固件侧升级 |
 | 真实摄像机 | BLOCKED（无设备） |
 | Emby 非标端口 | BLOCKED（语义未知） |
 | 原厂 445 吞吐基线 / 原厂撤销对照 | BLOCKED（MAC/凭据门控） |
-| IPv6 | 已实测：二进制支持（测试实例 `interfaces = ::1`、1445 监听成功）；生产未启用，设备只有 link-local，无全局地址 |
+| IPv6 | 二进制支持；生产未启用，设备只有 link-local。`s8-diskacl` 与访客规则均为 IPv4 `iptables`，未覆盖 IPv6 |
 | 发布签名 | 未完成（无密钥与签名流程）；明确列为发布前置条件 |
-| 本轮干净环境复建 | 已完成：A `1049 s` / B `1077 s`，`smbd`、`smbclient`、`libsmbd-base-private-samba.so`、GnuTLS/nettle/gmp 哈希一致，`smbd`/`nmbd` 与设备一致（见 [发布就绪复核](release-readiness-2026-11-08.md) §1） |
+| 干净环境复建 | 1.0.6 时代已完成：A `1049 s` / B `1077 s`，`smbd`/`nmbd` 与设备一致；1.0.7 仅兼容层变化，未重新构建 |
 
-## 11. RC 门槛
+## 11. RC 门槛（1.0.7）
 
-- [x] 独立目录部署、哈希基线、可回滚
-- [x] macOS SMB3 枚举/挂载（1445 与 445）
-- [x] TaskMonitor 替换边界（33–34 条动态清单、server 缺位实测、版本化兼容层、回滚）
-- [x] 配置源漂移守卫（手动路径 fail-closed；hook 启动/重载记录后接受）
-- [x] 重启后 139/445 归属（两次重启 + 审计复测）与 App 入口路径（入口级）
-- [x] 干净环境复建产物与本清单散列一致（`smbd` `52e10557…`、`nmbd` `2283bda9…`，A/B 一致）
-- [x] 真实 USB 拔插三阶段（插入/拔出/重插，单口设备 + SanDisk 128 G 双分区；见 §10）
+- [x] 1.0.7-r2d 实机安装：`current -> versions/1.0.7-r2d/root`，`samba restart` 后 pid 迁移、139/445 仍归 `samba-s5d`
+- [x] 磁盘访问链未退化：8 DROP + 1 RETURN，`jumps=2`，`legacy_chain=absent`
+- [x] 访客规则位置正确：`br-guest` DROP 在原厂 ACCEPT 之前；`guest=enforced`
+- [x] cron 自愈：手动删除访客规则后约 50 秒恢复
+- [x] 离线回归：32 cases / 135 assertions / 0 failures（sh、dash、busybox 1.36、设备 busybox 1.19.4）
+- [x] 发布包散列：设备 tar MD5 与本地一致；`install-release.sh verify` 通过
+- [ ] 访客端到端（真实访客客户端访问 139/445 被拒）
+- [ ] 1.0.7 安装后整机冷启动
 - [ ] 签名与验证链
 - [ ] 真实 App/云端、OTA、摄像机、Emby 场景
 
-审计完成度与逐项证据见 [2026-11-08 审计](audit-2026-11-08.md)。
+证据索引：[docs/evidence/2026-11-09-diskacl/](evidence/2026-11-09-diskacl/)；逐项设计见 [decisions.md](decisions.md) D-S9-01…11。
