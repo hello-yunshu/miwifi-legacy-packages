@@ -27,7 +27,7 @@
 | `b3-nmbd-deploy.txt` | nmbd 切换与验证：pid/exe、137/138、139/445、INPUT、链计数、cron、`diskacl-status`、`nmblookup -A`、`smbclient -L`、macOS `smbutil` | 名称 `XIAOMI_8041<00/03/20>`、`WORKGROUP<00/1e>`；共享可枚举 |
 | `b1-dropbear-deploy.txt` | 候选 Dropbear 2222 启动、`/etc/dropbear` 与 `/tmp/dbkeys` 两种 key 目录、认证失败日志、清理 | `/etc` 775 组可写；`/` 属主 1000；无可用修法，BLOCKED |
 | `b2-b4-deploy.txt` | `miDebug.sh` 切换后 md5 与 CURL 行、`mitvapp` 未切换、MiniDLNA App 状态与端口 | curl 仅覆盖显式 HTTP 调用方；MiniDLNA 未部署 |
-| `cross-check.txt` | 发布包 md5/sha256、`state/*.md5`、设备二进制 md5、兼容层 `MANIFEST` 校验、`install.log`、nmbd 日志 | 载荷 `0f600101…`；`smbd 52e10557…`、`nmbd 2283bda9…`；MANIFEST 4/4 OK |
+| `cross-check.txt` | 发布包 md5/sha256、解包后 `MANIFEST.md5`/`SHA256SUMS`（11/11）、`state/*.md5`、设备二进制 md5、兼容层 `MANIFEST` 校验、`install.log`、nmbd 日志 | 载荷 `0f600101…`；`smbd 52e10557…`、`nmbd 2283bda9…`；设备 MANIFEST 4/4、发布包 11/11 OK |
 | `samba.init.orig` / `samba.init.new` / `samba.init.diff` | 切换前后 `/etc/init.d/samba` 与差异 | 仅 nmbd 启停入口变化，私有优先、原厂兜底 |
 | `miDebug.sh.new` | 安装后的 `miDebug.sh` | 增加 `CURL` 变量与 `-x` 兜底 |
 
