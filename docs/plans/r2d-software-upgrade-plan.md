@@ -106,7 +106,7 @@ A1 是正式候选，不是政策附注：上游一旦发布新 stable 或影响
 - 自愈脚本（`recipes/stage2/dropbear-22/`）：`takeover-22.sh`（停原厂 → 起新实例 → banner 校验 → 回环公钥实测 → 写标记）、`watchdog-22.sh`（独立 BusyBox 看护，deadline 无标记即调回退）、`rollback-22.sh`（按 pidfile/端口清理非原厂实例 → 还原原厂 init/config → 启动原厂 → 校验 22 归属）。
 - 判定：接管后只有 banner `dropbear_2026.94` 与回环公钥 `AUTH_OK` 同时成立才写标记；任一步失败立即回退，看护独立兜底。没有这套机制就不接管 22。
 
-**验证顺序**：构建机产出 → 隔离端口 2223 成功/强制失败双演练 → 备份 → 窗口内接管 + 看护 → LAN 重登/管理面/端口归属 → 原厂 stop/start 链与完整回退实测 → 冷启动复查端口归属（本轮未做整机重启，见 §11）。
+**验证顺序**：构建机产出 → 隔离端口 2223 成功/强制失败双演练 → 备份 → 窗口内接管 + 看护 → LAN 重登/管理面/端口归属 → 原厂 stop/start 链与完整回退实测 → 冷启动复查端口归属（2026-11-10 01:45 已完成真实 `reboot`，见 §11）。
 
 ### 2.4 B2：curl
 
@@ -509,7 +509,7 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 |---|---|---|---|
 | A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留（保留/隐藏/删除）仍未决策，属 A0 剩余项，需单独递增版本窗口 |
 | A1 | Samba 上游维护 | **未触发** | 上游 stable 仍 4.25.1，无部署对象 |
-| B1 | Dropbear 2026.94 | **PASS（22 已接管）** | 原厂二进制/配置/host key/authorized_keys/init 先做字节备份并 `md5sum -c` 校验（`/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`）。隔离 2223 双演练：成功路径写标记；强制失败路径由独立看护 15 s 到点杀掉新实例、22 保持原厂。22 接管后 banner `dropbear_2026.94`、既有公钥登录成功、`/proc/<pid>/exe` 指向私有树、认证方法 `publickey,password`、LuCI 200、SMB 未变；`/etc/init.d/dropbear` wrapper 的标记开/关 stop/start 与 `rollback-22.sh` 完整回退均实测。**未做整机重启**，冷启动挂载顺序未验证。见 [证据](../evidence/2026-11-10-b1-takeover/README.md) |
+| B1 | Dropbear 2026.94 | **PASS（22 已接管，含冷启动）** | 原厂二进制/配置/host key/authorized_keys/init 先做字节备份并 `md5sum -c` 校验（`/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`）。隔离 2223 双演练：成功路径写标记；强制失败路径由独立看护 15 s 到点杀掉新实例、22 保持原厂。22 接管后 banner `dropbear_2026.94`、既有公钥登录成功、`/proc/<pid>/exe` 指向私有树、认证方法 `publickey,password`、LuCI 200、SMB 未变；`/etc/init.d/dropbear` wrapper 的标记开/关 stop/start 与 `rollback-22.sh` 完整回退均实测。**2026-11-10 01:45 真实 `reboot`**：约 50 s 恢复，`/userdisk/data` 于 16.66 s 挂载、dropbear 37.29 s 启动，冷启动后 22 仍为 2026.94（未回退），host key 指纹与公钥登录正常；Samba/nmbd/ACL/cron/LuCI 无退化。见 [证据](../evidence/2026-11-10-b1-takeover/coldboot.md) |
 | B2 | curl 8.23.0 | **部分覆盖（全量替换不可行）** | `miDebug.sh` 已切；`mitvapp` 的 `localhost:` URL 无法用 `--proto-default`/`--proto =http` 覆盖（实测 http=000），只有改写调用方为 `http://` 才等价；`helper.sh` 的 `-skL` 依赖 HTTPS，私有 curl 仅 `Protocols: http`；`wifishare.sh`、`netspeed` 位于只读 `/usr`，PATH 全为只读目录，无法 shim。见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |
 | B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
 | B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
