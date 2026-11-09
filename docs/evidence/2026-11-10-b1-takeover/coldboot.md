@@ -54,7 +54,7 @@ host key: SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus（与重启前一�
 | `diskacl-sync` cron | 存在：`* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh … # s8-diskacl` |
 | `s8-diskacl` 链 | 8 条 MAC DROP + `RETURN` |
 | INPUT 跳转 | 第 2/3 条为 TCP/UDP 跳 `s8-diskacl`；第 4 条为 `br-guest` 139/445 DROP |
-| `diskacl-status` | `chain=present jumps=2 legacy_chain=absent guest=enforced` |
+| `sh /userdisk/data/s7root/xiaomi-smb-adapter.sh -r … diskacl-status` | `chain=present jumps=2 legacy_chain=absent guest=enforced`（**摘要**：原文为 14 行 `diskacl_*=`，见 `coldboot-post.txt` 第 67 行起；该命令是适配器子命令，非独立命令，见 [来源核查](../../audits/diskacl-status-provenance-2026-11-10.md)） |
 | LuCI | `GET /cgi-bin/luci` = 200 |
 | 22 / 80 | 22 归 2026.94；80 归 `sysapihttpd` |
 
