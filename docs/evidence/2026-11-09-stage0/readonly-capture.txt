@@ -1,0 +1,768 @@
+
+===== identity =====
+Mon Nov  9 14:29:34 CST 2026
+Linux XiaoQiang 2.6.36 #3 MiWiFi-R2D-2.25.209 SMP PREEMPT Tue Oct 16 11:45:02 UTC 2018 armv7l GNU/Linux
+ 14:29:34 up 15:51,  load average: 0.11, 0.08, 0.05
+
+--- /etc/openwrt_release ---
+DISTRIB_ID="OpenWrt"
+DISTRIB_RELEASE="Attitude Adjustment"
+DISTRIB_REVISION="unknown"
+DISTRIB_CODENAME="attitude_adjustment"
+DISTRIB_TARGET="brcm4709/R2D"
+DISTRIB_DESCRIPTION="OpenWrt Attitude Adjustment 12.09.1"
+
+--- /proc/version ---
+Linux version 2.6.36 (jenkins@48251e92e4b1) (gcc version 4.8.2 20130603 (prerelease) (crosstool-NG 1.19.0) ) #3 MiWiFi-R2D-2.25.209 SMP PREEMPT Tue Oct 16 11:45:02 UTC 2018
+
+--- /proc/uptime ---
+57107.58 107990.82
+
+===== storage =====
+rootfs on / type rootfs (rw)
+none on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+none on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+none on /dev type devtmpfs (rw,relatime,size=126612k,nr_inodes=31653,mode=755)
+tmpfs on /tmp type tmpfs (rw,nosuid,relatime,size=101780k,mode=755)
+/dev/ubi1_0 on / type ubifs (ro,noatime,bulk_read,no_chk_data_crc,compr=none)
+devpts on /dev/pts type devpts (rw,noatime,mode=600)
+tmpfs on /extdisks type tmpfs (rw,nosuid,relatime,size=101780k,mode=755)
+/dev/ubi2_0 on /data type ubifs (rw,noatime,bulk_read,compr=none)
+/dev/ubi2_0 on /userdisk type ubifs (rw,noatime,bulk_read,compr=none)
+/dev/sda1 on /userdisk/data type ext4 (rw,noatime,barrier=1,data=ordered)
+/dev/ubi2_0 on /etc type ubifs (rw,noatime,bulk_read,compr=none)
+none on /dev/cgroup/mem type cgroup (rw,relatime,memory)
+none on /dev/cgroup/net_cls type cgroup (rw,relatime,net_cls)
+/dev/sdb1 on /extdisks/sdb1 type tntfs (rw,noatime,uid=0,gid=0,umask=00,nls=utf8,min_prealloc_size=64k,max_prealloc_size=976727036,readahead=1M,user_xattr,case_sensitive,fail_safe,hidden=show,dotfile=show,errors=continue,mft_zone_multiplier=1)
+Filesystem           1K-blocks      Used Available Use% Mounted on
+rootfs                  110440     89852     20588  81% /
+none                    126612         0    126612   0% /dev
+tmpfs                   101780      1620    100160   2% /tmp
+/dev/ubi1_0             110440     89852     20588  81% /
+tmpfs                   101780      1620    100160   2% /extdisks
+/dev/ubi2_0             208956     64248    139872  31% /data
+/dev/ubi2_0             208956     64248    139872  31% /userdisk
+/dev/sda1            976458860 508752236 467706624  52% /userdisk/data
+/dev/ubi2_0             208956     64248    139872  31% /etc
+/dev/sdb1            976727036 419520948 557206088  43% /extdisks/sdb1
+
+===== listeners =====
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       in out PID/Program name    
+tcp        0      0 0.0.0.0:8384            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8192            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9088          0.0.0.0:*               LISTEN       0 8280 6804/indexservice
+tcp        0      0 127.0.0.1:8960          0.0.0.0:*               LISTEN       0 0 5799/fcgi-cgi
+tcp        0      0 0.0.0.0:8385            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8193            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8194            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8098            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9090          0.0.0.0:*               LISTEN       0 18720 7002/datacenter
+tcp        0      0 0.0.0.0:8899            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8195            0.0.0.0:*               LISTEN       0 8220 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8387            0.0.0.0:*               LISTEN       0 0 18971/hiapk2
+tcp        0      0 127.0.0.1:9091          0.0.0.0:*               LISTEN       0 8940 9912/plugincenter
+tcp        0      0 0.0.0.0:8196            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8197            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:1990        0.0.0.0:*               LISTEN       0 52 7620/wps_monitor
+tcp        0      0 0.0.0.0:8198            0.0.0.0:*               LISTEN       0 0 5818/mihttpd.conf
+tcp        0      0 0.0.0.0:8999            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:7080            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:9096          0.0.0.0:*               LISTEN       0 56940 11985/smartcontroll
+tcp        0      0 0.0.0.0:9097            0.0.0.0:*               LISTEN       0 0 6804/indexservice
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 1200 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN       0 60 7092/himan
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 31980 6121/dropbear
+tcp        0      0 127.0.0.1:8920          0.0.0.0:*               LISTEN       0 60 6513/fcgi-cgi
+tcp        0      0 0.0.0.0:5081            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 127.0.0.1:5916          0.0.0.0:*               LISTEN       0 0 7673/acsd
+tcp        0      0 0.0.0.0:8380            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8188            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 3780 1687/samba-s5d
+tcp        0      0 0.0.0.0:8381            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8382            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8190            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8383            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:8191            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6121/dropbear
+udp        0      0 0.0.0.0:42000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:42000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 127.0.0.1:42032         0.0.0.0:*                            0 0 7673/acsd
+udp        0      0 127.0.0.1:40500         0.0.0.0:*                            0 0 7620/wps_monitor
+udp        0      0 0.0.0.0:1900            0.0.0.0:*                            20584142 92684 7620/wps_monitor
+udp        0      0 0.0.0.0:38000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:38000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 24387541 7586/eapd
+udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 24404206 6364/eapd
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            18962 0 2071/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            19040 23136 2071/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            18962 360 2071/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            41494 0 2071/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 15696 2071/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            41494 0 2071/nmbd
+udp        0      0 127.0.0.1:38032         0.0.0.0:*                            0 0 7565/nas
+udp        0      0 0.0.0.0:3478            0.0.0.0:*                            0 0 6389/stunserver
+udp        0      0 127.0.0.1:37064         0.0.0.0:*                            43558162 0 7620/wps_monitor
+udp        0      0 0.0.0.0:45000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:45000           0.0.0.0:*                            0 0 6364/eapd
+udp        0      0 0.0.0.0:988             0.0.0.0:*                            248 453 12549/xqbc
+udp        0      0 127.0.0.1:45032         0.0.0.0:*                            0 0 7601/bcm_bsd
+udp        0      0 0.0.0.0:43000           0.0.0.0:*                            0 0 7586/eapd
+udp        0      0 0.0.0.0:43000           0.0.0.0:*                            0 0 6364/eapd
+
+===== client_mac_mapping =====
+ssh_client_ip=192.168.3.176
+192.168.3.176    0x1         0x2         5c:9b:a6:95:d0:07     *        br-lan
+
+===== target_processes =====
+pid=1687 comm=samba-s5d exe=/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+
+  argv=./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/log 
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libcrypt-0.9.33.2.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubacktrace-0.9.33.2.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libdcerpc-binding.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libgmp.so.10.5.0
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libgnutls.so.30.42.0
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libhogweed.so.6.11
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libndr-krb5pac.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libndr-nbt.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libndr-standard.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libndr.so.6.1.0
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libnettle.so.8.11
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libsamba-errors.so.1.0.0
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libsamba-passdb.so.0.30.0
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libsamba-util.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libsmbconf.so.0.0.1
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/libwbclient.so.0.16
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libCHARSET3-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libMESSAGING-SEND-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libMESSAGING-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libREG-FULL-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libaddns-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libasn1-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libasn1util-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libauth-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libauthkrb5-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-cldap-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-ldap-common-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-ldap-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-nbt-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-smb-common-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcli-spoolss-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcliauth-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libclidns-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcluster-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcmdline-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcom-err-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libcommon-auth-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libdbwrap-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libdcerpc-samba-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libflag-mapping-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libgenrand-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libgensec-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libgse-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libgssapi-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libhcrypto-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libheimbase-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libhx509-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libinterfaces-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libiov-buf-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libkrb5-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libkrb5samba-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libldb-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libldbsamba-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/liblibcli-lsa3-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/liblibcli-netlogon3-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/liblibsmb-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libmessages-dgm-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libmessages-util-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libmsghdr-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libmsrpc3-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libndr-samba-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libndr-samba4-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libnetif-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libngtcp2-crypto-gnutls-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libngtcp2-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libnpa-tstream-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libpopt-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libreplace-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libroken-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-cluster-support-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-credentials-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-debug-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-hostconfig-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-modules-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-security-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-security-trusts-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba-sockets-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamba3-util-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamdb-common-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsamdb-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsecrets3-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libserver-id-db-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libserver-role-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsmbd-base-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsmbd-shim-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsocket-blocking-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libstable-sort-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libsys-rw-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtalloc-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtalloc-report-printf-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtdb-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtdb-wrap-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtevent-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtevent-util-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libtime-basic-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libutil-reg-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libutil-setid-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libutil-tdb-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/lib/private/libwind-private-samba.so
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/brlock.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/gencache.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/leases.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/locking.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/names.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbXsrv_client_global.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbXsrv_open_global.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbXsrv_session_global.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbXsrv_tcon_global.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbXsrv_version_global.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/lock/smbd_cleanupd.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/private/secrets.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/state/account_policy.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/state/group_mapping.tdb
+  map: /userdisk/data/s7root/versions/1.0.7-r2d/root/var/state/share_info.tdb
+pid=2071 comm=nmbd exe=/usr/sbin/samba_multicall
+
+  argv=/usr/sbin/nmbd -D 
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libcrypt-0.9.33.2.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libresolv-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubacktrace-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /tmp/lock/messages.tdb
+  map: /tmp/lock/serverid.tdb
+  map: /usr/lib/libaio.so.1.0.1
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/samba_multicall
+pid=27445 comm=dropbear exe=/usr/sbin/dropbear
+
+  argv=/usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22 
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libcrypt-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libutil-0.9.33.2.so
+  map: /usr/sbin/dropbear
+pid=5818 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: master process /usr/sbin/sysapihttpd -c /etc/mihttpd/mihttpd.conf
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+pid=5819 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: worker process                              
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+pid=5820 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: worker process                              
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+pid=6121 comm=dropbear exe=/usr/sbin/dropbear
+
+  argv=/usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22 
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libcrypt-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libutil-0.9.33.2.so
+  map: /usr/sbin/dropbear
+pid=6728 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: master process /usr/sbin/sysapihttpd -c /tmp/sysapihttpdconf/sysapihttpd.conf
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+pid=6729 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: worker process                                          
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+pid=6730 comm=sysapihttpd exe=/usr/sbin/sysapihttpd
+
+  argv=nginx: worker process                                          
+  map: /lib/ld-uClibc-0.9.33.2.so
+  map: /lib/libblobmsg_json.so
+  map: /lib/libdl-0.9.33.2.so
+  map: /lib/libpthread-0.9.33.2.so
+  map: /lib/libuClibc-0.9.33.2.so
+  map: /lib/libubox.so
+  map: /lib/libubus.so
+  map: /usr/lib/libconfig.so.9.1.3
+  map: /usr/lib/libcrypto.so.1.0.0
+  map: /usr/lib/libjson-c.so.2.0.1
+  map: /usr/lib/libpcre.so.0.0.1
+  map: /usr/lib/libssl.so.1.0.0
+  map: /usr/lib/libz.so.1.2.7
+  map: /usr/sbin/sysapihttpd
+
+===== software_versions =====
+
+--- /usr/sbin/smbd -V ---
+Version 4.0.21
+
+--- /usr/sbin/nmbd -V ---
+Version 4.0.21
+
+--- /usr/sbin/dropbear -V ---
+Unknown argument -V
+Dropbear sshd v2011.54
+Usage: /usr/sbin/dropbear [options]
+Options are:
+-b bannerfile	Display the contents of bannerfile before user login
+		(default: none)
+-d dsskeyfile	Use dsskeyfile for the DSS host key
+		(default: /etc/dropbear/dropbear_dss_host_key)
+-r rsakeyfile	Use rsakeyfile for the RSA host key
+		(default: /etc/dropbear/dropbear_rsa_host_key)
+-F		Don't fork into background
+-E		Log to stderr rather than syslog
+
+--- /usr/bin/curl --version ---
+curl 7.33.0 (arm-xiaomi-linux-uclibcgnueabi) libcurl/7.33.0 PolarSSL/1.3.16 zlib/1.2.7
+Protocols: file ftp ftps http https imap imaps pop3 pop3s rtsp smtp smtps tftp 
+Features: IPv6 Largefile SSL libz 
+
+===== active_samba_version =====
+Version 4.25.1
+
+===== taskmonitor_list =====
+
+===== taskmonitor_smb_entries =====
+./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/log
+./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/log
+samba-s5d
+
+===== smb_current_release =====
+lrwxrwxrwx    1 root     root            23 Nov  9 03:10 /userdisk/data/s7root/current -> versions/1.0.7-r2d/root
+52e105576e190ab6b977be419b3144fe  /userdisk/data/s7root/current/sbin/smbd
+52e105576e190ab6b977be419b3144fe  /userdisk/data/s7root/current/sbin/samba-s5d
+
+===== smb_config_hashes =====
+52e105576e190ab6b977be419b3144fe  /userdisk/data/s7root/current/sbin/samba-s5d
+f94e2f5caf29375e075c48d566301e07  /userdisk/data/s7root/current/etc/smb.conf
+bcad8b90869688b7982a50aaa891cf99  /var/etc/smb.conf
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter
+03e596af3763e1164b5426cfe56fa25d  /etc/init.d/samba
+a26f32ce175be65ba4613c1aac72b4e1  /etc/init.d/samba.vendor
+8f75166621f4f5b902eb5dd107102019  /etc/hotplug.d/block/80-sambaAndDlna
+
+===== macfilter_policy =====
+macfilter.mode=mode
+macfilter.mode.wan=blacklist
+macfilter.mode.lan=blacklist
+macfilter.mode.admin=blacklist
+macfilter.mode.pridisk=whitelist
+macfilter.lanports=lanports
+macfilter.adminports=adminports
+macfilter.adminports.tcp=80,443,23,22
+macfilter.@mac[0]=mac
+macfilter.@mac[0].mac=b8:c1:11:cd:f7:b2
+macfilter.@mac[0].wan=yes
+macfilter.@mac[0].lan=yes
+macfilter.@mac[0].admin=yes
+macfilter.@mac[0].pridisk=no
+macfilter.@mac[1]=mac
+macfilter.@mac[1].mac=f0:d5:bf:40:1d:2a
+macfilter.@mac[1].wan=yes
+macfilter.@mac[1].admin=yes
+macfilter.@mac[1].pridisk=no
+macfilter.@mac[1].lan=no
+macfilter.@mac[2]=mac
+macfilter.@mac[2].mac=bc:b3:08:fe:db:17
+macfilter.@mac[2].wan=yes
+macfilter.@mac[2].lan=yes
+macfilter.@mac[2].admin=yes
+macfilter.@mac[2].pridisk=no
+macfilter.@mac[3]=mac
+macfilter.@mac[3].mac=d8:c4:97:94:50:99
+macfilter.@mac[3].wan=yes
+macfilter.@mac[3].lan=yes
+macfilter.@mac[3].admin=yes
+macfilter.@mac[3].pridisk=no
+macfilter.@mac[4]=mac
+macfilter.@mac[4].mac=18:bc:5a:19:b9:16
+macfilter.@mac[4].wan=yes
+macfilter.@mac[4].admin=yes
+macfilter.@mac[4].pridisk=no
+macfilter.@mac[4].lan=no
+macfilter.@mac[5]=mac
+macfilter.@mac[5].mac=0c:8c:24:6f:bd:2c
+macfilter.@mac[5].wan=yes
+macfilter.@mac[5].lan=yes
+macfilter.@mac[5].admin=yes
+macfilter.@mac[5].pridisk=no
+macfilter.@mac[6]=mac
+macfilter.@mac[6].mac=c8:85:50:4d:1a:bb
+macfilter.@mac[6].wan=yes
+macfilter.@mac[6].lan=yes
+macfilter.@mac[6].admin=yes
+macfilter.@mac[6].pridisk=no
+macfilter.@mac[7]=mac
+macfilter.@mac[7].mac=b6:d9:b3:4a:09:19
+macfilter.@mac[7].wan=yes
+macfilter.@mac[7].lan=yes
+macfilter.@mac[7].admin=yes
+macfilter.@mac[7].pridisk=no
+macfilter.@mac[8]=mac
+macfilter.@mac[8].mac=30:0e:d5:f9:9a:31
+macfilter.@mac[8].wan=yes
+macfilter.@mac[8].lan=yes
+macfilter.@mac[8].admin=yes
+macfilter.@mac[8].pridisk=no
+macfilter.@mac[9]=mac
+macfilter.@mac[9].mac=80:a5:89:86:b7:e5
+macfilter.@mac[9].wan=yes
+macfilter.@mac[9].admin=yes
+macfilter.@mac[9].pridisk=no
+macfilter.@mac[9].lan=no
+macfilter.@mac[10]=mac
+macfilter.@mac[10].mac=74:9e:f5:b2:f2:d7
+macfilter.@mac[10].wan=yes
+macfilter.@mac[10].lan=yes
+macfilter.@mac[10].admin=yes
+macfilter.@mac[10].pridisk=no
+macfilter.@mac[11]=mac
+macfilter.@mac[11].mac=74:9e:f5:ea:79:f9
+macfilter.@mac[11].wan=yes
+macfilter.@mac[11].admin=yes
+macfilter.@mac[11].pridisk=no
+macfilter.@mac[11].lan=yes
+macfilter.@mac[12]=mac
+macfilter.@mac[12].mac=04:cf:8c:6c:92:b9
+macfilter.@mac[12].wan=yes
+macfilter.@mac[12].lan=yes
+macfilter.@mac[12].admin=yes
+macfilter.@mac[12].pridisk=no
+macfilter.@mac[13]=mac
+macfilter.@mac[13].mac=e2:8b:88:58:8a:75
+macfilter.@mac[13].lan=yes
+macfilter.@mac[13].admin=yes
+macfilter.@mac[13].pridisk=no
+macfilter.@mac[13].wan=yes
+macfilter.@mac[14]=mac
+macfilter.@mac[14].mac=14:a3:2f:c0:7e:27
+macfilter.@mac[14].lan=yes
+macfilter.@mac[14].admin=yes
+macfilter.@mac[14].pridisk=no
+macfilter.@mac[14].wan=yes
+macfilter.@mac[15]=mac
+macfilter.@mac[15].mac=3c:46:d8:a0:9e:75
+macfilter.@mac[15].wan=yes
+macfilter.@mac[15].lan=yes
+macfilter.@mac[15].admin=yes
+macfilter.@mac[15].pridisk=no
+macfilter.@mac[16]=mac
+macfilter.@mac[16].mac=e2:54:2e:fb:8b:75
+macfilter.@mac[16].wan=yes
+macfilter.@mac[16].admin=yes
+macfilter.@mac[16].pridisk=no
+macfilter.@mac[16].lan=no
+macfilter.@mac[17]=mac
+macfilter.@mac[17].mac=1c:91:48:42:92:de
+macfilter.@mac[17].wan=yes
+macfilter.@mac[17].lan=yes
+macfilter.@mac[17].admin=yes
+macfilter.@mac[17].pridisk=no
+macfilter.@mac[18]=mac
+macfilter.@mac[18].mac=60:7e:a4:19:93:dc
+macfilter.@mac[18].wan=yes
+macfilter.@mac[18].lan=yes
+macfilter.@mac[18].admin=yes
+macfilter.@mac[18].pridisk=no
+macfilter.@mac[19]=mac
+macfilter.@mac[19].mac=80:30:49:d8:f2:a3
+macfilter.@mac[19].wan=yes
+macfilter.@mac[19].lan=yes
+macfilter.@mac[19].admin=yes
+macfilter.@mac[19].pridisk=no
+macfilter.@mac[20]=mac
+macfilter.@mac[20].mac=b0:8c:75:d5:71:2e
+macfilter.@mac[20].wan=yes
+macfilter.@mac[20].lan=yes
+macfilter.@mac[20].admin=yes
+macfilter.@mac[20].pridisk=no
+macfilter.@mac[21]=mac
+macfilter.@mac[21].mac=94:5c:9a:3f:b4:4c
+macfilter.@mac[21].wan=yes
+macfilter.@mac[21].admin=yes
+macfilter.@mac[21].pridisk=no
+macfilter.@mac[21].lan=no
+macfilter.@mac[22]=mac
+macfilter.@mac[22].mac=9c:9d:7e:7e:ff:f1
+macfilter.@mac[22].wan=yes
+macfilter.@mac[22].lan=yes
+macfilter.@mac[22].admin=yes
+macfilter.@mac[22].pridisk=no
+macfilter.@mac[23]=mac
+macfilter.@mac[23].mac=f4:26:79:69:cf:1c
+macfilter.@mac[23].wan=yes
+macfilter.@mac[23].lan=yes
+macfilter.@mac[23].admin=yes
+macfilter.@mac[23].pridisk=no
+macfilter.@mac[24]=mac
+macfilter.@mac[24].mac=3e:cd:57:0d:45:6e
+macfilter.@mac[24].wan=yes
+macfilter.@mac[24].lan=yes
+macfilter.@mac[24].admin=yes
+macfilter.@mac[24].pridisk=no
+macfilter.@mac[25]=mac
+macfilter.@mac[25].mac=5c:02:14:7c:78:33
+macfilter.@mac[25].wan=yes
+macfilter.@mac[25].lan=yes
+macfilter.@mac[25].admin=yes
+macfilter.@mac[25].pridisk=no
+macfilter.@mac[26]=mac
+macfilter.@mac[26].mac=d4:35:38:57:fd:80
+macfilter.@mac[26].wan=yes
+macfilter.@mac[26].admin=yes
+macfilter.@mac[26].pridisk=no
+macfilter.@mac[26].lan=no
+macfilter.@mac[27]=mac
+macfilter.@mac[27].mac=6a:ef:f5:2f:6e:52
+macfilter.@mac[27].wan=yes
+macfilter.@mac[27].admin=yes
+macfilter.@mac[27].pridisk=no
+macfilter.@mac[27].lan=yes
+macfilter.@mac[28]=mac
+macfilter.@mac[28].mac=78:f2:35:29:7f:f9
+macfilter.@mac[28].wan=yes
+macfilter.@mac[28].lan=yes
+macfilter.@mac[28].admin=yes
+macfilter.@mac[28].pridisk=no
+macfilter.@mac[29]=mac
+macfilter.@mac[29].mac=5a:3d:a1:e4:04:e8
+macfilter.@mac[29].wan=yes
+macfilter.@mac[29].admin=yes
+macfilter.@mac[29].pridisk=no
+macfilter.@mac[29].lan=no
+macfilter.@mac[30]=mac
+macfilter.@mac[30].mac=bc:6e:e2:dc:df:89
+macfilter.@mac[30].wan=yes
+macfilter.@mac[30].lan=yes
+macfilter.@mac[30].admin=yes
+macfilter.@mac[30].pridisk=no
+macfilter.@mac[31]=mac
+macfilter.@mac[31].mac=4c:03:4f:91:e8:cb
+macfilter.@mac[31].wan=yes
+macfilter.@mac[31].admin=yes
+macfilter.@mac[31].pridisk=no
+macfilter.@mac[31].lan=yes
+macfilter.@mac[32]=mac
+macfilter.@mac[32].mac=00:f0:cb:ee:b4:9f
+macfilter.@mac[32].wan=yes
+macfilter.@mac[32].lan=yes
+macfilter.@mac[32].admin=yes
+macfilter.@mac[32].pridisk=no
+macfilter.@mac[33]=mac
+macfilter.@mac[33].mac=00:15:5d:03:00:18
+macfilter.@mac[33].wan=yes
+macfilter.@mac[33].lan=yes
+macfilter.@mac[33].admin=yes
+macfilter.@mac[33].pridisk=no
+macfilter.@mac[34]=mac
+macfilter.@mac[34].mac=94:f8:27:d4:dd:e6
+macfilter.@mac[34].wan=yes
+macfilter.@mac[34].admin=yes
+macfilter.@mac[34].pridisk=no
+macfilter.@mac[34].lan=no
+macfilter.@mac[35]=mac
+macfilter.@mac[35].mac=32:8a:c4:32:b5:04
+macfilter.@mac[35].wan=yes
+macfilter.@mac[35].lan=yes
+macfilter.@mac[35].admin=yes
+macfilter.@mac[35].pridisk=no
+macfilter.@mac[36]=mac
+macfilter.@mac[36].mac=00:15:5d:03:00:23
+macfilter.@mac[36].wan=yes
+macfilter.@mac[36].admin=yes
+macfilter.@mac[36].pridisk=no
+macfilter.@mac[36].lan=yes
+macfilter.@mac[37]=mac
+macfilter.@mac[37].mac=c2:ec:92:db:a1:23
+macfilter.@mac[37].wan=yes
+macfilter.@mac[37].lan=yes
+macfilter.@mac[37].admin=yes
+macfilter.@mac[37].pridisk=no
+macfilter.@mac[38]=mac
+macfilter.@mac[38].mac=5c:9b:a6:95:d0:07
+macfilter.@mac[38].wan=yes
+macfilter.@mac[38].lan=yes
+macfilter.@mac[38].admin=yes
+macfilter.@mac[38].pridisk=no
+macfilter.@mac[39]=mac
+macfilter.@mac[39].mac=90:b1:41:15:cf:56
+macfilter.@mac[39].wan=yes
+macfilter.@mac[39].lan=yes
+macfilter.@mac[39].admin=yes
+macfilter.@mac[39].pridisk=no
+
+===== firewall_acl =====
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination         
+1     7568  909K s8-diskacl  tcp  --  br-lan *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445
+2      743 90714 s8-diskacl  udp  --  br-lan *       0.0.0.0/0            0.0.0.0/0            multiport dports 137,138
+3        0     0 DROP       tcp  --  br-guest *       0.0.0.0/0            0.0.0.0/0            multiport dports 139,445
+4     530K  165M ACCEPT     tcp  --  *      *       0.0.0.0/0            0.0.0.0/0            multiport dports 22,80,135:139,445 /* mixbox-firewall */
+5     548K  101M delegate_input  all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+Chain s8-diskacl (2 references)
+num   pkts bytes target     prot opt in     out     source               destination         
+1        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC F0:D5:BF:40:1D:2A
+2        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 18:BC:5A:19:B9:16
+3        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 80:A5:89:86:B7:E5
+4        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC E2:54:2E:FB:8B:75
+5        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:5C:9A:3F:B4:4C
+6        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC D4:35:38:57:FD:80
+7        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 5A:3D:A1:E4:04:E8
+8        0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 94:F8:27:D4:DD:E6
+9     8311 1000K RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0           
+-N s8-diskacl
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+
+===== firewall_ipv6_input =====
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+num   pkts bytes target     prot opt in     out     source               destination         
+1        2   144 delegate_input  all      *      *       ::/0                 ::/0                
+
+===== diskacl_cron =====
+23:* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+
+===== homes_setting =====
+1
+
+--- homes section: /userdisk/data/s7root/current/etc/smb.conf ---
+[homes]
+	comment = Home Directories
+	browseable = no
+	read only = no
+	create mode = 0750
+
+
+--- homes section: /var/etc/smb.conf ---
+[homes]
+	comment     = Home Directories
+	browsable   = no
+	read only   = no
+	create mode = 0750
+
+
+===== smb_passdb_users =====
+-rw-------    1 root     root             0 Nov  9 03:10 /userdisk/data/s7root/current/var/private/smbpasswd
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+
+===== unix_home_accounts =====
+root uid=0 home=/root
+daemon uid=1 home=/var
+ftp uid=55 home=/home/ftp
+network uid=101 home=/var
+nobody uid=65534 home=/var
+
+===== startup_entry_names =====
+/etc/init.d/cron
+/etc/init.d/dropbear
+/etc/init.d/minidlna
+/etc/init.d/cron_fixup
+/etc/init.d/samba.vendor
+/etc/init.d/samba
+/etc/init.d/taskmonitor
+/etc/init.d/plugintaskmonitor.init
+/etc/hotplug.d/block/80-sambaAndDlna
+/etc/crontabs/root
+/etc/crontabs/roothuXWkn
+
+===== curl_script_reference_paths =====
+/etc/init.d/miDebug.sh: contains curl reference (line contents omitted)
+
+===== end =====
+Capture complete. Review output locally; it may contain LAN/MAC addresses and daemon arguments.
