@@ -1,9 +1,9 @@
 # R2D 软件升级总计划与可行性审计
 
 - 基线设备：MiWiFi R2D / 固件 2.25.209 / ARMv7 EABI / uClibc 0.9.33.2 / Linux 2.6.36
-- 计划日期：2026-11-09（第三版：恢复 A0、A1、B1–B6 八项正式候选）
+- 计划日期：2026-11-10（第三版：恢复 A0、A1、B1–B6 八项正式候选；B1 于 11-10 接管 22）
 - 本轮范围：候选范围维持八项不变；阶段 2/3 完成离线构建与隔离验证，阶段 4 完成维护窗口部署与一次整机冷启动，阶段 5 完成收口核对
-- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已在 2222 备用实例验证密钥认证（22 仍归原厂）**；**B6 三项能力已在隔离端口验证**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
+- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已接管 22：原厂备份到位、2026.94 在 22 运行、看护与回退实测**；**B6 三项能力已在隔离端口验证**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
 - 阶段 2/3 执行记录：[2026-11-09 构建与隔离验证](stage-2-3-execution-2026-11-09.md)
 - 阶段 4/5 执行记录：[2026-11-09 维护窗口与收口](../evidence/2026-11-09-stage4/README.md)
 - 事实来源：[2026-11-08 设备清点](../device-inventory-2026-11-08.md)、[固件 2.24.11 可行性比对](../firmware-2.24.11-feasibility-2026-11-08.md)、[Samba 发布就绪复核](../release-readiness-2026-11-08.md)
@@ -32,7 +32,7 @@
 |---|---|---|---|---|---|
 | A0 | Samba 服务与 1.0.7 兼容层 | Samba 4.25.1 运行；139/445 归 `samba-s5d`；ACL 与 cron 自愈有设备证据 | 完成 1.0.7 收尾：冷启动核对、`homes` 运行时确认与产品决策 | 阶段 0 回滚资产（§4.1） | 冷启动后端口/ACL/cron 保持；`homes` 配置与枚举一致、产品去留有记录；访客端到端在无 BSS 时保持 BLOCKED |
 | A1 | Samba 上游维护与 4.25.1 复核 | 设备与上游当前 stable 同为 4.25.1 | 上游出现新 stable 或安全修复时重锁源码、迁移 SDK 补丁并发布新 payload | A0 验收；构建容器与复现脚本 | 新版本通过 §5 全套回归并独立窗口部署；无新 upstream 时不产生部署对象 |
-| B1 | Dropbear SSH 服务端 | 2011.54，TCP 22 对 LAN/访客网可达；候选 2026.94 源已锁定并验签 | 私有树构建候选，备用端口并行验证后接管 22 | 不依赖候选的回退通道（init 备份 + 原厂二进制 + 超时脚本） | 新会话登录/密钥/重连/重启后接管与回退；无带外通道前不接管 22 |
+| B1 | Dropbear SSH 服务端 | 2011.54，TCP 22 对 LAN/访客网可达；候选 2026.94 源已锁定并验签 | 私有树构建候选，备用端口并行验证后接管 22 | 不依赖候选的回退通道（字节级备份 + 原厂二进制原位 + 独立看护 + `rollback-22.sh`） | 已接管：banner/密钥登录/进程归属/认证方法/管理面/回退链均实测；冷启动未重启验证 |
 | B2 | curl | 7.33.0 + PolarSSL 1.3.16；仓库内未见调用点，设备侧只见 `/etc/init.d/miDebug.sh` 引用 | 先盘点调用方，再决定升级范围；如需升级，独立前缀 + 私有 TLS | 调用方清单与协议/选项需求 | 每个调用方比对退出码、输出与副作用；`/usr/bin/curl` 保持 7.33.0 |
 | B3 | `nmbd` | 原厂 4.0.21（PID 2071 / `/usr/sbin/samba_multicall`）持有 UDP 137/138；私有 4.25.1 `nmbd` 已在现役树 | 评估并执行切换到私有 `nmbd` | 发现功能影响评估（电视/旧客户端） | 137/138 归私有树、单实例、`samba restart` 与冷启动后不被拉回原厂 |
 | B4 | MiniDLNA / ReadyMedia | 1.1.0；配置启用，管理链可拉起；**按在用处理** | 构建 1.3.3 候选并验证 App/电视发现 | 私有依赖（libexif/libjpeg/libid3tag/flac/vorbis/sqlite）与私有树布局 | `shareUpdate` 生成配置、索引、电视发现、重启持久性、App 门控 |
@@ -94,28 +94,19 @@ A1 是正式候选，不是政策附注：上游一旦发布新 stable 或影响
 - 私有树在 `/userdisk/data`；盘未挂载时新服务起不来，启动入口必须回退原厂程序。
 - 单纯升级不改变访客网可达性；限制 22 端口是另一个防火墙变更，需单独回归。
 
-**接管点（唯一可写入口）**
+**接管点（已实施）**
 
-- `/` 是只读 ubifs（`/dev/ubi1_0 on / type ubifs (ro,…)`），不能替换 `/usr/sbin/dropbear` 或 `/etc/init.d/dropbear` 里的二进制文件。
-- `/etc` 是独立可写 ubifs（`/dev/ubi2_0`），因此唯一可行接管点是**启动脚本 `/etc/init.d/dropbear`**：内容改为 wrapper，成功标记存在时 `exec` 私有树候选二进制，否则 `exec /usr/sbin/dropbear` 回退原厂。
-- 回退点三件套：
-  1. `/userdisk/data/s7root/state/dropbear.init.orig`：部署前 `cp -p` 的原文件字节副本；
-  2. 原厂二进制 `/usr/sbin/dropbear` 原位保留、不被覆盖；
-  3. 窗口内保持第二个已建立的 SSH 会话。
-- 超时恢复脚本（接管时后台启动；120 秒内未出现成功标记即恢复原厂 init）：
+- `/` 是只读 ubifs（`/dev/ubi1_0 on / type ubifs (ro,…)`），不能替换 `/usr/sbin/dropbear`。
+- `/etc` 是独立可写 ubifs（`/dev/ubi2_0`），实际接管点是 `/etc/init.d/dropbear`：保留原厂全部函数，只在文件头按“候选二进制可执行 + `run/takeover.ok` 存在”选择 `PROG`，并为候选追加 `-D /etc/dropbear`；否则仍用 `/usr/sbin/dropbear`。
+- `stop()` 由原厂的 `service_stop -x ${PROG}` 改为“按 pidfile 终止，并校验目标 exe 为原厂或候选路径”，否则切换后若标记消失，原厂进程无法被新 init 停止。
+- 回退资产：
+  1. `/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`：原厂 init/config/host key/authorized_keys 的字节副本 + `restore.sh`，[清单](../evidence/2026-11-10-b1-takeover/backup-manifest.md)；
+  2. 原厂二进制 `/usr/sbin/dropbear` 原位保留、从未覆盖；
+  3. 接管窗口内保持已建立的 SSH 会话（dropbear 子进程不随监听进程退出）。
+- 自愈脚本（`recipes/stage2/dropbear-22/`）：`takeover-22.sh`（停原厂 → 起新实例 → banner 校验 → 回环公钥实测 → 写标记）、`watchdog-22.sh`（独立 BusyBox 看护，deadline 无标记即调回退）、`rollback-22.sh`（按 pidfile/端口清理非原厂实例 → 还原原厂 init/config → 启动原厂 → 校验 22 归属）。
+- 判定：接管后只有 banner `dropbear_2026.94` 与回环公钥 `AUTH_OK` 同时成立才写标记；任一步失败立即回退，看护独立兜底。没有这套机制就不接管 22。
 
-```sh
-#!/bin/sh
-# 与接管同时启动。未写入成功标记就恢复原厂 init，避免锁死唯一的 SSH 入口。
-sleep 120
-[ -f /userdisk/data/s7root/state/dropbear-takeover.ok ] && exit 0
-cp -p /userdisk/data/s7root/state/dropbear.init.orig /etc/init.d/dropbear
-/etc/init.d/dropbear restart
-```
-
-- 判定：接管后独立新建 SSH 会话成功才写入 `dropbear-takeover.ok`；标记未写入则脚本自动回退。没有这套机制就不接管 22。
-
-**验证顺序**：构建机产出 → 备用端口并行运行 + LAN 登录/密钥/会话稳定/断线重连 → 备份 init 与主机密钥 → 窗口内接管 + 超时回退 → 冷启动复查端口归属与旧入口不会重复拉起原厂进程。
+**验证顺序**：构建机产出 → 隔离端口 2223 成功/强制失败双演练 → 备份 → 窗口内接管 + 看护 → LAN 重登/管理面/端口归属 → 原厂 stop/start 链与完整回退实测 → 冷启动复查端口归属（本轮未做整机重启，见 §11）。
 
 ### 2.4 B2：curl
 
@@ -281,7 +272,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 0 | §4.1 恢复回滚资产 + 实测 rollback | —（前置门） | 全部后续部署 | SMB | 30–45 min | 失败即停，不改包 | PASS（2026-11-09 16:24） |
 | 1 | A0 升级后整机冷启动核对 | 低（可重复重启） | 整机：所有入口同时不可用 | 整机 / SMB / SSH / 管理面 / 无线 | 10–15 min | 无代码回滚；失败走本地 1.0.7 重装，≤30 min | 可执行 |
 | 2 | B3 `nmbd` 切换 | 中（发现功能退化不易察觉） | NetBIOS 发现、电视/旧客户端、App 发现 | SMB / 管理面（发现） | 15–30 min | 改回包装器原厂路径 + restart，≤5 min | BLOCKED：发现功能无设备证据 |
-| 3 | B1 Dropbear 接管 22 | 高（唯一维护入口） | SSH，进而所有远程维护 | SSH / 管理面 | 30–60 min | 超时脚本自动回退 ≤5 min | BLOCKED：无带外恢复通道 |
+| 3 | B1 Dropbear 接管 22 | 高（唯一维护入口） | SSH，进而所有远程维护 | SSH / 管理面 | 30–60 min | 备份还原 + `rollback-22.sh`，≤5 min | 已执行：备份校验 + 2223 双演练 + 独立看护；见 §11 |
 | 4 | B4 MiniDLNA 切换 | 中（索引与发现） | 电视播放/媒体索引 | 应用 / 管理面（App 开关） | 30–45 min | 切回原厂服务，≤10 min | BLOCKED：私有依赖链未构建 |
 | 5 | B2 curl 显式路径（逐调用方） | 低（旧二进制保留） | 无服务阻塞 | 仅调用方 | 每调用方 5–15 min | 改回原命令，即时 | 可进入：调用方已盘点（HTTP 脚本） |
 | 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | BLOCKED：前置未决项（§2.8） |
@@ -292,7 +283,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 
 - **A0 冷启动**：`uptime -s`；`readlink /userdisk/data/s7root/current`；`netstat -ltnp | grep -E ':(139|445) '`；`sh /userdisk/data/s7root/xiaomi-smb-adapter.sh -r /userdisk/data/s7root/current diskacl-status`；`iptables -S INPUT | grep -c 's8-diskacl'`；`crontab -l | grep diskacl-sync`；`smbutil view -N //guest@192.168.3.2`。
 - **B3 nmbd**：切换前 `netstat -lunp | grep -E ':(137|138) '` 确认端口释放；切换后 `readlink /proc/<pid>/exe` 应为私有树 `nmbd`；`/etc/init.d/samba restart` 与冷启动后再查。回滚判据：137/138 重新归 `/usr/sbin/samba_multicall`。
-- **B1 Dropbear**：新会话 `ssh -p 22 … 'dropbear -V'`；`netstat -ltnp | grep ':22 '`；`/etc/init.d/dropbear restart` 后重连；确认 `/etc/init.d/dropbear` 为 wrapper 且原厂副本存在。回滚：`cp -p state/dropbear.init.orig /etc/init.d/dropbear && /etc/init.d/dropbear restart`。
+- **B1 Dropbear**：`ssh -p 22 … 'readlink /proc/$(cat /var/run/dropbear.1.pid)/exe'` 应为私有树；`netstat -ltnp | grep ':22 '` 单实例；`/etc/init.d/dropbear restart` 后重连并确认 banner `dropbear_2026.94`；确认 `/etc/init.d/dropbear` 为 wrapper、`run/takeover.ok` 存在、原厂副本与 `rollback-22.sh` 可用。回滚：`sh /userdisk/data/dropbear-2026.94/bin/rollback-22.sh`。
 - **B4 MiniDLNA**：`ps | grep minidlna`；`netstat -ltnp | grep 8200`；媒体目录索引数量与旧版比对；电视端发现与播放一次；重启后复查。
 - **B2 curl**：`curl-new --version` 与 `readelf -d` 确认依赖闭合；调用方逐个比对退出码/输出/网络副作用；`/usr/bin/curl --version` 保持 7.33.0。
 - **B5 dnsmasq**：`netstat -lunp | grep ':53 '`；解析与租约测试；断开上游 DNS 后行为。
@@ -504,25 +495,25 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 | `homes` 产品去留 | 用户未决定；生产 passdb 无用户 | A0 |
 | 是否有客户端依赖 NetBIOS 发现 | 无电视/旧 Windows 实测证据 | B3 |
 | curl 的真实调用方与协议 | 已盘完：`miDebug.sh`（HTTP，已切）、`mitvapp`（scheme-less HTTP）、`helper.sh`（HTTPS/`-k`）、`wifishare.sh`（HTTP，只读 `/usr`）、`netspeed`（只读 `/usr`）；全量替换判定不可行 | B2 |
-| Dropbear 是否有带外恢复渠道 | 仓库无串口/实体维护入口证据；因此只验证 2222 备用实例，不接管 22 | B1 |
+| Dropbear 是否有带外恢复渠道 | 仓库无串口/实体维护入口证据；本轮按用户授权，以“完整备份 + 隔离双演练 + 独立看护 + 完整回退实测”替代带外通道，接管 22 | B1 |
 | MiniDLNA 当前实际使用情况 | 按“在用”处理；本轮用户决定推迟，未触碰 | B4 |
 | dnsmasq 是否由本机承担 DNS/DHCP | 当前未运行、无 53 监听 | B5 |
 | WebDAV 撤权语义与看护进程 | 已定稿：5 秒（按 MAC 全包 DROP）+ fail-closed + 租约/看护；与 SMB 10–22 秒的差异写入 D-S11-06 | B6 |
 | 8443 能否在不动系统库的前提下收紧 TLS | 管理链未回归 | 系统 OpenSSL（§3） |
 
-## 11. 阶段 4/5 最终状态（2026-11-09）
+## 11. 阶段 4/5 最终状态（2026-11-10 更新）
 
-维护窗口内完成一次整机冷启动；证据目录 [docs/evidence/2026-11-09-stage4](../evidence/2026-11-09-stage4/README.md)。
+维护窗口内完成一次整机冷启动；证据目录 [docs/evidence/2026-11-09-stage4](../evidence/2026-11-09-stage4/README.md)。B1 于 2026-11-10 单独窗口接管 22，证据 [docs/evidence/2026-11-10-b1-takeover](../evidence/2026-11-10-b1-takeover/README.md)。
 
 | 编号 | 组件 | 最终状态 | 说明 |
 |---|---|---|---|
 | A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留（保留/隐藏/删除）仍未决策，属 A0 剩余项，需单独递增版本窗口 |
 | A1 | Samba 上游维护 | **未触发** | 上游 stable 仍 4.25.1，无部署对象 |
-| B1 | Dropbear 2026.94 | **PASS（2222 备用实例）** | 重编放宽 `authorized_keys` 祖先目录检查（`DROPBEAR_RELAX_AUTHKEYS` 门控），2222 独立 host key + 公钥登录成功、`-s` 下仅 publickey、banner 2026.94、进程归属候选树；同一二进制不设变量时仍按原检查拒绝。22 端口原厂二进制/启动路径不变，验完实例已停并清理。见 [证据](../evidence/2026-11-09-followup/b1-dropbear-relax.txt) |
+| B1 | Dropbear 2026.94 | **PASS（22 已接管）** | 原厂二进制/配置/host key/authorized_keys/init 先做字节备份并 `md5sum -c` 校验（`/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`）。隔离 2223 双演练：成功路径写标记；强制失败路径由独立看护 15 s 到点杀掉新实例、22 保持原厂。22 接管后 banner `dropbear_2026.94`、既有公钥登录成功、`/proc/<pid>/exe` 指向私有树、认证方法 `publickey,password`、LuCI 200、SMB 未变；`/etc/init.d/dropbear` wrapper 的标记开/关 stop/start 与 `rollback-22.sh` 完整回退均实测。**未做整机重启**，冷启动挂载顺序未验证。见 [证据](../evidence/2026-11-10-b1-takeover/README.md) |
 | B2 | curl 8.23.0 | **部分覆盖（全量替换不可行）** | `miDebug.sh` 已切；`mitvapp` 的 `localhost:` URL 无法用 `--proto-default`/`--proto =http` 覆盖（实测 http=000），只有改写调用方为 `http://` 才等价；`helper.sh` 的 `-skL` 依赖 HTTPS，私有 curl 仅 `Protocols: http`；`wifishare.sh`、`netspeed` 位于只读 `/usr`，PATH 全为只读目录，无法 shim。见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |
 | B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
 | B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
 | B5 | dnsmasq 2.92rel2 | **未触发** | 本机不承担 DNS/DHCP，无 53 监听；阶段 2 已产出候选二进制，但无部署对象 |
 | B6 | WebDAV（lighttpd） | **PASS（隔离端口三项）** | 在 18084 隔离实例上逐项验证：5 秒撤权（新连接 1.08 s、已有下载 1.79 s 停止增长、恢复 1.21 s；中断上传未发布目标文件）、fail-closed（策略非 blacklist 时 1.53 s 内停服务并置链尾无条件 DROP，恢复策略后仍保持关闭）、看护存活（`kill -9` 守卫后 5.30 s 停服务）。生产 `macfilter` 未改，测试用副本；验完规则/实例/状态目录已清理。见 [证据](../evidence/2026-11-09-followup/b6-webdav-guard.txt) |
 
-**边界核对**：未接管 22；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动。B1 的放宽仅由 2222 实例的环境变量启用，原厂 22 二进制与启动路径未变；B6 只在隔离端口与策略副本上验证，未替换任何生产服务。
+**边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动；B6 只在隔离端口与策略副本上验证，未替换任何生产服务。

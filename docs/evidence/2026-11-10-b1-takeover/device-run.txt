@@ -1,0 +1,112 @@
+== date ==
+Tue Nov 10 01:42:12 CST 2026
+== uname ==
+Linux XiaoQiang 2.6.36 #3 MiWiFi-R2D-2.25.209 SMP PREEMPT Tue Oct 16 11:45:02 UTC 2018 armv7l GNU/Linux
+== post-swap identity ==
+19515
+/userdisk/data/dropbear-2026.94/sbin/dropbear
+/userdisk/data/dropbear-2026.94/sbin/dropbear -P /var/run/dropbear.1.pid -D /etc/dropbear -p 22 
+== md5 ==
+c2cd6355107bfffb32c8d773c2c8ad25  /usr/sbin/dropbear
+504eeae6d9f171939b0f67786b25630e  /etc/init.d/dropbear
+4ff9c827d4f95ca5082a5520c03e1419  /etc/config/dropbear
+2b25ef3311bbec3c3a16426834d1a38f  /etc/dropbear/authorized_keys
+7b335b01de340c26de923e6e5770c13b  /etc/dropbear/dropbear_rsa_host_key
+fd9574db00833d0b312fcf3fdb2527ab  /userdisk/data/dropbear-2026.94/sbin/dropbear
+504eeae6d9f171939b0f67786b25630e  /userdisk/data/dropbear-2026.94/dropbear.init.new
+== ports ==
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 600 6236/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 360 19515/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 19515/dropbear
+== banner ==
+SSH-2.0-dropbear_2026.94
+== processes ==
+19515 ?        00:00:00 dropbear
+19649 ?        00:00:00 dropbear
+== takeover.log ==
+[Tue Nov 10 01:40:07 CST 2026] takeover start
+vendor pid=17502
+banner=SSH-2.0-dropbear_2026.94
+auth_out=/userdisk/data/dropbear-2026.94/bin/dbclient: Warning: failed creating /root/.ssh: Read-only file system
+/userdisk/data/dropbear-2026.94/bin/dbclient: 
+Host '127.0.0.1' key accepted unconditionally.
+(ssh-rsa fingerprint SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus)
+
+AUTH_OK
+[Tue Nov 10 01:40:10 CST 2026] takeover SUCCESS
+== watchdog.log ==
+[Tue Nov 10 01:40:04 CST 2026] watchdog armed deadline=90s pid=17999
+[Tue Nov 10 01:40:14 CST 2026] watchdog sees marker, exit 0
+== drill.log ==
+[Tue Nov 10 01:31:15 CST 2026] drill start
+[Tue Nov 10 01:33:38 CST 2026] drill start
+banner=
+drill banner mismatch
+[Tue Nov 10 01:34:31 CST 2026] drill start
+[Tue Nov 10 01:36:49 CST 2026] drill start
+banner=SSH-2.0-dropbear_2026.94
+auth_out=/userdisk/data/dropbear-2026.94/bin/dbclient: Warning: failed creating /root/.ssh: Read-only file system
+/userdisk/data/dropbear-2026.94/bin/dbclient: 
+Host '127.0.0.1' key accepted unconditionally.
+(ssh-rsa fingerprint SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus)
+
+root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: root@127.0.0.1's password: 
+/userdisk/data/dropbear-2026.94/bin/dbclient: Connection to root@127.0.0.1:2223 exited: Remote closed the connection
+drill auth failed
+[Tue Nov 10 01:38:10 CST 2026] drill start
+banner=SSH-2.0-dropbear_2026.94
+auth_out=/userdisk/data/dropbear-2026.94/bin/dbclient: Warning: failed creating /root/.ssh: Read-only file system
+/userdisk/data/dropbear-2026.94/bin/dbclient: 
+Host '127.0.0.1' key accepted unconditionally.
+(ssh-rsa fingerprint SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus)
+
+AUTH_OK
+drill auth failed
+[Tue Nov 10 01:38:21 CST 2026] drill start
+banner=SSH-2.0-dropbear_2026.94
+auth_out=/userdisk/data/dropbear-2026.94/bin/dbclient: Warning: failed creating /root/.ssh: Read-only file system
+/userdisk/data/dropbear-2026.94/bin/dbclient: 
+Host '127.0.0.1' key accepted unconditionally.
+(ssh-rsa fingerprint SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus)
+
+AUTH_OK
+[Tue Nov 10 01:38:22 CST 2026] drill SUCCESS marker written
+[Tue Nov 10 01:38:37 CST 2026] drill-fail start
+drill-fail instance up on 2223, intentionally no marker
+drill-fail watchdog armed (deadline 15s)
+[Tue Nov 10 01:39:17 CST 2026] drill-fail start
+drill-fail instance up on 2223, intentionally no marker
+drill-fail watchdog armed (deadline 15s)
+[Tue Nov 10 01:39:33 CST 2026] drill rollback start
+drill rollback kill pid=17300 exe=/userdisk/data/dropbear-2026.94/sbin/dropbear
+[Tue Nov 10 01:39:34 CST 2026] drill rollback OK: 22 still vendor pid=7152
+== drill watchdog ==
+[Tue Nov 10 01:39:18 CST 2026] watchdog armed deadline=15s pid=17302
+[Tue Nov 10 01:39:33 CST 2026] watchdog deadline reached without marker -> rollback
+[Tue Nov 10 01:39:34 CST 2026] watchdog rollback rc=0
+== drill rollback tail ==
+[Tue Nov 10 01:39:33 CST 2026] drill rollback start
+drill rollback kill pid=17300 exe=/userdisk/data/dropbear-2026.94/sbin/dropbear
+[Tue Nov 10 01:39:34 CST 2026] drill rollback OK: 22 still vendor pid=7152
+== rollback.log ==
+[Tue Nov 10 01:41:46 CST 2026] rollback start
+kill non-vendor pid=19344 exe=/userdisk/data/dropbear-2026.94/sbin/dropbear
+[Tue Nov 10 01:41:49 CST 2026] rollback OK pid=19427 exe=/usr/sbin/dropbear
+== vendor-restart.log ==
+[Tue Nov 10 01:39:47 CST 2026] vendor stop/start dry-run start
+[Tue Nov 10 01:39:51 CST 2026] vendor restart OK pid=17502 exe=/usr/sbin/dropbear
+== backup manifest ==
+--- md5 sha-less manifest ---
+134  4ff9c827d4f95ca5082a5520c03e1419  etc/config/dropbear
+578  2b25ef3311bbec3c3a16426834d1a38f  etc/dropbear/authorized_keys
+459  f0d0cdbd4f71136ee94b181ee3df3e29  etc/dropbear/dropbear_dss_host_key
+427  7b335b01de340c26de923e6e5770c13b  etc/dropbear/dropbear_rsa_host_key
+4583  b010c10c00d12dec35b8ab4d2e88e2bb  etc/init.d/dropbear
+1761  5f5be5254ae90e76817844038a485f0b  etc/rc.common
+128  8b495cce031f84dbc05fe2e1135827ea  etc/rc.local
+3488  cffa973cb0e71e1d12967d843ee92179  lib/functions/service.sh
+175184  c2cd6355107bfffb32c8d773c2c8ad25  usr/bin/dbclient
+175184  c2cd6355107bfffb32c8d773c2c8ad25  usr/bin/dropbearkey
+175184  c2cd6355107bfffb32c8d773c2c8ad25  usr/sbin/dropbear

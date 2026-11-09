@@ -1,0 +1,19 @@
+== final state ==
+Tue Nov 10 01:43:37 CST 2026
+pid=19515
+/userdisk/data/dropbear-2026.94/sbin/dropbear
+/userdisk/data/dropbear-2026.94/sbin/dropbear -P /var/run/dropbear.1.pid -D /etc/dropbear -p 22 
+504eeae6d9f171939b0f67786b25630e  /etc/init.d/dropbear
+4ff9c827d4f95ca5082a5520c03e1419  /etc/config/dropbear
+2b25ef3311bbec3c3a16426834d1a38f  /etc/dropbear/authorized_keys
+7b335b01de340c26de923e6e5770c13b  /etc/dropbear/dropbear_rsa_host_key
+fd9574db00833d0b312fcf3fdb2527ab  /userdisk/data/dropbear-2026.94/sbin/dropbear
+Tue Nov 10 01:40:10 CST 2026
+SSH-2.0-dropbear_2026.94
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 600 6236/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 600 19515/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 19515/dropbear
+19515 ?        00:00:00 dropbear
+20118 ?        00:00:00 dropbear
