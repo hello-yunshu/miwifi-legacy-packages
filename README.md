@@ -12,6 +12,7 @@
 - [固件 2.24.11 离线可行性](docs/firmware-2.24.11-feasibility-2026-11-08.md)
 - [SMB 1.0.7-r2d 升级审计](docs/audits/smb-1.0.7-audit-2026-11-09.md)
 - [系统 OpenSSL 为什么没升级](docs/audits/openssl-not-upgraded-2026-11-10.md)
+- [`diskacl-status` 来源核查](docs/audits/diskacl-status-provenance-2026-11-10.md)
 - [证据目录索引](docs/evidence/README.md)
 - [Samba 实验与构建边界](docs/samba.md)
 - [许可证及第三方代码](THIRD_PARTY.md)

@@ -16,7 +16,7 @@
 
 - 版本字符串（`strings /usr/lib/libssl.so.1.0.0 | grep "OpenSSL [0-9]"`）：`OpenSSL 1.0.1j 15 Oct 2014`，`libcrypto.so.1.0.0` 同为 1.0.1j。
 - 只有 soname，**没有开发用软链**：`/usr/lib/libssl.so`、`/usr/lib/libcrypto.so` 均不存在。这表示固件只带运行时，不带头文件与链接入口。
-- `/usr/lib` 下没有第二份 OpenSSL；`/userdisk/data` 下也没有私有 OpenSSL 树（`ls -d /userdisk/data/*openssl*` 为空）。
+- `/usr/lib` 下没有第二份 OpenSSL，但 `/userdisk/data` 上**有其他 OpenSSL 副本**（首版审计漏记，此处更正）：`/userdisk/data/.Entware/lib/libssl.so.3` 与 `libcrypto.so.3`（Entware 的 OpenSSL 3，`/opt` 未挂载、无进程映射），以及 `/userdisk/data/appdata/chroot_file/lib/` 下的 `libssl.so.1.0.0`/`libcrypto.so.1.0.0`（chroot 副本）。这些副本**都没有被 `sysapihttpd` 加载**（其 `/proc/<pid>/maps` 只指向 `/usr/lib`），因此不改变“系统 TLS 无法安全替换”的结论。
 
 `/` 的挂载事实：
 
