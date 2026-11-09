@@ -1,0 +1,19 @@
+== config test ==
+dnsmasq: syntax check OK.
+rc=0
+== start ==
+pid=16074
+udp        0      0 127.0.0.1:5353          0.0.0.0:*                            0 0 16074/dnsmasq
+== query via nslookup ==
+BusyBox v1.19.4 (2018-10-16 11:10:12 UTC) multi-call binary.
+
+Usage: nslookup [HOST] [SERVER]
+
+Query the nameserver for the IP address of the given HOST
+optionally using a specified DNS server
+
+rc=1
+== query bytes ==
+00000000  12 34 01 01 03 72 32 64  04 74 65 73 74 01 01     |.4...r2d.test..|
+0000000f
+== response ==

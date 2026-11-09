@@ -1,0 +1,14 @@
+== stop ==
+port-5353-free
+16686 root      1588 S    ash -c D=/userdisk/data/r2d-cand/b5-dnsmasq; printf 
+18078 root      1588 S    ash -c D=/userdisk/data/r2d-cand/b5-dnsmasq; echo "=
+== prod dns (53) ==
+no-53-listener
+== prod pids ==
+14367 13997 13996 13985 6675
+18077 10382 6121
+6730 6729 6728 5820 5819 5818
+== late leftover found on final sweep ==
+16686 ash -c D=/userdisk/data/r2d-cand/b5-dnsmasq; printf ... | nc -u -w 3 127.0.0.1 5353
+action: kill 16686
+recheck: ps | grep b5-dnsmasq -> none; no listener on 5353

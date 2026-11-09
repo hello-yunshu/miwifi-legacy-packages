@@ -1,0 +1,28 @@
+== stop lighttpd ==
+port-18081-free
+no-lighttpd-proc
+== prod baseline ==
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 1200 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 37380 6121/dropbear
+tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 300 13985/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6121/dropbear
+== busybox applets ==
+hexdump
+nc
+nslookup
+wget
+== other tools ==
+nc: /usr/bin/nc
+nslookup: /usr/bin/nslookup
+hexdump: /usr/bin/hexdump
+od: none
+xxd: none
+wget: /usr/bin/wget
+perl: /usr/bin/perl
+python: none
+== late leftover found on final sweep ==
+10388 /userdisk/data/r2d-cand/b2-curl/root/bin/curl -v --connect-timeout 2 http://127.0.0.1:18081/
+action: kill 10388
+recheck: ps | grep b2-curl -> none; no listener on 18081

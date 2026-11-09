@@ -1,0 +1,10 @@
+port-18080-free
+no-webdav-proc
+== prod pids ==
+14367 13997 13996 13985 6675
+18371 10382 6121
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 300 13985/samba-s5d
+== temp files removed on final sweep ==
+rm -f /tmp/w_body /tmp/w_lock.xml /tmp/w_lock_b /tmp/w_lock_h /tmp/w_prop /tmp/w_up.txt
+recheck: ls /tmp/w_* -> none; ls /tmp/*r2d* -> none
