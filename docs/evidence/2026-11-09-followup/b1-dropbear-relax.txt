@@ -1,0 +1,89 @@
+# B1 Dropbear 密钥认证（2222 备用实例）上机验证
+
+日期：2026-11-09 21:29–21:31 CST。设备：MiWiFi R2D / 2.25.209（192.168.3.2）。
+结论：**PASS（备用实例范围）**；22 端口原厂 Dropbear 未改动。
+
+## 1. 根分区只读判定
+
+```
+rootfs on / type rootfs (rw)
+/dev/ubi1_0 on / type ubifs (ro,noatime,bulk_read,no_chk_data_crc,compr=none)
+touch: /.__wtest: Read-only file system
+drwxr-xr-x   22 1000     1000   1528 Oct 16  2018 /
+drwxrwxr-x   36 root     root   6176 Oct 16  2018 /etc
+```
+
+`/` 为 ro ubifs，故排除“改 `/` 属主”的备用路线，采用重编放宽的主路线。
+
+## 2. 候选构建
+
+- 源码：`dropbear-2026.94.tar.bz2`（已验签）
+- 补丁：`recipes/stage2/dropbear-relax-authkeys.patch`（仅在 `DROPBEAR_RELAX_AUTHKEYS` 置位时跳过祖先目录属主/权限遍历，仍检查 `authorized_keys` 文件本身）
+- 配方：`recipes/stage2/b1-dropbear-relax.sh`
+- 产物：`/userdisk/data/r2d-cand/b1-dropbear-relax/root/sbin/dropbear`
+- MD5：`fd9574db00833d0b312fcf3fdb2527ab`（320137 B）
+- 版本：`Dropbear v2026.94`
+
+## 3. 2222 实例验证
+
+独立 host key（ed25519 + rsa），`-D <候选>/etc/keys`，`-s`（禁用密码），环境变量 `DROPBEAR_RELAX_AUTHKEYS=1`：
+
+```
+=== running instances ===
+tcp  0 0 192.168.3.2:2222  0.0.0.0:* LISTEN 0 120 7220/dropbear
+tcp  0 0 0.0.0.0:22        0.0.0.0:* LISTEN 0 2700 7152/dropbear
+=== exe ownership ===
+/proc/7220/exe -> /userdisk/data/r2d-cand/b1-dropbear-relax/root/sbin/dropbear
+
+debug1: Remote protocol version 2.0, remote software version dropbear_2026.94
+debug1: Server host key: ssh-ed25519 SHA256:4RT/fDvXTUoxce5v6ubVTwXQ77K2uOVAUBehPyAc+xU
+debug1: Authentications that can continue: publickey
+LOGIN_S_OK
+uid=0(root) gid=0(root) groups=0(root)
+
+# 密码路径（-s）
+root@192.168.3.2: Permission denied (publickey).
+
+# 未加 -s 时（第一次启动，用于观察密码认证是否被提供）
+debug1: Authentications that can continue: publickey,password
+root@192.168.3.2: Permission denied (publickey,password).
+```
+
+服务器日志：
+
+```
+[7157] Nov 09 21:29:47 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.3.176:52627
+[7713] Nov 09 21:30:07 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.3.176:52640
+```
+
+2222 的 host key 指纹（SHA256 `4RT/...`）与 22 的 DSS/RSA key（md5 `16:b7:…` / `7e:09:…`）不同，确认独立。
+
+## 4. 放宽门控反证（同一二进制，不设环境变量，端口 2223）
+
+```
+root@192.168.3.2: Permission denied (publickey).
+[8387] Nov 09 21:30:15 /userdisk/data/r2d-cand must be owned by user or root, and not writable by group or others
+[8387] Nov 09 21:30:15 Exit before auth from <192.168.3.176:52649>: (user 'root', 0 fails): Exited normally
+```
+
+即：不放宽时，父目录 `/userdisk/data`（777）即被判定为不安全；放宽才允许通过。范围由环境变量控制，原厂 22 实例从不设置该变量。
+
+## 5. 原厂 22 未改动
+
+```
+c2cd6355107bfffb32c8d773c2c8ad25  /usr/sbin/dropbear
+f0d0cdbd4f71136ee94b181ee3df3e29  /etc/dropbear/dropbear_dss_host_key
+7b335b01de340c26de923e6e5770c13b  /etc/dropbear/dropbear_rsa_host_key
+2b25ef3311bbec3c3a16426834d1a38f  /etc/dropbear/authorized_keys
+/proc/7152/exe -> /usr/sbin/dropbear
+```
+
+## 6. 清理
+
+停止 2222/2223，删除临时 host key、测试 `authorized_keys`、dbclient 与日志，pid 文件已清空：
+
+```
+tcp  0 0 0.0.0.0:22 0.0.0.0:* LISTEN 0 2760 7152/dropbear
+```
+
+候选目录仅保留 `root/sbin/dropbear`、`root/bin/dropbearkey` 与空 `var/{log,run}`。

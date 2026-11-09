@@ -1,0 +1,69 @@
+# B2 curl 全量替换可行性（结论）
+
+日期：2026-11-09 21:36 CST。设备：R2D / 2.25.209。
+结论：**全量替换不可行**；只有“显式 `http://` 且调用方文件可写”的入口可以切换（`miDebug.sh` 已完成）。
+
+## 1. 私有 curl 能力边界
+
+```
+curl 8.23.0 (arm-xiaomi-linux-uclibcgnueabi) libcurl/8.23.0
+Release-Date: 2026-10-14
+Protocols: http
+Features: alt-svc IPv6 Largefile threadsafe UnixSockets
+```
+
+`Protocols` 只有 `http`，没有 TLS 后端；`-k` 选项存在但无 HTTPS 可谈。
+
+## 2. `mitvapp` 的 `localhost:` 依赖
+
+调用点（`/etc/init.d/mitvapp:49`）：
+
+```
+result=`curl localhost:/cgi-bin/luci/api/xqsystem/sdev|xargs`
+```
+
+实测（同一 URL）：
+
+```
+vendor scheme-less:  http=200 size=29
+new scheme-less:     http=000 size=0
+new --proto-default http:  http=000 size=0
+new --proto "=http":       http=000 size=0
+new http://localhost/...:  http=200 size=29   {"mibox":0,"code":0,"mitv":0}
+```
+
+原因：`localhost:` 被 8.x 解析为 scheme（`Protocol "localhost" not supported`），
+`--proto-default` 只作用于“没有 scheme”的 URL，`--proto` 是白名单校验，都改不了解析结果。
+**结论**：无法用新版 curl 的选项覆盖；只能把调用方改写成 `http://localhost/...`（改写后正文与退出码一致）。
+`/etc` 是 `ubi2_0` rw 分区，改这一行技术上可行，但属于改原厂脚本，按本轮“只出结论、不强行切换”的要求未做。
+
+## 3. `helper.sh` 的 `-k`
+
+```
+4:	[ -x /opt/bin/curl ] && alias curl=/opt/bin/curl
+13:	result1=$(curl -skL --connect-timeout 10 -m 20 -w %{http_code} -o ... "$wgeturl")
+35:	curl -kfsSl "$1"
+```
+
+- `-k` 的语义是“允许不受信证书的 HTTPS”，而私有 curl 无 HTTPS 协议，替换后所有 HTTPS 下载直接失败。
+- 脚本预留的 `/opt/bin/curl` 不可用：`/opt` 在只读 rootfs 上（`touch /opt/.wtest` → `Read-only file system`），无法持久放置替换二进制。
+- `$wgeturl` 来自云端配置，不能假定只走 HTTP。
+
+**结论：不可行。** 要覆盖必须重新构建带 TLS 的 curl，并接受“不校验证书”的原厂语义；这超出“替换 CLI”的范围。
+
+## 4. 只读根分区上的两个调用方
+
+| 调用方 | 位置/形态 | 阻碍 |
+|---|---|---|
+| `/usr/sbin/wifishare.sh` | 裸 `curl`，显式 `http://api.miwifi.com/...` | `/usr` 为只读 rootfs；`PATH=/bin:/sbin:/usr/bin:/usr/sbin` 全部只读，无法在 PATH 前面插入私有 curl |
+| `/usr/bin/netspeed` | ELF/Lua 内 `execl("curl ...")` 字符串 | 只读二进制，需改二进制或 remount/overlay，超出本轮边界 |
+
+`/etc/init.d/miDebug.sh` 已改为“私有 curl + 原厂兜底”，是当前唯一已切换的调用方；
+它显式使用 `http://`，且 `/etc` 可写，属于可覆盖的那一类。
+
+## 5. 总体结论
+
+1. 新版 curl 的选项不能覆盖 `localhost:` 这种 scheme-less URL；`--proto-default` 无效，必须改调用方。
+2. HTTP-only 构建无法承接 `helper.sh` 的 `-k`/HTTPS 语义。
+3. 只读根分区（`/usr`、`/opt`、`/bin`、`/sbin`）排除了 PATH shim 和二进制替换。
+4. 因此全量替换不可行；保留 `miDebug.sh` 单点替换，其余调用方维持原厂 7.33.0。
