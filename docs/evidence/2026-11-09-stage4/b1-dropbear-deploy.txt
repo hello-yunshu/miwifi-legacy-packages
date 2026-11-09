@@ -1,0 +1,14 @@
+### B1 key-auth retry with /tmp/dbkeys
+[28771] Nov 09 18:11:37 Not backgrounding
+[28820] Nov 09 18:11:42 Child connection from 192.168.3.176:62991
+[28820] Nov 09 18:11:42 / must be owned by user or root, and not writable by group or others
+[28820] Nov 09 18:11:42 Exit before auth from <192.168.3.176:62991>: (user 'root', 0 fails): Exited normally
+### cleanup
+port-2222-free
+authorized_keys
+dropbear_dss_host_key
+dropbear_rsa_host_key
+dropbear_rsa_host_key_cand.pub
+prod dropbear: 28876 6121
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 43740 6121/dropbear
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6121/dropbear

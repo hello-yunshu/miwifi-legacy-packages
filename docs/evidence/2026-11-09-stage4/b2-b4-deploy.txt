@@ -1,0 +1,14 @@
+### B2 caller switch
+e46abbf360456e59559d2ee657566e43  /etc/init.d/miDebug.sh
+5:CURL=/userdisk/data/r2d-cand/b2-curl/root/bin/curl
+6:[ -x "$CURL" ] || CURL=/usr/bin/curl
+15:    data=`${CURL} -s ${VERIFY_URL}${verifyCode}`
+-- mitvapp unchanged --
+be55d4afbedc38f821b595ec0fe96dd3  /etc/init.d/mitvapp
+be55d4afbedc38f821b595ec0fe96dd3  /userdisk/data/s7root/state/mitvapp.pre-stage4.bak
+### B4 decision
+not deployed: app manifest status=6 (off), start via supervisord PROCLINE=/usr/bin/minidlna and reload uses killall -10 minidlna; integrated path cannot be exercised
+status = "6";
+use_status = "1";
+no-minidlna
+port-8200-free

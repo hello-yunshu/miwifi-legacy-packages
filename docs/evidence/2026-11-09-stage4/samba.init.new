@@ -1,0 +1,119 @@
+#!/bin/sh /etc/rc.common
+# S8 SMB compatibility init: version switch for the vendor SMB service entry.
+#
+# Layout (all on the internal HDD, see /userdisk/data/s8compat):
+#   versions/v1/hook.sh            -> drives the new Samba instance
+#   versions/v0-vendor/            -> empty marker: full vendor behaviour
+#   current -> versions/v1         -> active compatibility version
+#   /etc/init.d/samba.vendor       -> byte-identical copy of the vendor init
+#
+# The vendor implementation is sourced below, then only the four entry points
+# that own the SMB process are overridden.  If the versioned hook is absent
+# (explicit rollback, or a boot without /userdisk/data), the vendor script is
+# executed unchanged, so the factory capability is never lost.
+
+if [ ! -r /etc/init.d/samba.vendor ]; then
+	echo "s8compat: /etc/init.d/samba.vendor missing" >&2
+	exit 1
+fi
+
+. /etc/init.d/samba.vendor
+
+S8COMPAT_HOOK=/userdisk/data/s8compat/current/hook.sh
+S8ROOT=/userdisk/data/s7root/current
+
+# rc.common shifts its own argv before sourcing this file, so the action is in
+# $action, not in $@.  Pass it explicitly or the vendor script sees no command.
+if [ ! -x "$S8COMPAT_HOOK" ]; then
+	exec /etc/init.d/samba.vendor "${action:-help}"
+fi
+
+s8compat() {
+	"$S8COMPAT_HOOK" "$@"
+}
+
+# B3 (stage 4): prefer the private Samba 4.25.1 nmbd from the active version
+# tree, fall back to the vendor binary when the tree is unavailable.  The four
+# browser/master options mirror the vendor /var/etc/smb.conf semantics so that
+# switching binaries does not change NetBIOS browsing behaviour.
+# Revert = restore state/samba.init.pre-stage4.bak and restart this service.
+nmbd_private() {
+	[ -x "$S8ROOT/sbin/nmbd" ] && [ -r "$S8ROOT/etc/smb.conf" ]
+}
+
+nmbd_start() {
+	if nmbd_private; then
+		local bin
+		bin=$(readlink -f "$S8ROOT/sbin/nmbd")
+		LD_LIBRARY_PATH=$(dirname "$bin")/../lib:$(dirname "$bin")/../lib/private
+		export LD_LIBRARY_PATH
+		service_start "$bin" -D -s "$S8ROOT/etc/smb.conf" \
+			-l "$S8ROOT/var/log/nmbd" \
+			--option="interfaces=br-lan" \
+			--option="local master=yes" \
+			--option="preferred master=yes" \
+			--option="domain master=yes"
+		return $?
+	fi
+	service_start /usr/sbin/nmbd -D
+}
+
+nmbd_stop() {
+	if nmbd_private; then
+		service_stop "$(readlink -f "$S8ROOT/sbin/nmbd")"
+	fi
+	service_stop /usr/sbin/nmbd
+}
+
+start_impl() {
+	/usr/sbin/shareUpdate -s
+	updateconfig
+
+	s8compat start
+	rc=$?
+	if [ $rc -ne 0 ]; then
+		logger -t s8compat "new smbd start failed rc=$rc"
+		return 1
+	fi
+
+	nmbd_start
+
+	smbid=$(pidof samba-s5d)
+	[ -z "$smbid" ] && {
+		sleep 3
+		smbid=$(pidof samba-s5d)
+	}
+	nmbid=$(pidof nmbd)
+
+	if [ -n "$smbid" -a -n "$nmbid" ]; then
+		if [ -f /dev/cgroup/cpu/samba/tasks ]; then
+			echo $smbid > /dev/cgroup/cpu/samba/tasks
+			echo $nmbid > /dev/cgroup/cpu/samba/tasks
+		fi
+		return 0
+	fi
+	return 1
+}
+
+stop() {
+	rc=0
+	s8compat stop || rc=$?
+	nmbd_stop
+	# A foreign listener (e.g. the vendor smbd started while the hook was
+	# hidden) is not ours to kill: report it instead of a silent success.
+	return $rc
+}
+
+reload() {
+	updateconfig
+	smbcontrol all reload-config >/dev/null 2>&1
+	s8compat reload
+	return $?
+}
+
+status() {
+	s8compat status
+	ret=$?
+	echo $ret
+	return $ret
+}

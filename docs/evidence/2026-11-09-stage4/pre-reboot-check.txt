@@ -1,0 +1,42 @@
+### pre-reboot 2026年11月 9日 星期一 18时13分26秒 CST
+-- listeners --
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 28057/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 1260 6728/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 44640 6121/dropbear
+tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 28057/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6121/dropbear
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1636 0 28450/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 2076 28450/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1636 0 28450/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            1866 0 28450/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 936 28450/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            1866 0 28450/nmbd
+-- processes --
+ 5818 root      4120 S    {sysapihttpd} nginx: master process /usr/sbin/sysapi
+ 5819 root      4168 S    {sysapihttpd} nginx: worker process
+ 5820 root      4168 S    {sysapihttpd} nginx: worker process
+ 6121 root      1140 S    /usr/sbin/dropbear -P /var/run/dropbear.1.pid -p 22
+ 6728 root      9056 S    {sysapihttpd} nginx: master process /usr/sbin/sysapi
+ 6729 root      9056 S <  {sysapihttpd} nginx: worker process
+ 6730 root      9056 S <  {sysapihttpd} nginx: worker process
+28057 root     27460 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
+-- nmbd exe --
+/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+-- INPUT --
+-P INPUT ACCEPT
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-A INPUT -p tcp -m multiport --dports 22,80,135:139,445 -m comment --comment mixbox-firewall -j ACCEPT
+-A INPUT -j delegate_input
+-- chain --
+DROP_COUNT=8
+-- cron --
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+-- rollback --
+1.0.6-r2d
+1.0.6-ok
+-rwxr-xr-x    1 root     root          2139 Oct 16  2018 /userdisk/data/s7root/state/miDebug.sh.pre-stage4.bak
+-rwxr-xr-x    1 root     root          2471 Oct 16  2018 /userdisk/data/s7root/state/mitvapp.pre-stage4.bak
+-rwxr-xr-x    1 root     root          2145 Nov  9 03:10 /userdisk/data/s7root/state/samba.init.pre-stage4.bak
