@@ -11,6 +11,15 @@
 #   $BASE/state/previous             name to roll back to
 #   $BASE/state/vendor.md5           baseline of vendor files (first install)
 #   $BASE/state/<name>.sha256        payload digest
+#   $BASE/state/install.log          install / activate audit trail
+#
+# Retention:
+#   Keep at least one complete previous tree (N-1) plus the state/previous
+#   pointer, so rollback never depends on re-downloading a package.  Deleting a
+#   tree without clearing the pointer leaves a dangling rollback target; install
+#   then refuses to upgrade (exit 6) and only re-installing that exact missing
+#   tree is allowed.  Activation verifies the rollback tree without starting it
+#   and records the result in state/install.log.
 #
 # Exit codes:
 #   0 ok
@@ -19,7 +28,7 @@
 #   3 payload rejected (missing binaries / prefix cannot be parsed)
 #   4 prefix conflict (target exists and is not our symlink)
 #   5 vendor file drift against recorded baseline
-#   6 no previous version / version not installed
+#   6 no previous version / version not installed / rollback target tree missing
 
 set -u
 
@@ -32,12 +41,56 @@ VENDOR_CONF=${S7_VENDOR_CONF:-/etc/config/samba}
 BASELINE=${S7_BASELINE:-$BASE/state/vendor.md5}
 CONFIG_BASELINE=${S7_CONFIG_BASELINE:-$BASE/state/vendor-config.md5}
 CRONTAB=${S7_CRONTAB:-/etc/crontabs/root}
+LOG=${S7_INSTALL_LOG:-$BASE/state/install.log}
 
 die() { echo "install: $1" >&2; exit "${2:-1}"; }
+
+log() {
+	mkdir -p "$BASE/state" 2>/dev/null
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG" 2>/dev/null || true
+}
 
 sha() { md5sum "$1" 2>/dev/null | awk '{print $1}'; }
 
 tree_root() { echo "$BASE/versions/$1/root"; }
+
+previous_name() { cat "$BASE/state/previous" 2>/dev/null || true; }
+
+# Inspect the recorded rollback target without starting it.  Sets RB_STATUS,
+# RB_NAME and RB_PREFIX; returns 1 when the pointer names an unusable tree.
+check_rollback() {
+	RB_STATUS=none
+	RB_NAME=
+	RB_PREFIX=
+	rb=$(previous_name)
+	[ -n "$rb" ] || return 0
+	RB_NAME=$rb
+	rb_tree=$(tree_root "$rb")
+	[ -d "$rb_tree" ] || { RB_STATUS=missing-tree; return 1; }
+	[ -x "$rb_tree/sbin/smbd" ] || { RB_STATUS=missing-smbd; return 1; }
+	RB_PREFIX=$(baked_prefix "$rb_tree") || { RB_STATUS=bad-prefix; return 1; }
+	RB_STATUS=ok
+	return 0
+}
+
+report_rollback() {
+	if check_rollback; then
+		case $RB_STATUS in
+		none)
+			echo "  rollback: none"
+			log "rollback-target: none"
+			;;
+		ok)
+			echo "  rollback: $RB_NAME (tree ok, not started)"
+			log "rollback-target: $RB_NAME verified tree+baked-prefix, not started"
+			;;
+		esac
+		return 0
+	fi
+	echo "  rollback: UNUSABLE $RB_NAME ($RB_STATUS)" >&2
+	log "rollback-target: $RB_NAME UNUSABLE:$RB_STATUS"
+	return 1
+}
 
 current_name() {
 	[ -L "$BASE/current" ] || return 1
@@ -91,6 +144,15 @@ cmd_install() {
 		die "version $name exists with different payload" 3
 	fi
 
+	# A rollback pointer naming a missing tree means the last cleanup left no
+	# usable fallback.  Refuse to upgrade on top of that instead of silently
+	# carrying a broken chain forward; re-installing that exact tree is allowed,
+	# because that is how the pointer is repaired.
+	prev=$(previous_name)
+	if [ -n "$prev" ] && [ "$prev" != "$name" ] && [ ! -d "$(tree_root "$prev")" ]; then
+		die "rollback target $prev has no tree; reinstall $prev or clear state/previous first" 6
+	fi
+
 	mkdir -p "$BASE/versions" || die "cannot create $BASE/versions" 1
 	tmp="$BASE/versions/.$name.tmp"
 	rm -rf "$tmp"
@@ -107,6 +169,8 @@ cmd_install() {
 	echo "  tree:   $dst"
 	echo "  baked:  $baked"
 	echo "  smbd:   $(md5sum "$dst/sbin/smbd" | awk '{print $1}')"
+	log "install $name tar_md5=$(sha "$tar") tree=$dst"
+	report_rollback || true
 }
 
 cmd_activate() {
@@ -141,17 +205,21 @@ cmd_activate() {
 	fi
 	echo "activated $name"
 	echo "  prefix: $baked -> $(readlink -f "$baked")"
+	log "activate $name previous=$(previous_name)"
+	report_rollback || true
 }
 
 cmd_rollback() {
 	[ -f "$BASE/state/previous" ] || die "no previous version recorded" 6
-	prev=$(cat "$BASE/state/previous")
+	# cmd_activate assigns its own `prev`; keep the rollback target under a
+	# distinct name or the final message reports the version we came from.
+	target=$(cat "$BASE/state/previous")
 	cur=$(current_name 2>/dev/null || true)
-	[ -n "$prev" ] || die "empty previous marker" 6
-	[ -d "$(tree_root "$prev")" ] || die "previous tree missing: $prev" 6
-	cmd_activate "$prev" || exit $?
+	[ -n "$target" ] || die "empty previous marker" 6
+	[ -d "$(tree_root "$target")" ] || die "previous tree missing: $target" 6
+	cmd_activate "$target" || exit $?
 	[ -n "$cur" ] && echo "$cur" >"$BASE/state/previous"
-	echo "rolled-back-to $prev"
+	echo "rolled-back-to $target"
 }
 
 cmd_stop() {
