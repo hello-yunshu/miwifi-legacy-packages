@@ -1,0 +1,84 @@
+== post-boot ==
+Tue Oct 16 19:45:36 CST 2018
+47.84 30.26
+-- mount --
+/dev/ubi2_0 /userdisk ubifs rw,noatime,bulk_read,compr=none 0 0
+/dev/sda1 /userdisk/data ext4 rw,noatime,barrier=1,data=ordered 0 0
+-- dmesg sda/ext4 --
+[    4.380000] sd 0:0:0:0: [sda] 1953525168 512-byte logical blocks: (1.00 TB/931 GiB)
+[    4.390000] sd 0:0:0:0: [sda] 4096-byte physical blocks
+[    4.400000] sd 0:0:0:0: [sda] Write Protect is off
+[    4.400000] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+[    4.400000] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+[    6.230000]  sda: sda1
+[    6.230000] sd 0:0:0:0: [sda] Attached SCSI disk
+[   13.730000] UBI: attaching mtd10 to ubi2
+[   15.700000] UBI: attached mtd10 to ubi2
+[   16.660000] EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+[   22.940000] Adding 262140k swap on /userdisk/data/.swapfiles.  Priority:-1 extents:2 across:270332k 
+-- logread boot --
+-- 22 --
+pid=6137
+/userdisk/data/dropbear-2026.94/sbin/dropbear
+/userdisk/data/dropbear-2026.94/sbin/dropbear -P /var/run/dropbear.1.pid -D /etc/dropbear -p 22 
+starttime_ticks=3729
+SSH-2.0-dropbear_2026.94
+-- marker --
+Tue Nov 10 01:40:10 CST 2026
+504eeae6d9f171939b0f67786b25630e  /etc/init.d/dropbear
+-- procs --
+ 6137 ?        00:00:00 dropbear
+10167 ?        00:00:00 dropbear
+10170 ?        00:00:00 smbd
+10216 ?        00:00:00 smbd-notifyd
+10217 ?        00:00:00 smbd-cleanupd
+== services ==
+11680 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+11218 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+10217 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+10216 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+10207 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+-- ports --
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 10207/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 60 5757/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 240 6137/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 60 10207/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 6137/dropbear
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1256 0 11680/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 1596 11680/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1256 0 11680/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            226 0 11680/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 246 11680/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            226 0 11680/nmbd
+-- s7root --
+versions/1.0.7-r2d/root
+previous=1.0.6-r2d
+
+-- cron --
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+-- jumps --
+2:-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+3:-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+4:-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-- chain --
+8
+-A s8-diskacl -j RETURN
+-- diskacl status --
+diskacl_chain=present
+diskacl_jumps=2
+diskacl_legacy_chain=absent
+diskacl_legacy_jumps=0
+diskacl_guest=enforced
+== clock ==
+Tue Oct 16 19:45:50 CST 2018
+-- ticks demo --
+6257
+62.58 32.84
+-- dropbear starttime --
+3729
+-- nmbd starttime --
+5184
+-- samba starttime --
+5043
+-- hostkey --
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgwCEjPXoocvEfK0YIEAgnEx0/gbMiwt/SqkeTpNm0ng+5Df6cq9kgUodTfI+vgo4dnw4J0bnWaORmDmJ1xmASPNo6oVdRpj8yeWYZ7OYpHK+gg4n+j9aIwFvkkRo2s8ENqLdfiGOAccZu+hy3WPH+WTyAEk2Ln2ubgNvgETeGhI3tos1 root@XiaoQiang

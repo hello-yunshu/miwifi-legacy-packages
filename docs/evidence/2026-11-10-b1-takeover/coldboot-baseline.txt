@@ -1,0 +1,55 @@
+== baseline ==
+Tue Nov 10 01:45:17 CST 2026
+ 01:45:17 up  7:31,  load average: 0.14, 0.13, 0.09
+-- dropbear --
+pid=19515
+/userdisk/data/dropbear-2026.94/sbin/dropbear
+/userdisk/data/dropbear-2026.94/sbin/dropbear -P /var/run/dropbear.1.pid -D /etc/dropbear -p 22 
+SSH-2.0-dropbear_2026.94
+-- s7root --
+versions/1.0.7-r2d/root
+1.0.6-r2d
+
+-- cron --
+* * * * * /userdisk/data/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+-- ports --
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 600 6236/sysapihttpd.co
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 840 19515/dropbear
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 19515/dropbear
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            13166 0 15631/nmbd
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            12798 16337 15631/nmbd
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            13166 0 15631/nmbd
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            28544 0 15631/nmbd
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 11022 15631/nmbd
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            28544 0 15631/nmbd
+-- input jumps --
+2:-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+3:-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+4:-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+-- diskacl chain --
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+-- nmbd --
+ 8343 ?        00:00:00 smbd[192.168.3.
+15223 ?        00:00:00 smbd-notifyd
+15224 ?        00:00:00 smbd-cleanupd
+15631 ?        00:00:00 nmbd
+-- md5 --
+504eeae6d9f171939b0f67786b25630e  /etc/init.d/dropbear
+d59c22faf5f2e0c0beaf3b7fabbbab83  /userdisk/data/dropbear-2026.94/run/takeover.ok
+-- exe --
+15631 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
+15223 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+8343 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
+-- hostkey fingerprint source --
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgwCEjPXoocvEfK0YIEAgnEx0

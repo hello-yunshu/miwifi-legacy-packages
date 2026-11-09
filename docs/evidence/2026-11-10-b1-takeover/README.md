@@ -83,6 +83,6 @@ RSA host key 指纹 SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus（与备�
   - 标记恢复 → pid=19344 → 新路径，banner 2026.94。
 - 完整回退脚本实测：`rollback-22.sh` rc=0，pid=19427 → `/usr/sbin/dropbear`，`/etc/init.d/dropbear` md5 回到 `b010c10c…`；随后重新接管，pid=19515 → 新路径，banner 2026.94。
 
-## 未做
+## 冷启动
 
-- 未执行整机重启。启动脚本选择逻辑用 stop/start + 标记开关等价演练；冷启动后 `/userdisk/data` 是否在 S50 前挂载未实测。
+已执行真实 `reboot`，结果与启动顺序证据见 [coldboot.md](coldboot.md)，原始输出见 `coldboot-baseline.txt` / `coldboot-post.txt`。结论：约 50 s 恢复，`/userdisk/data` 16.66 s 挂载、dropbear 37.29 s 启动，22 仍由 2026.94 持有（未回退），其他组件无退化。
