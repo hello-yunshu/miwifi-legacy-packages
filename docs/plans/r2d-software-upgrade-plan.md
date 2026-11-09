@@ -3,7 +3,7 @@
 - 基线设备：MiWiFi R2D / 固件 2.25.209 / ARMv7 EABI / uClibc 0.9.33.2 / Linux 2.6.36
 - 计划日期：2026-11-09（第三版：恢复 A0、A1、B1–B6 八项正式候选）
 - 本轮范围：候选范围维持八项不变；阶段 2/3 完成离线构建与隔离验证，阶段 4 完成维护窗口部署与一次整机冷启动，阶段 5 完成收口核对
-- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only**；B1 Dropbear 与 B4 MiniDLNA 因环境/集成条件未部署（BLOCKED）；B5/B6 未触发
+- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已在 2222 备用实例验证密钥认证（22 仍归原厂）**；**B6 三项能力已在隔离端口验证**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
 - 阶段 2/3 执行记录：[2026-11-09 构建与隔离验证](stage-2-3-execution-2026-11-09.md)
 - 阶段 4/5 执行记录：[2026-11-09 维护窗口与收口](../evidence/2026-11-09-stage4/README.md)
 - 事实来源：[2026-11-08 设备清点](../device-inventory-2026-11-08.md)、[固件 2.24.11 可行性比对](../firmware-2.24.11-feasibility-2026-11-08.md)、[Samba 发布就绪复核](../release-readiness-2026-11-08.md)
@@ -503,11 +503,11 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 | 1.0.7 冷启动后整机状态 | 无记录（装包早于当前 uptime） | A0 |
 | `homes` 产品去留 | 用户未决定；生产 passdb 无用户 | A0 |
 | 是否有客户端依赖 NetBIOS 发现 | 无电视/旧 Windows 实测证据 | B3 |
-| curl 的真实调用方与协议 | 仅发现 `/etc/init.d/miDebug.sh` 引用，更深用户目录未盘完 | B2 |
-| Dropbear 是否有带外恢复渠道 | 仓库无串口/实体维护入口证据 | B1 |
-| MiniDLNA 当前实际使用情况 | 按“在用”处理 | B4 |
+| curl 的真实调用方与协议 | 已盘完：`miDebug.sh`（HTTP，已切）、`mitvapp`（scheme-less HTTP）、`helper.sh`（HTTPS/`-k`）、`wifishare.sh`（HTTP，只读 `/usr`）、`netspeed`（只读 `/usr`）；全量替换判定不可行 | B2 |
+| Dropbear 是否有带外恢复渠道 | 仓库无串口/实体维护入口证据；因此只验证 2222 备用实例，不接管 22 | B1 |
+| MiniDLNA 当前实际使用情况 | 按“在用”处理；本轮用户决定推迟，未触碰 | B4 |
 | dnsmasq 是否由本机承担 DNS/DHCP | 当前未运行、无 53 监听 | B5 |
-| WebDAV 撤权语义与看护进程 | 5 秒草案与 SMB 10–22 秒冲突；看护进程未设计 | B6 |
+| WebDAV 撤权语义与看护进程 | 已定稿：5 秒（按 MAC 全包 DROP）+ fail-closed + 租约/看护；与 SMB 10–22 秒的差异写入 D-S11-06 | B6 |
 | 8443 能否在不动系统库的前提下收紧 TLS | 管理链未回归 | 系统 OpenSSL（§3） |
 
 ## 11. 阶段 4/5 最终状态（2026-11-09）
@@ -518,11 +518,11 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 |---|---|---|---|
 | A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留（保留/隐藏/删除）仍未决策，属 A0 剩余项，需单独递增版本窗口 |
 | A1 | Samba 上游维护 | **未触发** | 上游 stable 仍 4.25.1，无部署对象 |
-| B1 | Dropbear 2026.94 | **BLOCKED** | 备用端口实例可启动，但密钥认证被 Dropbear 的祖先目录检查拒绝（`/` 属主 uid 1000，`/etc` 为 775）；修它需改 `/` 属主或重编放宽检查，超出本轮边界。22 端口未接管，候选实例已停并清理 |
-| B2 | curl 8.23.0 | **PASS（部分覆盖）** | `/etc/init.d/miDebug.sh` 显式 HTTP 调用切到私有 curl（原厂兜底），同请求正文与退出码一致；`mitvapp` 因 `localhost:` URL 猜测差异不切换；`helper.sh` 可能走 HTTPS 不切换；`wifishare.sh`、`netspeed` 在只读根分区不可切 |
+| B1 | Dropbear 2026.94 | **PASS（2222 备用实例）** | 重编放宽 `authorized_keys` 祖先目录检查（`DROPBEAR_RELAX_AUTHKEYS` 门控），2222 独立 host key + 公钥登录成功、`-s` 下仅 publickey、banner 2026.94、进程归属候选树；同一二进制不设变量时仍按原检查拒绝。22 端口原厂二进制/启动路径不变，验完实例已停并清理。见 [证据](../evidence/2026-11-09-followup/b1-dropbear-relax.txt) |
+| B2 | curl 8.23.0 | **部分覆盖（全量替换不可行）** | `miDebug.sh` 已切；`mitvapp` 的 `localhost:` URL 无法用 `--proto-default`/`--proto =http` 覆盖（实测 http=000），只有改写调用方为 `http://` 才等价；`helper.sh` 的 `-skL` 依赖 HTTPS，私有 curl 仅 `Protocols: http`；`wifishare.sh`、`netspeed` 位于只读 `/usr`，PATH 全为只读目录，无法 shim。见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |
 | B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
-| B4 | MiniDLNA 1.3.3 | **BLOCKED（未部署）** | App 清单 `status=6`（关闭）；服务由 `supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 拉起、`reload` 用 `killall -10 minidlna`，当前无法激活，改名切换会让启停/重载不可验证。二进制保留在候选树，8200 未监听 |
+| B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
 | B5 | dnsmasq 2.92rel2 | **未触发** | 本机不承担 DNS/DHCP，无 53 监听；阶段 2 已产出候选二进制，但无部署对象 |
-| B6 | WebDAV（lighttpd） | **未部署** | 阶段 3 仅验证 WebDAV 方法（401/201/200/207/LOCK/423/204/404）；5 秒撤权、fail-closed、看护进程存活未实现亦未验证，前置未决 |
+| B6 | WebDAV（lighttpd） | **PASS（隔离端口三项）** | 在 18084 隔离实例上逐项验证：5 秒撤权（新连接 1.08 s、已有下载 1.79 s 停止增长、恢复 1.21 s；中断上传未发布目标文件）、fail-closed（策略非 blacklist 时 1.53 s 内停服务并置链尾无条件 DROP，恢复策略后仍保持关闭）、看护存活（`kill -9` 守卫后 5.30 s 停服务）。生产 `macfilter` 未改，测试用副本；验完规则/实例/状态目录已清理。见 [证据](../evidence/2026-11-09-followup/b6-webdav-guard.txt) |
 
-**边界核对**：未接管 22；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留。失败项 B1/B4 均已按各自方式退回并如实记状态。
+**边界核对**：未接管 22；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动。B1 的放宽仅由 2222 实例的环境变量启用，原厂 22 二进制与启动路径未变；B6 只在隔离端口与策略副本上验证，未替换任何生产服务。

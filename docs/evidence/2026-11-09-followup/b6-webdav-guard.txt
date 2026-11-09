@@ -1,0 +1,110 @@
+# B6 WebDAV 三项能力隔离验证
+
+日期：2026-11-09 21:32–21:35 CST。端口：18084（隔离实例，不替换任何生产服务）。
+实现：`recipes/webdav/webdav-guard.sh`；配置模板 `recipes/webdav/lighttpd-test-18084.conf`。
+策略来源：`/etc/config/macfilter` 的**副本**（`/userdisk/data/s8webdav/uci/macfilter`），生产文件未改。
+
+## 1. 语义定稿
+
+- 策略：仅当 `macfilter.mode.lan=blacklist` 视为可信；`@mac[n].lan=no` 的设备被拒，未列出的设备放行（与原厂黑名单语义一致）。
+- 执行点：`WEBDAV-ACL` 链挂在 INPUT 的 18084 跳转上，按源 MAC `DROP`；作用于该端口的所有包，不只是新连接，因此已建立的 keep-alive、下载与上传同样被截断。
+- fail-closed：`mode.lan` 缺失/非 `blacklist`、UCI 读取或解析失败时，链尾追加无条件 `DROP` 并停止 lighttpd；策略恢复后**不自动重启**，需运维显式启动。
+- 看护：守卫每秒写一次 epoch 租约；独立看护每 0.2 s 检查，租约超过 5 s 或看到 fail 标记即停服务。
+- 启动顺序：先建默认拒绝链 → 策略健康检查 → 启动监听 → 启动看护与守卫。
+
+## 2. 基线（撤权前）
+
+```
+GET rc=206 size=1024 time=0.009197     # Range 请求 big.bin
+PUT rc=201
+hello-webdav                            # 回读一致
+```
+
+## 3. 5 秒撤权
+
+策略副本追加 `5c:9b:a6:95:d0:07`（测试客户端）`lan=no`，从写入开始计时：
+
+```
+before: True
+policy_written_after=0.27s first_blocked_after=1.08s
+```
+
+已有下载（`curl --limit-rate 200k`，10 MiB）：
+
+```
+policy_set_after=0.28s bytes_at_revoke=528384 last_growth_after=1.79s total_bytes=806912 curl_alive=True
+```
+
+即撤权后 1.79 s 起不再增长（客户端进程仍挂起，符合服务端丢包语义），远小于 5 s。
+
+恢复授权（`lan=yes`）：
+
+```
+restored_after=1.21s
+```
+
+中断上传（3 s 后撤权，等待 6 s）：
+
+```
+policy_set_after=0.29s client_alive_at_6s=True
+ls: /userdisk/data/r2d-cand/b6-webdav/webdav/upload-abort.bin: No such file or directory
+```
+
+目标文件未发布，上传目录无残留，满足“中断上传不得发布为完整文件”。
+
+## 4. fail-closed
+
+把副本的 `mode.lan` 改为 `whitelist`：
+
+```
+listening_before=True
+blocked_after=1.53s
+-N WEBDAV-ACL
+-A WEBDAV-ACL -j DROP
+0                                        # lighttpd 进程数
+2026-11-09 21:34:07 POLICY_UNHEALTHY fail-closed deny-all
+2026-11-09 21:34:07 stop lighttpd pid=9187
+```
+
+恢复健康策略后：
+
+```
+listening_after_restore=False (expected False)
+```
+
+即策略不可信时入口关闭，且不会在策略恢复后自行开门。
+
+## 5. 看护进程存活
+
+重启后 `kill -9` 守卫进程（lighttpd 与看护仍在）：
+
+```
+listening=True
+guard=13681 watchdog=13682 lease=1794231260
+service_stopped_after_guard_kill=5.30s
+watchdog_alive=yes
+2026-11-09 21:34:26 stop lighttpd pid=13680
+```
+
+租约 5 s 到期后由看护停服务，总计 5.30 s。
+
+## 6. 清理
+
+```
+stopped
+iptables: No chain/target/match by that name.   # WEBDAV-ACL 已删除
+18084_closed
+=== after cleanup ===
+tcp 0 0 0.0.0.0:80 0.0.0.0:* LISTEN
+tcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN
+1fa7f1d59410e81415c1eee07ee9a25b  /etc/config/macfilter   # mtime 2026-11-09 02:44，未改
+no_webdav_rules
+```
+
+状态目录 `/userdisk/data/s8webdav` 与测试文件已删除；候选树 `b6-webdav` 保留。
+
+## 7. 已知边界
+
+- 未做每请求应用层判定；执行点是包过滤，撤销后的 TCP 连接不会立即收到 RST，但数据停止流动。若在同一个 keep-alive 连接上恢复授权，该连接可能继续可用（与“拒绝新请求”草案的差异需在产品层确认）。
+- 未验证 TLS、真实 WebDAV 客户端、掉盘与并发写；本轮只回答三项能力是否成立。
+- 5 秒指标与 SMB 侧 10–22 秒不同，属于两套服务时延差异，需在对外说明中写清。

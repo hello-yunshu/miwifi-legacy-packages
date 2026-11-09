@@ -1,0 +1,25 @@
+--- a/src/svr-authpubkey.c	2026-07-23 11:00:00.000000000 +0000
++++ b/src/svr-authpubkey.c	2026-11-09 13:27:36.722964848 +0000
+@@ -581,6 +581,22 @@
+ 
+ 	TRACE(("enter checkpubkeyperms"))
+ 
++	/* R2D local patch: "/" is owned by uid 1000 and /etc is mode 775 on
++	 * the read-only vendor rootfs, so the upstream ancestor walk can never
++	 * pass for a root account. When the spare instance (port 2222) sets
++	 * DROPBEAR_RELAX_AUTHKEYS, only the authorized_keys file itself is
++	 * checked; the ancestor ownership/mode walk is skipped. The vendor
++	 * dropbear never sets the variable and its binary/startup path is not
++	 * replaced. */
++	if (getenv("DROPBEAR_RELAX_AUTHKEYS") != NULL) {
++		if (checkfileperm(path) != DROPBEAR_SUCCESS) {
++			ret = DROPBEAR_FAILURE;
++		}
++		m_free(path);
++		TRACE(("leave checkpubkeyperms (relaxed)"))
++		return ret;
++	}
++
+ 	/* Walk back up path checking permissions, stopping at either homedir,
+ 	 * or root if the path is outside of the homedir. */
+ 	while ((sep = strrchr(path, '/')) != NULL) {
