@@ -3,7 +3,7 @@
 - 基线设备：MiWiFi R2D / 固件 2.25.209 / ARMv7 EABI / uClibc 0.9.33.2 / Linux 2.6.36
 - 计划日期：2026-11-10（第三版：恢复 A0、A1、B1–B6 八项正式候选；B1 于 11-10 接管 22）
 - 本轮范围：候选范围维持八项不变；阶段 2/3 完成离线构建与隔离验证，阶段 4 完成维护窗口部署与一次整机冷启动，阶段 5 完成收口核对
-- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已接管 22：原厂备份到位、2026.94 在 22 运行、看护与回退实测**；**B6 三项能力已在隔离端口验证**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
+- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已接管 22：原厂备份到位、2026.94 在 22 运行、看护与回退实测**；**B6 WebDAV 已上线：`192.168.3.2:5005`，Digest 认证，开机自启与冷启动均通过**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
 - 阶段 2/3 执行记录：[2026-11-09 构建与隔离验证](stage-2-3-execution-2026-11-09.md)
 - 阶段 4/5 执行记录：[2026-11-09 维护窗口与收口](../evidence/2026-11-09-stage4/README.md)
 - 事实来源：[2026-11-08 设备清点](../device-inventory-2026-11-08.md)、[固件 2.24.11 可行性比对](../firmware-2.24.11-feasibility-2026-11-08.md)、[Samba 发布就绪复核](../release-readiness-2026-11-08.md)
@@ -173,6 +173,8 @@ A1 是正式候选，不是政策附注：上游一旦发布新 stable 或影响
 
 上述任一项未决时不进入部署窗口；条目保持候选状态。
 
+**2026-11-10 决策（S16）**：放弃 `macfilter` 联动的 5 秒撤权与 fail-closed 链，改为“真实认证 + 最小暴露目录 + 降权运行”。正式端口 `192.168.3.2:5005`，Digest 认证，只映射四个共享目录；看护改为 `run.sh` 内的 30 秒常驻子进程。五项前置中 1/2/5 被此方案取代，3/4 按“只绑 LAN、必须认证、不用 Basic”落实，TLS 因构建无 OpenSSL 暂缺并记录为限制。详见 `docs/decisions.md` S16。
+
 ## 3. 不纳入本轮的系统组件
 
 | 组件 | 排除原因 | 未来重新立项条件 |
@@ -262,7 +264,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 5 | B2 curl 8.23.0 | SHA-256 `8dadd7d2…e6c5`，`.asc` 已验签；调用方已盘点 | 选定逐调用方范围 | 私有树 + 显式路径 | 可执行（HTTP-only） |
 | 6 | A1 Samba 新 stable | 上游当前仍 4.25.1（4.25.2 = 404） | A0 验收 | 新 payload | BLOCKED：无新上游版本 |
 | 7 | B5 dnsmasq 2.92rel2 | SHA-256 `43d72b8c…a32ce06a`，`.asc` 已验签 | 网络拓扑变更决定 | 私有树 | BLOCKED：未触发（低优先级） |
-| 8 | B6 WebDAV（lighttpd 1.4.85 + libxml2/SQLite） | 记录在案 | 前置未决项（§2.8） | 独立实例 | BLOCKED：撤权语义/看护/端口未决 |
+| 8 | B6 WebDAV（lighttpd 1.4.85 + libxml2/SQLite） | 记录在案 | 无 | 独立实例 | 已上线：`192.168.3.2:5005`，冷启动通过 |
 
 构建环境固定为容器 `miwifi-s1`（Ubuntu 24.04，镜像 ID `sha256:fe8156…6ef852`），工具链 GCC 4.8.2 / uClibc 0.9.33.2，QEMU `qemu-arm-static`。容器当前没有 Dockerfile，可复现性缺口见 [阶段 0–1 记录](stage-0-1-preparation-2026-11-09.md)。
 
@@ -276,7 +278,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 3 | B1 Dropbear 接管 22 | 高（唯一维护入口） | SSH，进而所有远程维护 | SSH / 管理面 | 30–60 min | 备份还原 + `rollback-22.sh`，≤5 min | 已执行：备份校验 + 2223 双演练 + 独立看护；见 §11 |
 | 4 | B4 MiniDLNA 切换 | 中（索引与发现） | 电视播放/媒体索引 | 应用 / 管理面（App 开关） | 30–45 min | 切回原厂服务，≤10 min | BLOCKED：私有依赖链未构建 |
 | 5 | B2 curl 显式路径（逐调用方） | 低（旧二进制保留） | 无服务阻塞 | 仅调用方 | 每调用方 5–15 min | 改回原命令，即时 | 可进入：调用方已盘点（HTTP 脚本） |
-| 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | BLOCKED：前置未决项（§2.8） |
+| 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | 已上线（2026-11-10）：5005 + Digest + 4 目录，冷启动通过；见 D-S16-01…07 |
 | 7 | B5 dnsmasq | 高（DNS/DHCP 是联网控制面） | 全网解析/DHCP | 无线 / 整机联网 | 30–60 min | 恢复上游 DNS/DHCP，≤10 min | BLOCKED：未触发 |
 | 8 | A1 新 Samba payload | 中 | SMB 全量 | SMB | 30–45 min | 切回上一树，≤5 min | BLOCKED：无新上游版本 |
 
@@ -515,9 +517,9 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 | B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
 | B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
 | B5 | dnsmasq 2.92rel2 | **未触发** | 本机不承担 DNS/DHCP，无 53 监听；阶段 2 已产出候选二进制，但无部署对象 |
-| B6 | WebDAV（lighttpd） | **PASS（隔离端口三项）/ 生产挂起** | **未部署到生产**：方案与 5 秒撤权、fail-closed、看护存活三项能力只在 18084 隔离实例上验证，生产 `macfilter` 与任何现役服务均未替换。挂起原因见 §2.8 五项前置未决，需产品/运维决策后才进入窗口。隔离验证：5 秒撤权（新连接 1.08 s、已有下载 1.79 s 停止增长、恢复 1.21 s；中断上传未发布目标文件）、fail-closed（策略非 blacklist 时 1.53 s 内停服务并置链尾无条件 DROP，恢复策略后仍保持关闭）、看护存活（`kill -9` 守卫后 5.30 s 停服务）。见 [证据](../evidence/2026-11-09-followup/b6-webdav-guard.txt) |
+| B6 | WebDAV（lighttpd） | **PASS（生产）** | **已上线**：`192.168.3.2:5005`，Digest 认证（`realm=r2d-webdav`），降权 `nobody` 运行，只暴露 `下载/共享/图片/文档` 四个 bind mount；`.dev` 等未映射目录返回 404。设备与用户 Mac 的 curl 均完成 PROPFIND/PUT/GET/MOVE/MKCOL/DELETE 与 401 校验；`/etc/init.d/webdav`（START=99）等数据盘最多 180 s 后拉起，30 s 看护进程可自愈；整机冷启动后自动恢复并复测通过。§2.8 五项前置以 S16 的真实认证+最小暴露方案替代，不再引入 macfilter 5 秒撤权。见 D-S16-01…07 |
 
-**边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动；B6 只在隔离端口与策略副本上验证，未替换任何生产服务。
+**边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动；B6 以独立实例新增 5005，不改任何现役服务配置，回退为停服务 + 删 rc.d 链接。
 
 **不在八项候选内的系统组件**：内核、uClibc、BusyBox、iptables/ipset、系统 OpenSSL、`sysapihttpd`/nginx/uhttpd、无线栈、固件分支按 §3 结论保持不动。其中 OpenSSL 1.0.1j 的单独说明（现状、17 个消费者、为什么卡死、风险面）见 [系统 OpenSSL 为什么不在升级范围](../audits/openssl-not-upgraded-2026-11-10.md)。
 
