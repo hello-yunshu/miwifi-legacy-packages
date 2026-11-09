@@ -9,7 +9,7 @@
 - 事实来源：[2026-11-08 设备清点](../device-inventory-2026-11-08.md)、[固件 2.24.11 可行性比对](../firmware-2.24.11-feasibility-2026-11-08.md)、[Samba 发布就绪复核](../release-readiness-2026-11-08.md)
 - 最新只读现场证据：[2026-11-09 14:29 快照](../evidence/2026-11-09-stage0/readonly-capture.txt)
 - SMB 当前状态审计：[1.0.7-r2d 审计](../audits/smb-1.0.7-audit-2026-11-09.md)
-- 说明：设备清点、固件可行性、阶段 0 快照与 SMB 审计属于另一条清点线，尚未纳入版本控制；在其提交前，远端打开上述链接会 404。
+- 说明：设备清点、固件可行性、阶段 0 快照与 SMB 审计已随本轮收口纳入版本控制，链接可直达；原始输出索引见 [证据目录](../evidence/README.md)。
 
 ## 0. 本版改动
 
@@ -182,7 +182,7 @@ A1 是正式候选，不是政策附注：上游一旦发布新 stable 或影响
 | iptables 1.4.12.2 / ipset 6.20.1 | 扩展与内核匹配，防火墙是联网控制面 | 明确需要的扩展、厂商模块对应源码、独立网络回滚测试 |
 | `sysapihttpd` / nginx 1.2.2 / uhttpd | 小米管理 API、Lua/FastCGI、证书和固件脚本耦合；uhttpd 当前未监听 | 建立管理 API/App 全链路兼容测试和可靠恢复入口 |
 | wpa_supplicant / hostapd | 当前 AP 由 Broadcom `nas`/`wl` 闭源栈处理；wpa_supplicant 未运行，hostapd 不存在 | 替换无线栈的完整 BSP 与无线法规/射频回归条件 |
-| OpenSSL 1.0.1j（8443 实际加载） | 被 `sysapihttpd` 加载；设备无 `openssl` CLI。私有 OpenSSL 只保护新工具，不修复 8443 | 厂商支持的 TLS 配置审计结论；未证明不影响 App 前不改 `sysapihttpd` |
+| OpenSSL 1.0.1j（8443 实际加载） | 被 `sysapihttpd` 加载；另有 16 个厂商闭源二进制/私有库引用同一 soname；设备无 `openssl` CLI。私有 OpenSSL 只保护新工具，不修复 8443。[审计与证据](../audits/openssl-not-upgraded-2026-11-10.md) | 厂商支持的 TLS 配置审计结论；未证明不影响 App 前不改 `sysapihttpd` |
 | 固件分支 / U 盘刷机 | 2.25.209 以上无已确认的 R2D 开发版；2.24.11 缺 SSH 服务端会自我锁死；U 盘刷机会格式化硬盘 | 不立项 |
 
 ## 4. 阶段、顺序与门槛
@@ -514,6 +514,10 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 | B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
 | B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
 | B5 | dnsmasq 2.92rel2 | **未触发** | 本机不承担 DNS/DHCP，无 53 监听；阶段 2 已产出候选二进制，但无部署对象 |
-| B6 | WebDAV（lighttpd） | **PASS（隔离端口三项）** | 在 18084 隔离实例上逐项验证：5 秒撤权（新连接 1.08 s、已有下载 1.79 s 停止增长、恢复 1.21 s；中断上传未发布目标文件）、fail-closed（策略非 blacklist 时 1.53 s 内停服务并置链尾无条件 DROP，恢复策略后仍保持关闭）、看护存活（`kill -9` 守卫后 5.30 s 停服务）。生产 `macfilter` 未改，测试用副本；验完规则/实例/状态目录已清理。见 [证据](../evidence/2026-11-09-followup/b6-webdav-guard.txt) |
+| B6 | WebDAV（lighttpd） | **PASS（隔离端口三项）/ 生产挂起** | **未部署到生产**：方案与 5 秒撤权、fail-closed、看护存活三项能力只在 18084 隔离实例上验证，生产 `macfilter` 与任何现役服务均未替换。挂起原因见 §2.8 五项前置未决，需产品/运维决策后才进入窗口。隔离验证：5 秒撤权（新连接 1.08 s、已有下载 1.79 s 停止增长、恢复 1.21 s；中断上传未发布目标文件）、fail-closed（策略非 blacklist 时 1.53 s 内停服务并置链尾无条件 DROP，恢复策略后仍保持关闭）、看护存活（`kill -9` 守卫后 5.30 s 停服务）。见 [证据](../evidence/2026-11-09-followup/b6-webdav-guard.txt) |
 
 **边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动；B6 只在隔离端口与策略副本上验证，未替换任何生产服务。
+
+**不在八项候选内的系统组件**：内核、uClibc、BusyBox、iptables/ipset、系统 OpenSSL、`sysapihttpd`/nginx/uhttpd、无线栈、固件分支按 §3 结论保持不动。其中 OpenSSL 1.0.1j 的单独说明（现状、17 个消费者、为什么卡死、风险面）见 [系统 OpenSSL 为什么不在升级范围](../audits/openssl-not-upgraded-2026-11-10.md)。
+
+原始证据按日期归档在 [docs/evidence](../evidence/README.md)，索引列明每个目录的内容与对应条目。

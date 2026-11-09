@@ -7,6 +7,12 @@
 - [项目路线图](docs/plans/roadmap.md)
 - [S0 现场基线与行为合同](docs/baseline/index.md)
 - [设备软件清单及升级优先级](docs/inventory.md)
+- [设备整机清点（2026-11-08）](docs/device-inventory-2026-11-08.md)
+- [R2D 软件升级总计划与可行性审计](docs/plans/r2d-software-upgrade-plan.md)
+- [固件 2.24.11 离线可行性](docs/firmware-2.24.11-feasibility-2026-11-08.md)
+- [SMB 1.0.7-r2d 升级审计](docs/audits/smb-1.0.7-audit-2026-11-09.md)
+- [系统 OpenSSL 为什么没升级](docs/audits/openssl-not-upgraded-2026-11-10.md)
+- [证据目录索引](docs/evidence/README.md)
 - [Samba 实验与构建边界](docs/samba.md)
 - [许可证及第三方代码](THIRD_PARTY.md)
 - `tools/policy.py` 是离线模型，不能作为真实权限控制使用。

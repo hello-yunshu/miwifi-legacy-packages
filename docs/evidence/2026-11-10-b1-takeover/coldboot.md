@@ -60,7 +60,7 @@ host key: SHA256:pmNz57IrPJpHFwek6kt7ycibeMhkMWmaR+n4nYLvAus（与重启前一�
 
 ## 与重启前的差异
 
-- 系统时钟回落到 `Tue Oct 16 19:45:5x CST 2018`，重启前为 2026-11-10。设备无有效 RTC/NTP 同步前保持该时间；不影响 SSH/host key/服务归属，但会影响依赖本地时间的日志与证书判断，属本次观测到的环境行为，未做修改。
+- 系统时钟在启动后回落为 `Tue Oct 16 19:45:5x CST 2018`，重启前为 2026-11-10。设备无有效 RTC，启动后由厂商 cron `*/3 * * * * /usr/sbin/ntpsetclock rand once` 做一次性校时；01:56 复查时已回到 `Tue Nov 10 01:56:29 CST 2026`，`ntpd` 未常驻。影响仅限于开机后几分钟内依赖本地时间的日志与证书判断，属厂商既有行为，未做修改。
 - 22 PID 由 19515 变为 6137；exe、banner、host key、认证方式不变。
 
 ## 判定
