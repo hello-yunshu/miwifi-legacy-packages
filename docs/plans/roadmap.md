@@ -1,5 +1,7 @@
 # 项目开发路线图
 
+> 归档声明：2026-11-09 起由 [`docs/plans/r2d-software-upgrade-plan.md`](r2d-software-upgrade-plan.md) 承接执行排期，本文件保留为历史路线图。
+
 计划基线：2026-11-07。适用项目：MiWiFi Legacy Packages。此文档定义开发顺序与验收条件，不表示已完成部署或存在可安装的发布包。
 
 ## 项目目标与边界
