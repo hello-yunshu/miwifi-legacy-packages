@@ -1,6 +1,6 @@
 #!/bin/sh
 # 隔离演练：在 2223 起 dropbear 2026.94，成功则写标记。不碰 22。
-ROOT=/userdisk/data/dropbear-2026.94
+ROOT=/userdisk/data/.dev/live/dropbear
 D=$ROOT/run/drill
 MARK=$D/takeover.ok
 PIDFILE=/var/run/dropbear.drill.pid

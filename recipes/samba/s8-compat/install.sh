@@ -2,22 +2,22 @@
 # S8 compat installer: versioned install / verify / rollback of the SMB
 # service entry owned by /etc/init.d/samba.
 #
-#   /userdisk/data/s8compat/versions/v1/hook.sh      active compat driver
-#   /userdisk/data/s8compat/versions/v1/xiaomi-smb-adapter.sh
-#   /userdisk/data/s8compat/versions/v1/samba.init.wrapper
-#   /userdisk/data/s8compat/versions/v0-vendor/samba.init   pristine vendor init
-#   /userdisk/data/s8compat/current -> versions/v1 | versions/v0-vendor
+#   /userdisk/data/.dev/live/s8compat/versions/v1/hook.sh      active compat driver
+#   /userdisk/data/.dev/live/s8compat/versions/v1/xiaomi-smb-adapter.sh
+#   /userdisk/data/.dev/live/s8compat/versions/v1/samba.init.wrapper
+#   /userdisk/data/.dev/live/s8compat/versions/v0-vendor/samba.init   pristine vendor init
+#   /userdisk/data/.dev/live/s8compat/current -> versions/v1 | versions/v0-vendor
 #   /etc/init.d/samba         stable wrapper (falls back to vendor)
 #   /etc/init.d/samba.vendor  byte-identical vendor copy
 set -u
 
-BASE=/userdisk/data/s8compat
+BASE=/userdisk/data/.dev/live/s8compat
 VERS=$BASE/versions
 CUR=$BASE/current
 INIT=/etc/init.d/samba
 VENDOR=/etc/init.d/samba.vendor
-SMBROOT=/userdisk/data/s7root/current
-ADAPTER_SRC=/userdisk/data/s7root/xiaomi-smb-adapter.sh
+SMBROOT=/userdisk/data/.dev/live/samba/current
+ADAPTER_SRC=/userdisk/data/.dev/live/samba/xiaomi-smb-adapter.sh
 S2_LINK=/userdisk/data/samba-s2/root
 HOTPLUG=/etc/hotplug.d/block/90-s8-mounts
 CRON=/etc/crontabs/root

@@ -14,8 +14,8 @@
 set -u
 
 PKG=$(cd "$(dirname "$0")" && pwd -P) || exit 2
-BASE=${S7_BASE:-/userdisk/data/s7root}
-S8=${S8_BASE:-/userdisk/data/s8compat}
+BASE=${S7_BASE:-/userdisk/data/.dev/live/samba}
+S8=${S8_BASE:-/userdisk/data/.dev/live/s8compat}
 INIT=/etc/init.d/samba
 VENDOR=/etc/init.d/samba.vendor
 PORTS="139 445"

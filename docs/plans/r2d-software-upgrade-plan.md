@@ -10,6 +10,7 @@
 - 最新只读现场证据：[2026-11-09 14:29 快照](../evidence/2026-11-09-stage0/readonly-capture.txt)
 - SMB 当前状态审计：[1.0.7-r2d 审计](../audits/smb-1.0.7-audit-2026-11-09.md)
 - 说明：设备清点、固件可行性、阶段 0 快照与 SMB 审计已随本轮收口纳入版本控制，链接可直达；原始输出索引见 [证据目录](../evidence/README.md)。
+- **路径变更（2026-11-10）**：设备开发产物已全部迁入 `/userdisk/data/.dev/`（见 `decisions.md` S14）。本文历史章节中的 `/userdisk/data/s7root`、`/userdisk/data/s8compat`、`/userdisk/data/dropbear-2026.94`、`/userdisk/data/r2d-cand` 分别对应当前的 `.dev/live/samba`、`.dev/live/s8compat`、`.dev/live/dropbear`、`.dev/candidates`；新命令请直接用新路径。
 
 ## 0. 本版改动
 
@@ -30,7 +31,7 @@
 
 | 编号 | 组件 | 当前状态 | 目标 | 依赖 | 验收要点 |
 |---|---|---|---|---|---|
-| A0 | Samba 服务与 1.0.7 兼容层 | Samba 4.25.1 运行；139/445 归 `samba-s5d`；ACL 与 cron 自愈有设备证据 | 完成 1.0.7 收尾：冷启动核对、`homes` 运行时确认与产品决策 | 阶段 0 回滚资产（§4.1） | 冷启动后端口/ACL/cron 保持；`homes` 配置与枚举一致、产品去留有记录；访客端到端在无 BSS 时保持 BLOCKED |
+| A0 | Samba 服务与 1.0.7 兼容层 | Samba 4.25.1 运行；139/445 归 `samba-s5d`；ACL 与 cron 自愈有设备证据 | 完成 1.0.7 收尾：冷启动核对、`homes` 隐藏并持久化（产品去留已定，见 `decisions.md` S15） | 阶段 0 回滚资产（§4.1） | 冷启动后端口/ACL/cron 保持；`homes` 配置与枚举一致、去留已有记录；访客端到端在无 BSS 时保持 BLOCKED |
 | A1 | Samba 上游维护与 4.25.1 复核 | 设备与上游当前 stable 同为 4.25.1 | 上游出现新 stable 或安全修复时重锁源码、迁移 SDK 补丁并发布新 payload | A0 验收；构建容器与复现脚本 | 新版本通过 §5 全套回归并独立窗口部署；无新 upstream 时不产生部署对象 |
 | B1 | Dropbear SSH 服务端 | 2011.54，TCP 22 对 LAN/访客网可达；候选 2026.94 源已锁定并验签 | 私有树构建候选，备用端口并行验证后接管 22 | 不依赖候选的回退通道（字节级备份 + 原厂二进制原位 + 独立看护 + `rollback-22.sh`） | 已接管：banner/密钥登录/进程归属/认证方法/管理面/回退链均实测；冷启动未重启验证 |
 | B2 | curl | 7.33.0 + PolarSSL 1.3.16；仓库内未见调用点，设备侧只见 `/etc/init.d/miDebug.sh` 引用 | 先盘点调用方，再决定升级范围；如需升级，独立前缀 + 私有 TLS | 调用方清单与协议/选项需求 | 每个调用方比对退出码、输出与副作用；`/usr/bin/curl` 保持 7.33.0 |
@@ -65,8 +66,8 @@
 | 工作项 | 现状 | 判定方式 | 完成标准 |
 |---|---|---|---|
 | 升级后整机冷启动 | 现有证据只覆盖安装、`samba restart`、cron 同步；装包早于当前 uptime，无冷启动记录 | `uptime -s`、`readlink /userdisk/data/s7root/current`、`netstat -ltnp \| grep -E ':(139\|445) '`、`iptables -S INPUT`、`crontab -l \| grep diskacl-sync` | 冷启动后 139/445 仍归 `samba-s5d`；`diskacl-status` 为 `chain=present jumps=2 legacy_chain=absent guest=enforced`；cron 行存在；SSH 22 与 Web 80/8443 正常 |
-| `homes` 运行时确认 | UCI `samba.@samba[0].homes=1`；适配器据此输出 `[homes]`（comment/browseable=no/read only=no/create mode=0750，无 `path`）；macOS `smbutil view -N` 列出 `homes` | `uci get samba.@samba[0].homes`；`testparm -s $ROOT/etc/smb.conf \| sed -n '/^\[homes\]/,/^\[/p'`；`smbutil view -N //guest@192.168.3.2` | 生产 smbd 实际加载的配置、渲染结果与枚举三者一致 |
-| `homes` 产品决策 | 设备私有 `smbpasswd` 为 0 字节、`pdbedit -L` 无用户；内容访问只能在隔离实例建测试用户 | 决策记录（保留 / 隐藏 / 删除）；若隐藏则 `homes=0` 单独递增包版本 | 决策有书面记录；改动走独立窗口并回归普通共享、App 与回滚 |
+| `homes` 运行时确认 | UCI `samba.@samba[0].homes=1`；适配器据此输出 `[homes]`（comment/browseable=no/read only=no/create mode=0750，无 `path`）；macOS `smbutil view -N` 列出 `homes`。已于 2026-11-10 改为隐藏（`homes=0`，枚举不再出现，见 S15） | `uci get samba.@samba[0].homes`；`testparm -s $ROOT/etc/smb.conf \| sed -n '/^\[homes\]/,/^\[/p'`；`smbutil view -N //guest@192.168.3.2` | 生产 smbd 实际加载的配置、渲染结果与枚举三者一致 |
+| `homes` 产品决策 | 设备私有 `smbpasswd` 为 0 字节、`pdbedit -L` 无用户；内容访问只能在隔离实例建测试用户 | 决策记录（保留 / 隐藏 / 删除）；**已选隐藏**：`homes=0` 由 `/etc/init.d/samba-homes-fix`（START=97 + 有界复检）在冷启动后恢复，不改 payload、不递增包版本（S15） | 决策有书面记录；改动走独立窗口并回归普通共享、App 与回滚 |
 
 访客网 SMB 端到端仍 BLOCKED：Broadcom 驱动 `WLC_SET_VAR(bss)` 失败，`wl1.2` 无法创建，`br-guest` 无成员。不得为补测继续改这台设备的无线配置。
 
@@ -507,7 +508,7 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 
 | 编号 | 组件 | 最终状态 | 说明 |
 |---|---|---|---|
-| A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留（保留/隐藏/删除）仍未决策，属 A0 剩余项，需单独递增版本窗口 |
+| A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留已定**隐藏**（2026-11-10）：`homes=0`，冷启动被厂商 `datacenter` 异步改回 1 后由 S97 init + 有界复检压回，枚举中无 `nobody`/`Home Directories`；三次冷启动验证通过（见 `decisions.md` S15） |
 | A1 | Samba 上游维护 | **未触发** | 上游 stable 仍 4.25.1，无部署对象 |
 | B1 | Dropbear 2026.94 | **PASS（22 已接管，含冷启动）** | 原厂二进制/配置/host key/authorized_keys/init 先做字节备份并 `md5sum -c` 校验（`/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`）。隔离 2223 双演练：成功路径写标记；强制失败路径由独立看护 15 s 到点杀掉新实例、22 保持原厂。22 接管后 banner `dropbear_2026.94`、既有公钥登录成功、`/proc/<pid>/exe` 指向私有树、认证方法 `publickey,password`、LuCI 200、SMB 未变；`/etc/init.d/dropbear` wrapper 的标记开/关 stop/start 与 `rollback-22.sh` 完整回退均实测。**2026-11-10 01:45 真实 `reboot`**：约 50 s 恢复，`/userdisk/data` 于 16.66 s 挂载、dropbear 37.29 s 启动，冷启动后 22 仍为 2026.94（未回退），host key 指纹与公钥登录正常；Samba/nmbd/ACL/cron/LuCI 无退化。见 [证据](../evidence/2026-11-10-b1-takeover/coldboot.md) |
 | B2 | curl 8.23.0 | **部分覆盖（全量替换不可行）** | `miDebug.sh` 已切；`mitvapp` 的 `localhost:` URL 无法用 `--proto-default`/`--proto =http` 覆盖（实测 http=000），只有改写调用方为 `http://` 才等价；`helper.sh` 的 `-skL` 依赖 HTTPS，私有 curl 仅 `Protocols: http`；`wifishare.sh`、`netspeed` 位于只读 `/usr`，PATH 全为只读目录，无法 shim。见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |

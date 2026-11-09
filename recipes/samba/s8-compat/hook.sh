@@ -14,8 +14,8 @@ set -u
 
 S8DIR=$(cd "$(dirname "$0")" 2>/dev/null && pwd -P) || S8DIR=$(dirname "$0")
 ADAPTER=$S8DIR/xiaomi-smb-adapter.sh
-[ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/s7root/xiaomi-smb-adapter.sh
-SMBROOT=${S8_SMB_ROOT:-/userdisk/data/s7root/current}
+[ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/.dev/live/samba/xiaomi-smb-adapter.sh
+SMBROOT=${S8_SMB_ROOT:-/userdisk/data/.dev/live/samba/current}
 PORTS=${S8_PORTS:-139 445}
 
 log() {
