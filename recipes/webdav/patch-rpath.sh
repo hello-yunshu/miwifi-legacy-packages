@@ -2,6 +2,12 @@
 # Rewrite the baked DT_RPATH of a deployed lighttpd tree so it never points at
 # a path outside the .yunshu tree (the build prefix lived at the data-disk root).
 #
+# Legacy note: the .dev/live/webdav/currentlib and r2d-cand/b6-webdav patterns
+# below are match targets for trees built before the .yunshu migration.  They
+# are not active paths; do not "fix" them to .yunshu or old trees will no
+# longer match.  New trees are built with --prefix inside .yunshu and need no
+# patching.
+#
 # The build produced a two-entry RPATH string:
 #   /work/stage2/b6-webdav/root/userdisk/data/r2d-cand/b6-webdav/root/lib
 #   :/userdisk/data/r2d-cand/b6-webdav/root/lib                      (112 bytes)
