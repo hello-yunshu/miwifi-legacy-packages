@@ -11,7 +11,7 @@
 | `client-fix-matrix.txt` | 403 修复后的完整矩阵：未认证 401、`GET /` 200 四目录、子目录 200、PROPFIND 207、OPTIONS 200、`.dev` 404、PUT/GET/DELETE |
 | `client-two-roots.txt` | 双根改造后的矩阵：`GET /` 只列 `本机储存`/`外接盘`、charset 正确、两级列表、PROPFIND 207、根写入被拒、`.dev`/符号链接 404、外接盘断链自愈 |
 
-设备侧原始证据在 `/userdisk/data/.dev/evidence/webdav-20261110/`。
+设备侧原始证据在 `/userdisk/data/.yunshu/evidence/webdav-20261110/`。
 
 事故记录：验证共享根 DELETE 语义时误删 `共享/文件共享说明.jpg`，已从固件原件
 `usr/share/datacenter/文件共享说明.jpg` 恢复，md5 `adaaf63f0e57d8ba4ae23f987333cf4b`，

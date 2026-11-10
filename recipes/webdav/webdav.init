@@ -1,11 +1,11 @@
 #!/bin/sh /etc/rc.common
 # WebDAV 开机拉起钩子（非阻塞：等待 /userdisk/data 挂载在 run.sh 子进程里做）
-# 服务本体与回退方式见 /userdisk/data/.dev/live/webdav/run.sh
+# 服务本体与回退方式见 /userdisk/data/.yunshu/live/webdav/run.sh
 START=99
 STOP=10
 USE_PROCD=0
 
-RUN=/userdisk/data/.dev/live/webdav/run.sh
+RUN=/userdisk/data/.yunshu/live/webdav/run.sh
 
 start() {
 	( i=0; while [ ! -x "$RUN" ] && [ "$i" -lt 180 ]; do sleep 1; i=$((i+1)); done

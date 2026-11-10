@@ -1,0 +1,11 @@
+lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
+
+	Sharename       Type      Comment
+	---------       ----      -------
+	下载          Disk      
+	共享          Disk      
+	图片          Disk      
+	摄像机监控视频$ Disk      
+	文档          Disk      
+	IPC$            IPC       IPC Service (Share from router)
+SMB1 disabled -- no workgroup available

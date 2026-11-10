@@ -17,7 +17,7 @@
 - 幂等：`homes` 已是 0 时只记 `no-op`，不写配置、不 reload。
 - 写入路径：`uci set homes=0` + `uci commit` + reload；reload 后校验 smbd，被带停则 `stop`+`start` 自愈。
 - 后台有界复检 +15/+30/+45/+60/+90 秒，被改回 1 就再压一次，顺带确认 smbd 存活。
-- 日志：`/userdisk/data/.dev/live/samba-homes-fix.log`，每行带 `[uptime N]`。
+- 日志：`/userdisk/data/.yunshu/live/samba-homes-fix.log`，每行带 `[uptime N]`。
 
 ## 安装与回退
 
@@ -34,4 +34,4 @@ chmod 755 /etc/init.d/samba-homes-fix
 rm -f /etc/rc.d/S97samba-homes-fix /etc/rc.d/K10samba-homes-fix /etc/init.d/samba-homes-fix
 ```
 
-改动前的配置副本：`/userdisk/data/.dev/backups/homes-persist-20261110/`。
+改动前的配置副本：`/userdisk/data/.yunshu/backups/homes-persist-20261110/`。

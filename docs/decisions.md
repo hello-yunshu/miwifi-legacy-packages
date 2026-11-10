@@ -220,6 +220,8 @@
 
 ## S14（开发产物归入隐藏目录 `/userdisk/data/.dev`，2026-11-10）
 
+> 本节路径约定已被同日 S20 取代：`.dev` → `.yunshu`，两个顶层兼容链接均已消除（Samba 已重编）。
+
 - D-S14-01 布局与命名：本项目产生的目录/文件全部收进单一隐藏顶层 `/userdisk/data/.dev`（点号开头，`ls` 默认不显示；名称短、非厂商名，不与 `.Entware`/`.sysapihttpd` 冲突）。分五类：`live/`（现役，动之前先停服务）、`releases/`（发布 tar 归档）、`candidates/`（未部署候选构建树）、`backups/`（回滚资产与配置副本）、`evidence/`（阶段采集）。不单列 `tools/`：接管/回退/适配器/同步脚本本身就是服务生命周期的一部分，分别位于 `live/dropbear/bin`、`live/s8compat/versions/v1`、`live/samba`，抽出会破坏引用；`.dev/LAYOUT.txt` 在目录根标明“哪些能动”。
 - D-S14-02 两个顶层兼容链接是硬需求，不是图省事：Samba 4.25.1 的编译期前缀为 `/userdisk/data/samba-s2/root`（`samba-s5d -b` 与二进制内字符串均确认），候选二进制 RPATH 为 `/userdisk/data/r2d-cand/<comp>/root/lib`。因此保留 `/userdisk/data/samba-s2 -> .dev/live/samba-s2`（其内 `root -> .dev/live/samba/versions/1.0.7-r2d/root`）与 `/userdisk/data/r2d-cand -> .dev/candidates`。只有重新编译才能去掉，代价高于收益，本轮不重编。
 - D-S14-03 引用同步（改前 `cp -p` 到 `.dev/backups/config-before-hidden-20261110-0255/` 并记录 md5）：`/etc/init.d/samba`（`S8ROOT`、`S8COMPAT_HOOK`，`59d577c4…`→`0220fa6c…`）、`/etc/init.d/dropbear`（`NEWPROG`、`NEWMARK`，`504eeae6…`→`89f96524…`）、`/etc/init.d/miDebug.sh`（`CURL`，`e46abbf3…`→`1d9a458e…`）、`/etc/hotplug.d/block/90-s8-mounts`（`HOOK`、`LOG`，`861b98d8…`→`bd12512f…`）、`/etc/crontabs/root`（`diskacl-sync`，`5e8946d2…`→`a503fb30…`）、`live/s8compat/versions/v1/{hook.sh,diskacl-sync.sh,samba.init.wrapper}` 及其 `MANIFEST`/`hotplug.md5`、`live/samba/xiaomi-smb-install.sh`、`live/dropbear/{bin/*.sh,dropbear.init.new}`、`backups/dropbear-state/backup-dropbear-v2011.54/restore.sh`。仓库同名脚本同步更新；`recipes/samba/repro-build.sh` 的 `/userdisk/data/samba-s2/root` 未改，因为它是编译期前缀。
@@ -278,3 +280,83 @@
 - D-S18-06 其他取舍：数据盘根部的散落文件不逐个 bind（文件被替换后 bind 会指向旧 inode），所以 `本机储存` 只呈现目录树；新增/删除顶层目录由 30 秒看护跟进。旧的四目录平铺 mount 由 `cleanup_legacy()` 在启动时自动卸载并 `rmdir`，无需人工清理。
 - D-S18-07 验证（Mac curl，证据 `docs/evidence/2026-11-10-b6-webdav/client-two-roots.txt`）：未认证 401；`GET /` 200 且只列两个入口；`本机储存`/`外接盘` 均 200；`PROPFIND` 三处 207；`下载` 下 PUT 201 / GET 200 内容一致 / DELETE 204；根上 PUT 500（拒绝）；`.dev`、`samba-s2` 404 且不出现在列表；外接盘断链后根仍 200 并自动重绑。
 - D-S18-08 回退：`run.sh stop` 停看护/lighttpd 并卸载全部 bind（含两个根的子项），不删数据；`rm -f /etc/rc.d/S99webdav` 关自启。若要恢复四目录平铺，检出 S17 提交的 `run.sh`/`lighttpd.conf` 覆盖后 `run.sh restart` 即可，`cleanup_legacy()` 不会破坏新结构。
+
+## S19（数据盘根目录收口：消除 r2d-cand，2026-11-10）
+
+> D-S19-06/07/08 中“`samba-s2` 不能删、`.dev` 是最终形态”的结论已被同日 S20 取代：Samba 已重编进 `.yunshu`，根链接与 `.dev` 均已不存在。
+
+目标：`/userdisk/data` 顶层只留 `.dev` + 用户数据 + 共享目录；开发产物一律进 `.dev`。
+
+- D-S19-01 盘点结论：清理前根上 25 项、清理后 24 项——用户数据 6 个散落文件 + 8 个共享目录，厂商/系统隐藏项 7 个（`.Entware`、`.cache_dir`、`.filetransfer_tmp`、`.swapfiles`、`.sysapihttpd`、`.systemconfig`、`.upload_tmp`）+ `lost+found`，开发产物只有 `.dev`，兼容链接原有两个（`r2d-cand` 已删、`samba-s2` 保留）。清单与逐项归类见 `docs/evidence/2026-11-10-root-cleanup/root-listing.txt`。
+- D-S19-02 `LD_LIBRARY_PATH` 方案实测无效，不改用它。uClibc 0.9.33.2 解析依赖时先看“加载该对象的那个 ELF”自身的 `DT_RPATH`，再查环境变量；`mod_webdav.so` 的 `DT_RPATH` 写死为 `/userdisk/data/r2d-cand/b6-webdav/root/lib`，所以在 `run.sh` 里 export `LD_LIBRARY_PATH` 后 `maps` 仍落回候选目录。`LD_PRELOAD` 也只是再加载一份候选库，不能阻止原路径被打开。
+- D-S19-03 采用 ELF 的 `DT_RPATH` **等长**字符串替换：`/userdisk/data/r2d-cand/b6-webdav/root/lib`（42 字节）→ `/userdisk/data/.dev/live/webdav/currentlib`（42 字节，符号链接指向 `current/lib`），共 25 个 ELF。等长是硬要求，长短变化会让 `.dynstr` 之后的偏移整体错位，表现为启动即 SIGILL；Perl 的 `s{}{}` 替换段不能加引号（引号会变成字面字符）。脚本固化为 `recipes/webdav/patch-rpath.sh`，部署新树必须先跑。`mod_webdav.so` 的 RPATH 同时含构建机路径一段（设备上不存在）与 live 路径一段，两段均已写入，不影响加载。
+- D-S19-04 完成替换并验证通过后，删除根上 `r2d-cand` 链接与 `candidates/b6-webdav`（6372 KB → 0）。验证矩阵：`/proc/<pid>/maps` 中 lighttpd、5 个 `mod_*.so`、`libxml2`、`libsqlite3` 全部来自 `versions/1.0.0-r2d/root`；`/ -> 200`、`/本机储存/ -> 200`、`/外接盘/ -> 200`、`/本机储存/.dev/ -> 404`、未认证 `401`、`PROPFIND 207`；删除链接后再次 `run.sh restart` 仍全部通过；22/139/445/5005 正常。证据 `docs/evidence/2026-11-10-root-cleanup/rpath-and-health.txt`。
+- D-S19-05 同批清掉 `candidates/b2-curl`（1.7 MB），`/etc/init.d/miDebug.sh` 的 `CURL` 改回 `/usr/bin/curl`（B2 只做 HTTP，厂商 curl 足够）；原文件备份在 `.dev/backups/midebug-curl-20261110/`，`sh -n` 通过。
+- D-S19-06 `samba-s2` **不能删**，也不建议用 bind mount 替代。`smbd -b` 显示 SBINDIR / BINDIR / CONFIGFILE / LIBDIR / DATADIR / SAMBA_DATADIR / MODULESDIR / LOCKDIR / STATEDIR / CACHEDIR / PIDDIR / SMB_PASSWD_FILE / PRIVATE_DIR / BINDDNS_DIR 全部落在 `/userdisk/data/samba-s2/root/*`；`vfs_readonly` 等模块由 `MODULESDIR`/`PRIVATE_DIR` 的编译期常量 `dlopen`，`smb.conf` 没有对应可运行期覆盖项，`LD_LIBRARY_PATH` 只能解决库、解决不了模块目录；适配器还要用 `smbd -b` 的 SBINDIR 反查做断言。bind mount 同样要在根上建挂载点，不更干净。彻底去掉只能重编译 Samba 把 `--prefix` 指进 `.dev`，需长时间停机验证，另列任务。
+- D-S19-07 回退：`RPATH` 补丁的原树在 `backups/webdav-r2dcand-20261110/root-orig/`，`cp -a` 回去即可（不恢复链接也能跑）。若要连 `r2d-cand` 一起恢复，需先从仓库重新部署 `b6` 树再建链接——候选已删，不能只建链接。步骤写入设备侧 `live/webdav/ROLLBACK.txt` 第 5 节。
+- D-S19-08 防复发约定（写入设备 `.dev/LAYOUT.txt`）：① 开发产物只放 `.dev/`；② 构建前缀不要指向 `/userdisk/data` 顶层，能选 `.dev` 内路径就选；③ 删根上任何条目之前先 `grep /etc`、查 `/etc/crontabs/root`，再看 `/proc/*/maps` 与 `netstat`。仓库里指向 `r2d-cand`/`candidates` 的脚本（`webdav-guard.sh`、`lighttpd-test-18084.conf`）已同步改到 live 树，避免照着旧路径把链接重新造出来。
+- D-S19-09 清理过程中 WebDAV 有两次显式 `stop`/`start`（17:31:00、17:31:43），是本轮 `run.sh restart`，用于加载打完补丁的二进制并证明删除链接后仍可启动；同日 17:27:16 还有一次成对重启，早于补丁脚本落盘（17:30:56），归属无法从现场证据确认，只记录事实。
+
+## S20（`.dev` → `.yunshu`：根目录只留一个隐藏开发根，Samba 重编去掉 `samba-s2`，2026-11-10）
+
+目标（用户指令）：`/userdisk/data` 顶层不再有任何开发痕迹，全部开发资产收进唯一隐藏根
+`.yunshu`；授权重编 Samba，把 `--prefix` 指进 `.yunshu`，从而删除根上最后一个兼容链接
+`samba-s2`；此后所有开发产物都按同一规矩存放。
+
+- D-S20-01 结构定稿并整树改名：`.dev` → `.yunshu`，内部按生命周期分层——
+  `live/{samba,s8compat,dropbear,netwatch,webdav}`（现役）、`releases/`（发布 tar）、
+  `builds/`（剩余候选树）、`backups/`（回滚与配置备份）、`evidence/`（阶段证据）、
+  `LAYOUT.txt`（结构与维护约定）。迁移用同盘 `mv`，不复制、不 tar，避免双份占用。
+  引用点逐条改写：`/etc/init.d/{samba,webdav,netwatch,samba-homes-fix,dropbear,miDebug.sh}`、
+  `/etc/hotplug.d/block/90-s8-mounts`、`/etc/crontabs/root`、`live/s8compat/versions/v1/hook.sh`、
+  `live/samba/xiaomi-smb-adapter.sh`（默认 `ROOT` 一并改到 `live/samba/current`）、
+  WebDAV `run.sh` / `patch-rpath.sh` / `lighttpd.conf` / `ROLLBACK.txt`。
+  迁移前备份：`backups/pre-yunshu-20261110-migrate/`（/etc 副本）与
+  `pre-yunshu-20261110-migrate-internal.tar.gz`。
+- D-S20-02 WebDAV 在改名后无法启动，根因是旧 RPATH 补丁只替换了子串：
+  `readelf -d` 显示实际值是两段 112 字节——构建机 `DESTDIR`
+  `/work/stage2/b6-webdav/root/userdisk/data/...` + 设备候选路径
+  `/userdisk/data/r2d-cand/b6-webdav/root/lib`，旧脚本只改了第二段中的子串，第一段
+  `/work/stage2` 仍在，`dlopen` 继续去候选目录找库。修复：从
+  `backups/webdav-r2dcand-20261110/root-orig/` 还原 25 个 ELF，`patch-rpath.sh` 改为
+  **整段匹配**（`/work/stage2/...` + `r2d-cand/...` 的两种拼接形态）并统一写为
+  `/userdisk/data/.yunshu/live/webdav/lib`，不足字节补 NUL，文件字节数不变。
+  另有两处非 RPATH 文本（`bin/xmllint` 的默认 catalog、`sbin/lighttpd-angel` 的默认
+  lighttpd 路径）同样等长改写；`live/webdav/sbin -> current/sbin` 保留，
+  `etc` 链接因原树本就不带该目录、xmllint 不依赖而删除。
+- D-S20-03 Samba 4.25.1 重编为 `1.0.8-r2d`，编译期前缀
+  `--prefix=/userdisk/data/.yunshu/live/samba/runtime`。构建机为本机 Docker
+  `miwifi-s1`（ubuntu:24.04）内的 ARM uClibc 交叉工具链，依赖前缀复用已有
+  `/opt/samba-next`（gnutls 3.8.13 / nettle 3.10.2 / gmp 6.3.0），7 个既有补丁按序
+  应用。`/work`、`/toolchain` 是 virtiofs 挂载，单文件编译约 6–7 秒；把工具链、
+  依赖前缀与源码复制进容器 overlay 后降到约 136 ms，configure 3 分 43 秒、
+  `make -j` 4 分钟、install+打包约 1 分钟。外部运行库（libgnutls/libnettle/
+  libhogweed/libgmp 共 8 个文件）按旧树惯例拷入树内 `lib/`，`DT_RPATH` 为
+  `/userdisk/data/.yunshu/live/samba/runtime/lib`。
+- D-S20-04 双指针模型：`runtime -> versions/<ver>/root` 是 ELF 写死的前缀，
+  `current -> versions/<ver>/root` 是 init/hook/adapter/人工使用的入口；两者必须同时
+  指向同一棵树。`xiaomi-smb-install.sh install` 只落树并校验 `smbd -b` 的 baked prefix，
+  `activate` 原子改两个指针并记录 `state/previous`。离线验证通过后才切换：
+  `smbd -b` 的 SBINDIR/BINDIR/CONFIGFILE/LIBDIR/DATADIR/SAMBA_DATADIR/MODULESDIR/
+  LOCKDIR/STATEDIR/CACHEDIR/PIDDIR/PRIVATE_DIR/BINDDNS_DIR/SMB_PASSWD_FILE 等 17 项
+  全部在 `runtime` 下；`testparm` 解析现网 `smb.conf` 无错；`smbd --version` 为 4.25.1；
+  vfs 模块 40 个与旧树一致。
+- D-S20-05 切换顺序：`/etc/init.d/samba stop` → 停私有 nmbd → `activate 1.0.8-r2d` →
+  `start`。确认共享枚举与基线一致（下载/共享/图片/摄像机监控视频$/文档 + IPC$，
+  无 `[homes]`）、`smbclient` 可列、日志无模块加载错误后，删除根
+  `/userdisk/data/samba-s2` 与 `.yunshu/live/samba-s2`，并在**没有该链接**的状态下
+  `restart` 成功。1.0.7/1.0.6 旧树保留，但它们烘焙的是旧前缀；回退脚本
+  `.yunshu/backups/samba-1.0.7-rollback.sh` 会临时重建根链接，切回 1.0.8 后再删除，
+  这是旧树的硬约束，已写入 `LAYOUT.txt`。
+- D-S20-06 终态与验证：整机冷启动后 22/139/445/5005 与 137/138 全部监听；Samba
+  进程 cmdline 全为 `.yunshu` 路径；共享枚举同上；`[homes]` 不存在；WebDAV
+  未认证 401、根 200、两个入口 200、`PROPFIND` 207、`.yunshu` 404、PUT/GET/DELETE
+  201/200/204；`s8-diskacl` 链与 br-guest DROP 在位；crond 与 `diskacl-sync.sh` cron
+  在位；netwatch running、200 份环形快照。根目录只剩用户数据、8 个共享目录、
+  7 个厂商隐藏项、`lost+found` 与 `.yunshu`，无任何开发链接。
+- D-S20-07 防复发（写入设备 `.yunshu/LAYOUT.txt` 与仓库 `recipes/*/README.md`）：
+  ① 开发产物一律放 `.yunshu/`，不在数据盘顶层建目录、链接或文件；② 构建前缀只指向
+  `.yunshu` 内路径（Samba `live/samba/runtime`，WebDAV `live/webdav/lib`），不再指向
+  顶层或构建机路径；③ 删除顶层条目之前先 `grep /etc`、`/etc/crontabs/root`，再查
+  `/proc/*/maps` 与 `netstat`；④ 部署新 Samba 树一律 `install` + `activate`，不手工
+  改 `current`/`runtime`。

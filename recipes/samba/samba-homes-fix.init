@@ -16,7 +16,7 @@ EXTRA_HELP="	dryrun	Show what would be done, change nothing
 	restore	Set homes back to 1 and reload (rollback)
 	check	Re-check once and fix if needed (idempotent, for cron)"
 
-LOG=/userdisk/data/.dev/live/samba-homes-fix.log
+LOG=/userdisk/data/.yunshu/live/samba-homes-fix.log
 
 log() {
 	case "$LOG" in

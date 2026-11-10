@@ -1,0 +1,76 @@
+RPATH 补丁与 WebDAV 健康核对（2026-11-10，设备侧原始输出）
+设备：R2D / 192.168.3.2，服务：lighttpd 1.4.85 :5005
+
+== 1) 关键 ELF 的 DT_RPATH（.dynamic 的 tag 15，按 sh_link 取 .dynstr）==
+lighttpd:
+  RPATH /userdisk/data/.dev/live/webdav/currentlib
+mod_webdav.so:
+  RPATH /work/stage2/b6-webdav/root/userdisk/data/.dev/live/webdav/currentlib:/userdisk/data/.dev/live/webdav/currentlib
+libxml2:
+  RPATH /userdisk/data/.dev/live/webdav/currentlib
+angel:
+  RPATH /userdisk/data/.dev/live/webdav/currentlib
+mod_dirlisting:
+  RPATH /userdisk/data/.dev/live/webdav/currentlib
+说明：mod_webdav 的第一段是构建机路径（设备上不存在），第二段才是生效路径；
+      两段都是补丁后写入的，长度与旧串一致。
+
+== 2) 仍在二进制里出现 "r2d-cand" 的字符串（不是 RPATH，不参与加载）==
+lib/libxml2.so.16.1.4   file:///userdisk/data/r2d-cand/b6-webdav/root/etc/xml/catalog
+bin/xmlcatalog          /userdisk/data/r2d-cand/b6-webdav/root/etc/sgml/catalog
+bin/xmllint             "file:///userdisk/data/r2d-cand/b6-webdav/root/etc/xml/catalog are activated by default"
+sbin/lighttpd-angel     /userdisk/data/r2d-cand/b6-webdav/root/sbin/lighttpd
+影响：libxml2 的 catalog 默认提示与 xmllint/xmlcatalog 的默认 catalog 路径；
+      lighttpd-angel 未被使用（run.sh 直接 exec sbin/lighttpd）。服务运行不受影响。
+
+== 3) 运行中进程实际映射的库（/proc/22483/maps 去重）==
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/libsqlite3.so.3.54.1
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/libxml2.so.16.1.4
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/mod_auth.so
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/mod_authn_file.so
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/mod_dirlisting.so
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/mod_h2.so
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/lib/mod_webdav.so
+/userdisk/data/.dev/live/webdav/versions/1.0.0-r2d/root/sbin/lighttpd
+
+== 4) 无进程映射 candidates / r2d-cand ==
+for p in /proc/[0-9]*/maps; do grep -l "r2d-cand\|candidates" "$p"; done  ->  （空）
+
+== 5) 目录状态 ==
+ls -ld /userdisk/data/r2d-cand -> No such file or directory
+ls -ld /userdisk/data/.dev/live/webdav/currentlib -> current/lib
+ls -la /userdisk/data/.dev/candidates/ -> 仅 b1-dropbear-relax（528 KB）
+
+== 6) 接口矩阵（删除链接并重启后）==
+/userdisk/data/.dev/live/webdav/run.sh status:
+  binary: .../current/sbin/lighttpd ok
+  pid: 22483   watch_pid: 22488
+  listen: tcp 192.168.3.2:5005
+  本机储存: 下载 共享 图片 摄像机监控视频 数学 文件 文档 照片视频 全部 mounted
+  外接盘: mounted from /extdisks/sdb1
+未认证 GET /            -> 401
+GET /                   -> 200
+GET /本机储存/           -> 200
+GET /外接盘/             -> 200
+GET /本机储存/.dev/      -> 404
+PROPFIND /              -> 207
+netstat: 22 / 139 / 445 / 5005 均在监听
+/etc/init.d/samba status -> running pid=10641 port=139 445 (rc=0)
+dropbear -V -> Dropbear v2026.94
+
+== 7) Samba 编译期前缀证据（samba-s2 为什么不能删）==
+LD_LIBRARY_PATH=<root>/lib:<root>/lib/private smbd -b  (rc=0)
+   SBINDIR: /userdisk/data/samba-s2/root/sbin
+   BINDIR: /userdisk/data/samba-s2/root/bin
+   CONFIGFILE: /userdisk/data/samba-s2/root/etc/smb.conf
+   LIBDIR: /userdisk/data/samba-s2/root/lib
+   DATADIR: /userdisk/data/samba-s2/root/share
+   SAMBA_DATADIR: /userdisk/data/samba-s2/root/share/samba
+   MODULESDIR: /userdisk/data/samba-s2/root/lib
+   LOCKDIR: /userdisk/data/samba-s2/root/var/lock
+   STATEDIR: /userdisk/data/samba-s2/root/var/locks
+   CACHEDIR: /userdisk/data/samba-s2/root/var/cache
+   PIDDIR: /userdisk/data/samba-s2/root/var/run
+   SMB_PASSWD_FILE: /userdisk/data/samba-s2/root/private/smbpasswd
+   PRIVATE_DIR: /userdisk/data/samba-s2/root/private
+   BINDDNS_DIR: /userdisk/data/samba-s2/root/bind-dns

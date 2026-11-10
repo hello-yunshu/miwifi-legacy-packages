@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 # S8 SMB compatibility init: version switch for the vendor SMB service entry.
 #
-# Layout (all on the internal HDD, see /userdisk/data/.dev/live/s8compat):
+# Layout (all on the internal HDD, see /userdisk/data/.yunshu/live/s8compat):
 #   versions/v1/hook.sh            -> drives the new Samba instance
 #   versions/v0-vendor/            -> empty marker: full vendor behaviour
 #   current -> versions/v1         -> active compatibility version
@@ -19,7 +19,7 @@ fi
 
 . /etc/init.d/samba.vendor
 
-S8COMPAT_HOOK=/userdisk/data/.dev/live/s8compat/current/hook.sh
+S8COMPAT_HOOK=/userdisk/data/.yunshu/live/s8compat/current/hook.sh
 
 # rc.common shifts its own argv before sourcing this file, so the action is in
 # $action, not in $@.  Pass it explicitly or the vendor script sees no command.

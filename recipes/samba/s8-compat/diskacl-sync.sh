@@ -7,7 +7,7 @@
 # script is run by busybox crond once a minute; it is NOT a resident daemon.
 #
 # It is deliberately conservative:
-#   * no-op unless /userdisk/data/.dev/live/s8compat/current really points at v1
+#   * no-op unless /userdisk/data/.yunshu/live/s8compat/current really points at v1
 #     (after rollback to the vendor tree the job stays quiet);
 #   * no-op when macfilter is missing/unreadable or its md5 cannot be read;
 #   * only rebuilds when the macfilter md5 changed, or when the chain/jumps
@@ -22,11 +22,11 @@
 # TaskMonitor it re-applies the same blacklist chain, which is safe by design.
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
-BASE=${S8_BASE:-/userdisk/data/.dev/live/s8compat}
+BASE=${S8_BASE:-/userdisk/data/.yunshu/live/s8compat}
 S8DIR=$BASE/versions/v1
 ADAPTER=$S8DIR/xiaomi-smb-adapter.sh
-[ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/.dev/live/samba/xiaomi-smb-adapter.sh
-SMBROOT=${S8_SMB_ROOT:-/userdisk/data/.dev/live/samba/current}
+[ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/.yunshu/live/samba/xiaomi-smb-adapter.sh
+SMBROOT=${S8_SMB_ROOT:-/userdisk/data/.yunshu/live/samba/current}
 MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
 IPT=${S8_IPTABLES:-iptables}
 CHAIN=${S8_DISKACL_CHAIN:-s8-diskacl}

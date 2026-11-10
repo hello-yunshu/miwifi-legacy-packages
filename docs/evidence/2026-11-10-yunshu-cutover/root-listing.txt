@@ -1,0 +1,32 @@
+## root
+drwxrwxrwx   18 root     root          4096 Nov 10 18:24 .
+drwxrwxrwx    7 root     root           576 Nov  9 17:39 ..
+drwxr-xr-x   13 root     root          4096 Oct 16  2018 .Entware
+drwxrwxrwx    2 root     root          4096 Jan  5  2017 .cache_dir
+drwx------    2 root     root          4096 Oct 16  2018 .filetransfer_tmp
+-rw-r--r--    1 root     root     268435456 Oct 16  2018 .swapfiles
+drwxrwxrwx   16 root     root          4096 Jun 17  2015 .sysapihttpd
+drwxr-xr-x    7 root     root          4096 Aug 30  2017 .systemconfig
+drwx------    2 root     root          4096 Oct 16  2018 .upload_tmp
+drwxr-xr-x    7 root     root          4096 Nov 10 17:56 .yunshu
+-rw-rw-rw-    1 root     root      60353238 Sep 30  2023 2023-09-30 上午6.32.10.mp3
+-rw-rw-rw-    1 root     root     483376704 Sep 30  2023 2023-09-30 上午6.32.10.mp4
+-rwxrw-rw-    1 root     root     2055752700 Sep 30  2023 2023-09-30 下午2.15.56.mp4
+-rw-rw-rw-    1 root     root        679868 Oct 17  2023 WhatsApp Chat - Yun Shu SRS.zip
+drwx------    2 root     root          4096 Oct 16  2018 lost+found
+drwxrwxrwx    6 root     root          4096 Nov 10 18:24 下载
+drwxrwxrwx    4 root     root          4096 Nov 10 16:40 共享
+drwxrwxrwx    2 root     root          4096 Nov 10 07:27 图片
+drwxrwxrwx    4 nobody   nogroup       4096 Nov  8 03:24 摄像机监控视频
+drwxrwxrwx    3 root     root          4096 Jun 26  2022 数学
+drwxr-xr-x    8 51723371 51723371      4096 Nov  1 01:51 文件
+drwxrwxrwx    3 root     root          4096 Nov 10 16:36 文档
+drwxrwxrwx    2 root     root          4096 Nov 11  2024 照片视频
+-rwxrw-rw-    1 root     root           434 May 21  2025 笔记 2025年2月9日 上午3_24_10.txt
+-rwxrw-rw-    1 root     root          3806 Sep 23  2025 软路由所有docker.txt
+
+## broken links
+
+## samba links
+lrwxrwxrwx    1 root     root            23 Nov 10 18:22 /userdisk/data/.yunshu/live/samba/current -> versions/1.0.8-r2d/root
+lrwxrwxrwx    1 root     root            57 Nov 10 18:22 /userdisk/data/.yunshu/live/samba/runtime -> /userdisk/data/.yunshu/live/samba/versions/1.0.8-r2d/root

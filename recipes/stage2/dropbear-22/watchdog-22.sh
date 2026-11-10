@@ -1,7 +1,7 @@
 #!/bin/sh
 # 独立看护：接管期间若 deadline 内没有成功标记，自动回退原厂。
 # 只依赖 BusyBox；不依赖新 dropbear 可执行。
-ROOT=${B1_ROOT:-/userdisk/data/.dev/live/dropbear}
+ROOT=${B1_ROOT:-/userdisk/data/.yunshu/live/dropbear}
 MARK=$ROOT/run/takeover.ok
 LOG=$ROOT/log/watchdog.log
 ROLLBACK=${B1_ROLLBACK:-$ROOT/bin/rollback-22.sh}

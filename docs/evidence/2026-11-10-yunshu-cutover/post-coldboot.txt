@@ -1,0 +1,31 @@
+# collected Tue Nov 10 18:30:02 CST 2026
+
+## ports
+tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 
+tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 240 
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 840 
+tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 180 
+tcp        0      0 :::22                   :::*                    LISTEN       0 0 
+udp        0      0 192.168.3.255:137       0.0.0.0:*                            1752 0 
+udp        0      0 192.168.3.2:137         0.0.0.0:*                            280 2232 
+udp        0      0 0.0.0.0:137             0.0.0.0:*                            1752 0 
+udp        0      0 192.168.3.255:138       0.0.0.0:*                            2538 0 
+udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 1182 
+udp        0      0 0.0.0.0:138             0.0.0.0:*                            2538 0 
+
+## processes
+ 6007 ?        00:00:00 dropbear
+10256 ?        00:00:00 smbd-notifyd
+10259 ?        00:00:00 smbd-cleanupd
+11692 ?        00:00:00 nmbd
+11828 ?        00:00:00 dropbear
+17819 ?        00:00:00 smbd[192.168.3.
+28624 ?        00:00:00 dropbear
+
+## samba cmdline
+pid 10256: ./sbin/samba-s5d -D -s /userdisk/data/.yunshu/live/samba/current/etc/smb.conf -l /userdisk/data/.yunshu/live/samba/current/var/log 
+pid 10259: ./sbin/samba-s5d -D -s /userdisk/data/.yunshu/live/samba/current/etc/smb.conf -l /userdisk/data/.yunshu/live/samba/current/var/log 
+pid 17819: ./sbin/samba-s5d -D -s /userdisk/data/.yunshu/live/samba/current/etc/smb.conf -l /userdisk/data/.yunshu/live/samba/current/var/log 
+
+## uptime
+ 18:30:02 up 3 min,  load average: 0.41, 0.67, 0.32

@@ -14,8 +14,8 @@
 set -u
 
 PKG=$(cd "$(dirname "$0")" && pwd -P) || exit 2
-BASE=${S7_BASE:-/userdisk/data/.dev/live/samba}
-S8=${S8_BASE:-/userdisk/data/.dev/live/s8compat}
+BASE=${S7_BASE:-/userdisk/data/.yunshu/live/samba}
+S8=${S8_BASE:-/userdisk/data/.yunshu/live/s8compat}
 INIT=/etc/init.d/samba
 VENDOR=/etc/init.d/samba.vendor
 PORTS="139 445"
@@ -142,6 +142,14 @@ cmd_uninstall() {
 	if [ -L /userdisk/data/samba-s2/root ]; then
 		case $(readlink -f /userdisk/data/samba-s2/root) in
 			"$BASE"/*) rm -f /userdisk/data/samba-s2/root ;;
+		esac
+	fi
+	# 1.0.8 and later bake $BASE/runtime as the compile-time prefix; older
+	# trees used /userdisk/data/samba-s2/root (handled above).  Remove a
+	# prefix symlink only when it points into our own base.
+	if [ -L "$BASE/runtime" ]; then
+		case $(readlink -f "$BASE/runtime") in
+			"$BASE"/*) rm -f "$BASE/runtime" ;;
 		esac
 	fi
 	rm -f "$BASE/current"
