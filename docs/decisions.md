@@ -247,3 +247,21 @@
 - D-S16-06 冷启动：2026-11-10 07:18:28 记录基线后 `sync; reboot`，07:20:33 已恢复（uptime 1 分钟）；`webdav.log` 记录开机后（时钟仍为 2018-10-16 19:45:48）自动启动 pid=14296。核对：`/userdisk/data` 已挂、5005 已监听、四个共享均已 bind mount；随后 Mac curl 复测 CRUD 通过；`homes=0`，139/445、22、137/138、`s8-diskacl` 8 DROP + RETURN 均未变。
 - D-S16-07 事故与恢复：验证“DELETE 共享根”行为时对 `/共享/` 发起 DELETE，服务返回 207 并递归删除了 `文件共享说明.jpg`（256 699 B）。已从本机固件同路径原件 `usr/share/datacenter/文件共享说明.jpg` 复制回原位，md5 `adaaf63f0e57d8ba4ae23f987333cf4b` 与原件一致，权限恢复 0777、属主 root:root；`.piccache` 里只有 66 509 B 缩略图，未用它冒充原件。结论：WebDAV 对集合的 DELETE 是标准递归语义，四个共享根可被客户端整体清空，与 SMB 允许删除目录内容的语义一致；本轮不做方法级封锁，在 `recipes/webdav/README.md` 标注该风险。
 - D-S16-08 回退：`/userdisk/data/.dev/live/webdav/run.sh stop` 停看护、停 lighttpd、卸载四个 bind mount（不删共享目录数据）；`rm -f /etc/rc.d/S99webdav` 关闭自启；可选 `rm -f /etc/init.d/webdav`。不改 Samba/dropbear/防火墙配置。设备侧回退说明见 `/userdisk/data/.dev/live/webdav/ROLLBACK.txt`。
+
+## S17（WebDAV 403 修复与认证切换，2026-11-10）
+
+- 现象：访达/浏览器访问 `http://192.168.3.2:5005/` 显示 403 Forbidden。
+- 分层定位（Mac curl + 服务端访问日志）：
+  - `GET /`（带凭据）403，`GET /下载/` 等子目录同样 403；`PROPFIND /` 与四个子目录均 207；`OPTIONS /` 200（`DAV: 1,2,3`）；`.dev` 404；未认证 401。
+  - `/userdisk/data`（0777）到 `.dev/live/webdav/webroot` 各级对 `nobody` 的 x 权限齐全，PROPFIND 也能列目录，排除“父目录不可穿行”。
+  - 错误日志没有 403 记录（lighttpd 默认不记访问状态）；临时加 `mod_accesslog` 后确认 403 发生在静态处理器。
+  - 结论一：403 来自 lighttpd 静态目录处理——未加载 `mod_dirlisting` 且根目录无索引文件，浏览器 `GET /` 被拒。
+  - 结论二：访达 `WebDAVLib/1.3` 只发了一次 `OPTIONS /` → 401 的 Digest 挑战，随后不重试即放弃；Apple 客户端不支持 Digest。
+- 修复：
+  - 配置加载 `mod_dirlisting`，`dir-listing.activate = "enable"`、`dir-listing.hide-dotfiles = "enable"`。
+  - 认证从 Digest 切到 Basic：`auth.backend = "plain"`，`conf/users.basic`（`user:password`，0600 nobody），`realm` 仍为 `r2d-webdav`。
+  - docroot、四个 bind mount、`nobody` 降权、`umask 000`、START=99 自启与 `.dev` 隔离均未改。
+- 安全口径：仍不 root（降权 `nobody`）、不免密（Basic + 随机强口令）、`.dev` 仍 404；代价是 Basic 在 HTTP 下以 base64 传输口令，因此只绑 br-lan、不做 WAN 端口转发，并明确仅限可信内网。
+- 验证（Mac curl，证据 `docs/evidence/2026-11-10-b6-webdav/client-fix-matrix.txt`）：`GET /` 200 且列出四个目录；四个子目录 GET 均 200；五处 PROPFIND 均 207；OPTIONS 200；未认证 401 且 `WWW-Authenticate: Basic`；`.dev` 404；PUT 201 / GET 内容一致 / DELETE 204。
+- 未完成：Finder GUI 级挂载未能在自动化环境完成（`mount_webdav -S` 在发请求前阻塞，AppleScript 停在系统凭据框），需人工 `⌘K` 确认；服务端已按 Finder 要求提供 Basic + `OPTIONS 200` + `PROPFIND 207` + `GET / 200`。
+- 回退：服务回退同 D-S16-08；若需恢复 Digest，把 `auth.backend`、`auth.backend.*.userfile`、`auth.require` 的 `method` 改回 htdigest 版本（仓库上一提交可查）并 `run.sh restart`。

@@ -7,15 +7,18 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
 - 监听：`192.168.3.2:5005`（br-lan 地址，与 Samba `interfaces=br-lan` 一致）
 - 与现役服务无冲突：dropbear 22、samba-s5d 139/445、nmbd 137/138
 - 不做 WAN 端口转发；仅内网可达
-- 无 TLS（构建未启用 OpenSSL），因此用 HTTP Digest 认证，密码不以明文过网
+- 无 TLS（构建未启用 OpenSSL），因此只在局域网内使用；认证方式见下
 
 ## 认证与权限
 
-- Digest 认证，`realm=r2d-webdav`，用户文件 `conf/users.htdigest`（`user:realm:md5`）
+- Basic 认证，`realm=r2d-webdav`，用户文件 `conf/users.basic`（`user:password`，0600 nobody）
+- 为什么不用 Digest：macOS 访达的 `WebDAVLib/1.3` 只发一次 `OPTIONS`，收到 Digest 挑战后
+  不重试直接放弃（2026-11-10 用访问日志实测）；只有 Basic 能让 `⌘K` 正常挂载
 - lighttpd 绑定端口后降权到 `nobody:nogroup`，**不以 root 运行**
 - `umask 000` 启动，新建文件 0666、目录 0777，与 Samba 的 `create mask`/`directory mask` 一致，两边可互相改写
 - 只暴露 4 个目录：`下载`、`共享`、`图片`、`文档`；其它目录（含 `.dev`）不在 document-root 内
 - 四个目录用 `mount --bind` 挂进 `webroot/`，避免客户端 DELETE 掉共享入口本身
+- 目录列表已启用（`mod_dirlisting`）：浏览器 `GET /` 直接看到这四个目录，不返回 403
 
 ## 设备布局
 
@@ -23,7 +26,7 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
 /userdisk/data/.dev/live/webdav/
   current -> versions/1.0.0-r2d/root   二进制 + mod_webdav + 私有 lib
   conf/lighttpd.conf                   配置
-  conf/users.htdigest                  凭据（0600 nobody）
+  conf/users.basic                     凭据（user:password，0600 nobody）
   state/                               pid、error.log、上传临时目录、webdav.db
   webroot/{下载,共享,图片,文档}          四个共享的 bind mount 点
   run.sh                               start|stop|restart|status|watch|heal
@@ -51,8 +54,8 @@ ln -sfn versions/<ver>/root /userdisk/data/.dev/live/webdav/current
 /userdisk/data/.dev/live/webdav/run.sh restart
 ```
 
-修改用户：改 `conf/users.htdigest`（`user:realm:md5(user:realm:password)`），
-保持属主 `nobody:nogroup`、权限 0600。
+修改用户：改 `conf/users.basic`（`user:password`），
+保持属主 `nobody:nogroup`、权限 0600，然后 `run.sh restart`。
 
 ## 回退
 
@@ -66,8 +69,10 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 
 ## 已验证
 
-- 设备本机与用户 Mac 的 curl：PROPFIND `/` 只列出 4 个共享；PUT/GET/MOVE/MKCOL/DELETE 均成功
-- 未认证请求返回 401
+- 设备本机与用户 Mac 的 curl：`GET /` 返回 200 并列出 4 个共享；四个子目录 `GET` 均 200；
+  `PROPFIND` 全部 207；PUT/GET/MOVE/MKCOL/DELETE 均成功
+- 未认证请求返回 401（`WWW-Authenticate: Basic`）
+- `.dev` 等未映射路径返回 404
 - `kill -9 lighttpd` 后由看护在 30 秒周期内自动重启
 - `init.d/webdav stop/start` 往返正常，139/445 与 22 不受影响
 
@@ -75,7 +80,8 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 
 - 对四个共享根发 `DELETE` 是 WebDAV 标准的递归删除语义，会清空目录内容（2026-11-10
   实测误删过 `共享/文件共享说明.jpg`，已从固件原件恢复，见 D-S16-07）；客户端批量操作需谨慎
-- macOS Finder 的 `mount_webdav` 在本机自动化环境下未挂载成功（`-S` 返回 19/22，
-  AppleScript 挂载超时），真实 Finder 客户端待人工确认；curl 走的是同一网络与认证路径
-- 无 TLS，仅限内网使用
-- Digest 认证下密码以 md5 摘要落盘；强弱取决于密码本身
+- macOS Finder 的 `mount_webdav` 在本机自动化环境下仍未能完成 GUI 级挂载（`-S` 版本在
+  发请求前即阻塞，AppleScript 挂载会停在系统凭据框），需人工用 `⌘K` 确认一次；服务端已按
+  Finder 的要求提供 Basic + `OPTIONS 200` + `PROPFIND 207` + `GET / 200`
+- 无 TLS，Basic 口令在局域网内以 base64 传输；仅限可信内网，不要做 WAN 端口转发
+- 凭据以明文形式存放在 `conf/users.basic`（0600 nobody），设备上仅有 root/nobody 可读

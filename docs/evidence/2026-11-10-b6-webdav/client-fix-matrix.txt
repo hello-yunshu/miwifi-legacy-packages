@@ -1,0 +1,49 @@
+# Mac client fix matrix 2026-11-10 16:36:13 CST
+# endpoint http://192.168.3.2:5005/ (Basic, user r2d)
+
+## 1. unauth GET /
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Basic realm="r2d-webdav", charset="UTF-8"
+
+## 2. auth GET / (browser view)
+HTTP 200 text/html
+href="%E4%B8%8B%E8%BD%BD/"
+href="%E5%85%B1%E4%BA%AB/"
+href="%E5%9B%BE%E7%89%87/"
+href="%E6%96%87%E6%A1%A3/"
+
+## 3. auth GET subdirs
+下载 HTTP 200
+共享 HTTP 200
+图片 HTTP 200
+文档 HTTP 200
+
+## 4. auth PROPFIND
+/ HTTP 207
+/下载/ HTTP 207
+/共享/ HTTP 207
+/图片/ HTTP 207
+/文档/ HTTP 207
+
+## 5. OPTIONS (WebDAVLib first probe shape)
+HTTP/1.1 200 OK
+DAV: 1,2,3
+MS-Author-Via: DAV
+
+## 6. .dev must be 404
+HTTP 404
+
+## 7. PUT / GET / DELETE
+PUT HTTP 201
+basic-fix-1794299773
+DELETE HTTP 204
+
+## 8. re-verify 2026-11-10 after restoring the final config (no temporary accesslog)
+# config md5 device == repo: 8837ce378692f41b4962336ad89a2918
+unauth GET / -> 401
+auth GET / -> 200
+GET /下载/ /共享/ /图片/ /文档/ -> 200 200 200 200
+PROPFIND / -> 207
+.dev/LAYOUT.txt -> 404
+PUT 共享/s17check.txt -> 201, GET -> 200, byte-identical, DELETE -> 204
+run.sh status: pid 10541, watch_pid 10546, 4 shares mounted
