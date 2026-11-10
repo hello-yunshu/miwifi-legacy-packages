@@ -1,0 +1,9 @@
+# hint block on production (macOS UA), content lines exclude 13px/12px padding
+320 {"lines":3,"lh":18,"h":78,"gap":0}
+340 {"lines":2,"lh":18,"h":60,"gap":0}
+360 {"lines":2,"lh":18,"h":60,"gap":0}
+390 {"lines":2,"lh":18,"h":60,"gap":0}
+480 {"lines":2,"lh":18,"h":60,"gap":0}
+768 {"lines":1,"lh":18,"h":44,"gap":0}
+1024 {"lines":1,"lh":18,"h":44,"gap":0}
+1440 {"lines":1,"lh":18,"h":44,"gap":0}

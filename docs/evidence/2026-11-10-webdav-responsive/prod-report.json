@@ -1,0 +1,264 @@
+[
+  {
+    "w": 320,
+    "scheme": "light",
+    "sw": 320,
+    "cw": 320,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 304,
+    "count": "共 2 项",
+    "rows": [
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 4
+  },
+  {
+    "w": 390,
+    "scheme": "light",
+    "sw": 390,
+    "cw": 390,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 374,
+    "count": "共 2 项",
+    "rows": [
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 3
+  },
+  {
+    "w": 768,
+    "scheme": "light",
+    "sw": 768,
+    "cw": 768,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 748,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1024,
+    "scheme": "light",
+    "sw": 1024,
+    "cw": 1024,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 932,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1440,
+    "scheme": "light",
+    "sw": 1440,
+    "cw": 1440,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 1140,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1920,
+    "scheme": "light",
+    "sw": 1920,
+    "cw": 1920,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 1380,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 320,
+    "scheme": "dark",
+    "sw": 320,
+    "cw": 320,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 304,
+    "count": "共 2 项",
+    "rows": [
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 4
+  },
+  {
+    "w": 390,
+    "scheme": "dark",
+    "sw": 390,
+    "cw": 390,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 374,
+    "count": "共 2 项",
+    "rows": [
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 3
+  },
+  {
+    "w": 768,
+    "scheme": "dark",
+    "sw": 768,
+    "cw": 768,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 748,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1024,
+    "scheme": "dark",
+    "sw": 1024,
+    "cw": 1024,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 932,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1440,
+    "scheme": "dark",
+    "sw": 1440,
+    "cw": 1440,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 1140,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 1920,
+    "scheme": "dark",
+    "sw": 1920,
+    "cw": 1920,
+    "overflow": 0,
+    "over": [],
+    "panelRight": 1380,
+    "count": "共 2 项",
+    "rows": [
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "curM": null,
+    "namesClipped": 0,
+    "namesTotal": 2,
+    "hintLines": 2
+  },
+  {
+    "w": 390,
+    "scheme": "light",
+    "deep": true,
+    "url": "http://192.168.3.2:5005/?p=%2F%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98%2F%E4%B8%8B%E8%BD%BD%2F",
+    "overflow": 0,
+    "crumbs": "根目录/本机储存/下载",
+    "count": "共 8 项",
+    "namesClipped": 2,
+    "namesTotal": 9
+  },
+  {
+    "w": 390,
+    "scheme": "dark",
+    "deep": true,
+    "url": "http://192.168.3.2:5005/?p=%2F%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98%2F%E4%B8%8B%E8%BD%BD%2F",
+    "overflow": 0,
+    "crumbs": "根目录/本机储存/下载",
+    "count": "共 8 项",
+    "namesClipped": 2,
+    "namesTotal": 9
+  }
+]

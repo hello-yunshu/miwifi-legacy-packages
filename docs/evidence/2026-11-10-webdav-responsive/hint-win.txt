@@ -1,0 +1,7 @@
+# hint block on production (Windows UA), includes muted .foot-note
+320 {"lines":5,"h":117,"note":true,"noteH":36,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}
+360 {"lines":5,"h":117,"note":true,"noteH":36,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}
+390 {"lines":5,"h":117,"note":true,"noteH":36,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}
+480 {"lines":4,"h":99,"note":true,"noteH":36,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}
+768 {"lines":3,"h":83,"note":true,"noteH":18,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}
+1024 {"lines":2,"h":65,"note":true,"noteH":18,"overflow":0,"text":"上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 "}

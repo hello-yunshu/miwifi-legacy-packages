@@ -1,0 +1,4445 @@
+[
+  {
+    "group": "narrow",
+    "w": 312,
+    "note": "390@125%",
+    "scheme": "light",
+    "vw": 312,
+    "sw": 312,
+    "overflow": 0,
+    "panelRight": 296,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 206,
+        "fullW": 206
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 206,
+        "fullW": 206
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 280,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 240,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 278,
+        "h": 79,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 4
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 4,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 320,
+    "scheme": "light",
+    "vw": 320,
+    "sw": 320,
+    "overflow": 0,
+    "panelRight": 304,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 214,
+        "fullW": 214
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 214,
+        "fullW": 214
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 288,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 248,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 286,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 360,
+    "scheme": "light",
+    "vw": 360,
+    "sw": 360,
+    "overflow": 0,
+    "panelRight": 344,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 254,
+        "fullW": 254
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 254,
+        "fullW": 254
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 328,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 288,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 326,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 375,
+    "scheme": "light",
+    "vw": 375,
+    "sw": 375,
+    "overflow": 0,
+    "panelRight": 359,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 269,
+        "fullW": 269
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 269,
+        "fullW": 269
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 343,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 303,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 341,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 390,
+    "scheme": "light",
+    "vw": 390,
+    "sw": 390,
+    "overflow": 0,
+    "panelRight": 374,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 358,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 318,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 356,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 414,
+    "scheme": "light",
+    "vw": 414,
+    "sw": 414,
+    "overflow": 0,
+    "panelRight": 398,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 308,
+        "fullW": 308
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 308,
+        "fullW": 308
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 382,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 342,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 380,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 480,
+    "scheme": "light",
+    "vw": 480,
+    "sw": 480,
+    "overflow": 0,
+    "panelRight": 464,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 374,
+        "fullW": 374
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 374,
+        "fullW": 374
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 448,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 408,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 446,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 683,
+    "note": "1024@150%",
+    "scheme": "light",
+    "vw": 683,
+    "sw": 683,
+    "overflow": 0,
+    "panelRight": 663,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 297,
+        "fullW": 297
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 297,
+        "fullW": 297
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 643,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 605,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 641,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 768,
+    "scheme": "light",
+    "vw": 768,
+    "sw": 768,
+    "overflow": 0,
+    "panelRight": 748,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 382,
+        "fullW": 382
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 382,
+        "fullW": 382
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 728,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 690,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 726,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 819,
+    "note": "1024@125%",
+    "scheme": "light",
+    "vw": 819,
+    "sw": 819,
+    "overflow": 0,
+    "panelRight": 799,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 433,
+        "fullW": 433
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 433,
+        "fullW": 433
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 779,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 741,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 777,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 820,
+    "scheme": "light",
+    "vw": 820,
+    "sw": 820,
+    "overflow": 0,
+    "panelRight": 800,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 434,
+        "fullW": 434
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 434,
+        "fullW": 434
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 780,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 742,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 778,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 853,
+    "note": "1280@150%",
+    "scheme": "light",
+    "vw": 853,
+    "sw": 853,
+    "overflow": 0,
+    "panelRight": 833,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 467,
+        "fullW": 467
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 467,
+        "fullW": 467
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 813,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 775,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 811,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 960,
+    "note": "1440@150%",
+    "scheme": "light",
+    "vw": 960,
+    "sw": 960,
+    "overflow": 0,
+    "panelRight": 900,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 60,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 110,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 110,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 60,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 77,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 842,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 61,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 1024,
+    "scheme": "light",
+    "vw": 1024,
+    "sw": 1024,
+    "overflow": 0,
+    "panelRight": 932,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 92,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 142,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 142,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 92,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 109,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 874,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 93,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 1152,
+    "note": "1440@125%",
+    "scheme": "light",
+    "vw": 1152,
+    "sw": 1152,
+    "overflow": 0,
+    "panelRight": 996,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 156,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 206,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 206,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 156,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 173,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 938,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 157,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1280,
+    "scheme": "light",
+    "vw": 1280,
+    "sw": 1280,
+    "overflow": 0,
+    "panelRight": 1060,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 220,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 270,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 270,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 220,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 237,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1002,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 221,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1440,
+    "scheme": "light",
+    "vw": 1440,
+    "sw": 1440,
+    "overflow": 0,
+    "panelRight": 1140,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 300,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 350,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 350,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 300,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 317,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1082,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 301,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1536,
+    "note": "1920@125%",
+    "scheme": "light",
+    "vw": 1536,
+    "sw": 1536,
+    "overflow": 0,
+    "panelRight": 1188,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 348,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 398,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 398,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 348,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 365,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1130,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 349,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1920,
+    "scheme": "light",
+    "vw": 1920,
+    "sw": 1920,
+    "overflow": 0,
+    "panelRight": 1380,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 540,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 590,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 590,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 540,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 557,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1322,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 541,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 312,
+    "note": "390@125%",
+    "scheme": "dark",
+    "vw": 312,
+    "sw": 312,
+    "overflow": 0,
+    "panelRight": 296,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 206,
+        "fullW": 206
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 206,
+        "fullW": 206
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 280,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 240,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 278,
+        "h": 79,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 4
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 4,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 320,
+    "scheme": "dark",
+    "vw": 320,
+    "sw": 320,
+    "overflow": 0,
+    "panelRight": 304,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 214,
+        "fullW": 214
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 214,
+        "fullW": 214
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 288,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 248,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 286,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 360,
+    "scheme": "dark",
+    "vw": 360,
+    "sw": 360,
+    "overflow": 0,
+    "panelRight": 344,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 254,
+        "fullW": 254
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 254,
+        "fullW": 254
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 328,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 288,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 326,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 375,
+    "scheme": "dark",
+    "vw": 375,
+    "sw": 375,
+    "overflow": 0,
+    "panelRight": 359,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 269,
+        "fullW": 269
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 269,
+        "fullW": 269
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 343,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 303,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 341,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 390,
+    "scheme": "dark",
+    "vw": 390,
+    "sw": 390,
+    "overflow": 0,
+    "panelRight": 374,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 358,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 318,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 356,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 414,
+    "scheme": "dark",
+    "vw": 414,
+    "sw": 414,
+    "overflow": 0,
+    "panelRight": 398,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 308,
+        "fullW": 308
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 308,
+        "fullW": 308
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 382,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 342,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 380,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "narrow",
+    "w": 480,
+    "scheme": "dark",
+    "vw": 480,
+    "sw": 480,
+    "overflow": 0,
+    "panelRight": 464,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 374,
+        "fullW": 374
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 374,
+        "fullW": 374
+      }
+    ],
+    "rows": [
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 448,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 408,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 299,
+        "w": 446,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 683,
+    "note": "1024@150%",
+    "scheme": "dark",
+    "vw": 683,
+    "sw": 683,
+    "overflow": 0,
+    "panelRight": 663,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 297,
+        "fullW": 297
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 297,
+        "fullW": 297
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 643,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 605,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 641,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 768,
+    "scheme": "dark",
+    "vw": 768,
+    "sw": 768,
+    "overflow": 0,
+    "panelRight": 748,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 382,
+        "fullW": 382
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 382,
+        "fullW": 382
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 728,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 690,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 726,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 819,
+    "note": "1024@125%",
+    "scheme": "dark",
+    "vw": 819,
+    "sw": 819,
+    "overflow": 0,
+    "panelRight": 799,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 433,
+        "fullW": 433
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 433,
+        "fullW": 433
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 779,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 741,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 777,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 820,
+    "scheme": "dark",
+    "vw": 820,
+    "sw": 820,
+    "overflow": 0,
+    "panelRight": 800,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 434,
+        "fullW": 434
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 434,
+        "fullW": 434
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 780,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 742,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 778,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 853,
+    "note": "1280@150%",
+    "scheme": "dark",
+    "vw": 853,
+    "sw": 853,
+    "overflow": 0,
+    "panelRight": 833,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 467,
+        "fullW": 467
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 467,
+        "fullW": 467
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 20,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 70,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 70,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 20,
+        "y": 92,
+        "w": 813,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 37,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 775,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 21,
+        "y": 335,
+        "w": 811,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 960,
+    "note": "1440@150%",
+    "scheme": "dark",
+    "vw": 960,
+    "sw": 960,
+    "overflow": 0,
+    "panelRight": 900,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 60,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 110,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 110,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 60,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 77,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 842,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 61,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 1024,
+    "scheme": "dark",
+    "vw": 1024,
+    "sw": 1024,
+    "overflow": 0,
+    "panelRight": 932,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 92,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 142,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 142,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 92,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 109,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 874,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 93,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "tablet",
+    "w": 1152,
+    "note": "1440@125%",
+    "scheme": "dark",
+    "vw": 1152,
+    "sw": 1152,
+    "overflow": 0,
+    "panelRight": 996,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 156,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 206,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 206,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 156,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 173,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 938,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 157,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1280,
+    "scheme": "dark",
+    "vw": 1280,
+    "sw": 1280,
+    "overflow": 0,
+    "panelRight": 1060,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 220,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 270,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 270,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 220,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 237,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1002,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 221,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1440,
+    "scheme": "dark",
+    "vw": 1440,
+    "sw": 1440,
+    "overflow": 0,
+    "panelRight": 1140,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 300,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 350,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 350,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 300,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 317,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1082,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 301,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1536,
+    "note": "1920@125%",
+    "scheme": "dark",
+    "vw": 1536,
+    "sw": 1536,
+    "overflow": 0,
+    "panelRight": 1188,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 348,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 398,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 398,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 348,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 365,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1130,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 349,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "desktop",
+    "w": 1920,
+    "scheme": "dark",
+    "vw": 1920,
+    "sw": 1920,
+    "overflow": 0,
+    "panelRight": 1380,
+    "over": [],
+    "names": [
+      {
+        "text": "本机储存",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "外接盘",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      }
+    ],
+    "rows": [
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31
+    ],
+    "crumbCurrent": null,
+    "rects": {
+      "brand": {
+        "x": 540,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 590,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 590,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 540,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 557,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1322,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 541,
+        "y": 335,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。",
+    "errors": []
+  },
+  {
+    "group": "deep",
+    "w": 390,
+    "scheme": "light",
+    "note": "listing-shim",
+    "url": "http://127.0.0.1:18100/?p=%2F%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98%2F%E4%B8%8B%E8%BD%BD%2F",
+    "vw": 390,
+    "sw": 390,
+    "overflow": 0,
+    "panelRight": 374,
+    "over": [],
+    "names": [
+      {
+        "text": "返回上级",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      },
+      {
+        "text": "2026-11-10-backup-",
+        "clipped": true,
+        "visibleW": 284,
+        "fullW": 401
+      },
+      {
+        "text": "一个非常非常长的中文文件名用来测试在",
+        "clipped": true,
+        "visibleW": 284,
+        "fullW": 583
+      }
+    ],
+    "rows": [
+      52,
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33,
+      33
+    ],
+    "crumbCurrent": {
+      "w": 42,
+      "h": 33,
+      "lines": 2,
+      "clipped": false
+    },
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 358,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 318,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 352,
+        "w": 356,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。"
+  },
+  {
+    "group": "deep",
+    "w": 390,
+    "scheme": "dark",
+    "note": "listing-shim",
+    "url": "http://127.0.0.1:18100/?p=%2F%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98%2F%E4%B8%8B%E8%BD%BD%2F",
+    "vw": 390,
+    "sw": 390,
+    "overflow": 0,
+    "panelRight": 374,
+    "over": [],
+    "names": [
+      {
+        "text": "返回上级",
+        "clipped": false,
+        "visibleW": 284,
+        "fullW": 284
+      },
+      {
+        "text": "2026-11-10-backup-",
+        "clipped": true,
+        "visibleW": 284,
+        "fullW": 401
+      },
+      {
+        "text": "一个非常非常长的中文文件名用来测试在",
+        "clipped": true,
+        "visibleW": 284,
+        "fullW": 583
+      }
+    ],
+    "rows": [
+      52,
+      63,
+      63
+    ],
+    "crumbLinks": [
+      33,
+      33
+    ],
+    "crumbCurrent": {
+      "w": 42,
+      "h": 33,
+      "lines": 2,
+      "clipped": false
+    },
+    "rects": {
+      "brand": {
+        "x": 16,
+        "y": 15,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 66,
+        "y": 12,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 66,
+        "y": 39,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 16,
+        "y": 84,
+        "w": 358,
+        "h": 33,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 2
+      },
+      "title": {
+        "x": 31,
+        "y": 138,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 318,
+        "y": 141,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 17,
+        "y": 352,
+        "w": 356,
+        "h": 61,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": false,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。"
+  },
+  {
+    "group": "deep",
+    "w": 1440,
+    "scheme": "light",
+    "note": "listing-shim",
+    "url": "http://127.0.0.1:18100/?p=%2F%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98%2F%E4%B8%8B%E8%BD%BD%2F",
+    "vw": 1440,
+    "sw": 1440,
+    "overflow": 0,
+    "panelRight": 1140,
+    "over": [],
+    "names": [
+      {
+        "text": "返回上级",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "2026-11-10-backup-",
+        "clipped": false,
+        "visibleW": 494,
+        "fullW": 494
+      },
+      {
+        "text": "一个非常非常长的中文文件名用来测试在",
+        "clipped": true,
+        "visibleW": 494,
+        "fullW": 583
+      }
+    ],
+    "rows": [
+      56,
+      56,
+      56
+    ],
+    "crumbLinks": [
+      31,
+      31
+    ],
+    "crumbCurrent": {
+      "w": 40,
+      "h": 31,
+      "lines": 1,
+      "clipped": false
+    },
+    "rects": {
+      "brand": {
+        "x": 300,
+        "y": 17,
+        "w": 38,
+        "h": 38,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 2
+      },
+      "h1": {
+        "x": 350,
+        "y": 14,
+        "w": 170,
+        "h": 26,
+        "fs": "17px",
+        "lh": "25.5px",
+        "lines": 1
+      },
+      "sub": {
+        "x": 350,
+        "y": 41,
+        "w": 170,
+        "h": 18,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 1
+      },
+      "crumbs": {
+        "x": 300,
+        "y": 92,
+        "w": 840,
+        "h": 31,
+        "fs": "14px",
+        "lh": "21px",
+        "lines": 1
+      },
+      "title": {
+        "x": 317,
+        "y": 150,
+        "w": 30,
+        "h": 23,
+        "fs": "15px",
+        "lh": "22.5px",
+        "lines": 1
+      },
+      "count": {
+        "x": 1082,
+        "y": 153,
+        "w": 41,
+        "h": 20,
+        "fs": "13px",
+        "lh": "19.5px",
+        "lines": 1
+      },
+      "hint": {
+        "x": 301,
+        "y": 392,
+        "w": 838,
+        "h": 45,
+        "fs": "12px",
+        "lh": "18px",
+        "lines": 3
+      }
+    },
+    "overlap": {
+      "titleCount": false,
+      "h1Sub": false,
+      "brandH1": false
+    },
+    "gapListFoot": 0,
+    "colsShown": true,
+    "hintLines": 3,
+    "hintText": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18100 → 用当前账号密码连接。"
+  }
+]

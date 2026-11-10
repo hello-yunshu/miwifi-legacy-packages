@@ -1,0 +1,46 @@
+# stage A: path matrix   2026-11-10 22:00:27 +0800
+# GET  HEAD  PF0  PF1  path
+## 入口与静态资源
+200   200   207  207  /
+200   200   404  404  /__ui/
+200   200   404  404  /__ui/app.css
+200   200   404  404  /__ui/app.js
+200   200   404  404  /__ui/listing-shim.js
+## 两个根与其子目录
+200   200   207  207  /本机储存/
+200   200   207  207  /本机储存/下载/
+200   200   207  207  /本机储存/摄像机监控视频/
+200   200   207  207  /本机储存/共享/
+200   200   207  207  /本机储存/图片/
+200   200   207  207  /本机储存/照片视频/
+200   200   207  207  /本机储存/数学/
+200   200   207  207  /本机储存/文档/
+200   200   207  207  /本机储存/文件/
+200   200   207  207  /外接盘/
+200   200   207  207  /外接盘/音乐/
+200   200   207  207  /外接盘/备份 杂/
+200   200   207  207  /外接盘/cost-dashboard.zip
+## 不存在与隐藏
+404   404   404  404  /no-such-xyz/
+404   404   404  404  /no-such-xyz/file.txt
+404   404   404  404  /.yunshu/
+404   404   404  404  /.yunshu/conf/lighttpd.conf
+404   404   404  404  /.dev/
+404   404   404  404  /lost+found/
+## 穿越（curl 会规范化字面 ../，用 nc 发原始请求）
+HTTP/1.1 404 Not Found                   /../conf/lighttpd.conf
+HTTP/1.1 404 Not Found                   /本机储存/../.yunshu/
+HTTP/1.1 404 Not Found                   /本机储存/../.yunshu/conf/users.basic
+HTTP/1.1 404 Not Found                   /__ui/../../conf/users.basic
+HTTP/1.1 404 Not Found                   /%2e%2e/%2e%2e/etc/passwd
+HTTP/1.1 404 Not Found                   /..%2f..%2fetc%2fpasswd
+HTTP/1.1 404 Not Found                   /本机储存/%2e%2e%2f.yunshu/
+HTTP/1.1 404 Not Found                   //etc/passwd
+## 无凭据 / 错误凭据（期望 401）
+none  wrong path
+401   401   /
+401   401   /__ui/app.css
+401   401   /本机储存/
+401   401   /.yunshu/
+401   401   /no-such-xyz/
+# done

@@ -1,0 +1,23 @@
+[
+  {
+    "tag": "mac",
+    "hint": "上传、改名、删除：访达按 ⌘K → 输入 http://127.0.0.1:18099 → 用当前账号密码连接。",
+    "overflow": 0,
+    "hasEnglish": false,
+    "consoleErrors": []
+  },
+  {
+    "tag": "win",
+    "hint": "上传、改名、删除：资源管理器 →「映射网络驱动器」→ 输入 http://127.0.0.1:18099，提示时选「使用其他凭据」重填一次密码。Windows 自带客户端对 http + Basic 支持有限，连不上可改用第三方 WebDAV 客户端。",
+    "overflow": 0,
+    "hasEnglish": false,
+    "consoleErrors": []
+  },
+  {
+    "tag": "android",
+    "hint": "可在浏览器里直接浏览和下载；需要上传、改名、删除时，用任意 WebDAV 客户端连接 http://127.0.0.1:18099。",
+    "overflow": 0,
+    "hasEnglish": false,
+    "consoleErrors": []
+  }
+]
