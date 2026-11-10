@@ -3,7 +3,7 @@
 - 基线设备：MiWiFi R2D / 固件 2.25.209 / ARMv7 EABI / uClibc 0.9.33.2 / Linux 2.6.36
 - 计划日期：2026-11-10（第三版：恢复 A0、A1、B1–B6 八项正式候选；B1 于 11-10 接管 22）
 - 本轮范围：候选范围维持八项不变；阶段 2/3 完成离线构建与隔离验证，阶段 4 完成维护窗口部署与一次整机冷启动，阶段 5 完成收口核对
-- 状态：Samba 4.25.1 / 1.0.7-r2d 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 仅 `miDebug.sh` 切到私有 HTTP-only，全量替换判定不可行**；**B1 已接管 22：原厂备份到位、2026.94 在 22 运行、看护与回退实测**；**B6 WebDAV 已上线：`192.168.3.2:5005`，Digest 认证，开机自启与冷启动均通过**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
+- 状态：Samba 4.25.1 / **1.0.8-r2d** 在设备运行；**nmbd 已切换为私有 4.25.1**（冷启动后仍归私有树）；**curl 已整体回退：`miDebug.sh` 使用 `/usr/bin/curl`，`b2-curl` 候选树已删除，B2 无部署对象**；**B1 已接管 22：原厂备份到位、2026.94 在 22 运行、看护与回退实测**；**B6 WebDAV 已上线：`192.168.3.2:5005`，Basic 认证，双根（本机储存/外接盘）+ `/__ui/` 单页，开机自启与冷启动均通过**；**SMB 侧已对 `.yunshu` 加 `veto files` + `dont descend`**；B4 MiniDLNA 本轮推迟、未触碰；B5 未触发
 - 阶段 2/3 执行记录：[2026-11-09 构建与隔离验证](stage-2-3-execution-2026-11-09.md)
 - 阶段 4/5 执行记录：[2026-11-09 维护窗口与收口](../evidence/2026-11-09-stage4/README.md)
 - 事实来源：[2026-11-08 设备清点](../device-inventory-2026-11-08.md)、[固件 2.24.11 可行性比对](../firmware-2.24.11-feasibility-2026-11-08.md)、[Samba 发布就绪复核](../release-readiness-2026-11-08.md)
@@ -17,7 +17,7 @@
 | 项 | 内容 |
 |---|---|
 | 阶段 2/3 执行 | 八项范围不变：B1/B2/B4/B5/B6 在私有树完成离线构建并做设备隔离验证，B3 复用现役 4.25.1 并记录哈希，A1 无上游新版本；B4 的构建依赖新增 ffmpeg 6.1.2（仅为最小静态库），不改变候选范围 |
-| 阶段 4/5 执行 | 维护窗口内按“单项切换、单项验证、单项可回退”部署：B3 nmbd 切换 PASS（含 `samba restart` 与整机冷启动）；B2 curl 仅切 `miDebug.sh`；B1/B4 记 BLOCKED 并已退回；B5/B6 未触发。八项最终状态见 §11 |
+| 阶段 4/5 执行 | 维护窗口内按“单项切换、单项验证、单项可回退”部署：B1/B3/B6 完成部署；B2 curl 已整体回退（`miDebug.sh` 用 `/usr/bin/curl`，候选树已删）；B4 推迟；B5 未触发。八项最终状态见 §11 |
 | 候选范围 | **恢复八项正式候选**：A0、A1、B1、B2、B3、B4、B5、B6；每项都有目标、依赖与验收要点，不再以“政策表 / 决策门 / 明确不做 / 移出立项”降级或移出 |
 | 保留的审计改进 | 阶段 0 回滚硬前置、证据路径与判定、容量预算、内联回归矩阵、构建序与部署序两张表、跨组件交互矩阵、Dropbear 接管点与超时恢复脚本、已删除 S1–S8 文档的断链修复 |
 | 两张序表 | 八项全部纳入；按可执行性排序，真阻塞的条目标 BLOCKED 并写明原因，不删除 |
@@ -31,14 +31,14 @@
 
 | 编号 | 组件 | 当前状态 | 目标 | 依赖 | 验收要点 |
 |---|---|---|---|---|---|
-| A0 | Samba 服务与 1.0.7 兼容层 | Samba 4.25.1 运行；139/445 归 `samba-s5d`；ACL 与 cron 自愈有设备证据 | 完成 1.0.7 收尾：冷启动核对、`homes` 隐藏并持久化（产品去留已定，见 `decisions.md` S15） | 阶段 0 回滚资产（§4.1） | 冷启动后端口/ACL/cron 保持；`homes` 配置与枚举一致、去留已有记录；访客端到端在无 BSS 时保持 BLOCKED |
+| A0 | Samba 服务与 1.0.8 兼容层 | Samba 4.25.1 / 1.0.8-r2d 运行；139/445 归 `samba-s5d`；`smbd -b` 17 项全在 `.yunshu/live/samba/runtime`；ACL 与 cron 自愈有设备证据 | 完成 1.0.8 收尾：冷启动核对、`homes` 隐藏并持久化、`.yunshu` 从 SMB 共享中 veto（见 `decisions.md` S15/S21） | 阶段 0 回滚资产（§4.1） | 冷启动后端口/ACL/cron 保持；`homes` 配置与枚举一致；`.yunshu` 不可枚举/不可直访；访客端到端在无 BSS 时保持 BLOCKED |
 | A1 | Samba 上游维护与 4.25.1 复核 | 设备与上游当前 stable 同为 4.25.1 | 上游出现新 stable 或安全修复时重锁源码、迁移 SDK 补丁并发布新 payload | A0 验收；构建容器与复现脚本 | 新版本通过 §5 全套回归并独立窗口部署；无新 upstream 时不产生部署对象 |
 | B1 | Dropbear SSH 服务端 | 2011.54，TCP 22 对 LAN/访客网可达；候选 2026.94 源已锁定并验签 | 私有树构建候选，备用端口并行验证后接管 22 | 不依赖候选的回退通道（字节级备份 + 原厂二进制原位 + 独立看护 + `rollback-22.sh`） | 已接管：banner/密钥登录/进程归属/认证方法/管理面/回退链均实测；冷启动未重启验证 |
-| B2 | curl | 7.33.0 + PolarSSL 1.3.16；仓库内未见调用点，设备侧只见 `/etc/init.d/miDebug.sh` 引用 | 先盘点调用方，再决定升级范围；如需升级，独立前缀 + 私有 TLS | 调用方清单与协议/选项需求 | 每个调用方比对退出码、输出与副作用；`/usr/bin/curl` 保持 7.33.0 |
-| B3 | `nmbd` | 原厂 4.0.21（PID 2071 / `/usr/sbin/samba_multicall`）持有 UDP 137/138；私有 4.25.1 `nmbd` 已在现役树 | 评估并执行切换到私有 `nmbd` | 发现功能影响评估（电视/旧客户端） | 137/138 归私有树、单实例、`samba restart` 与冷启动后不被拉回原厂 |
+| B2 | curl | 7.33.0 + PolarSSL 1.3.16；**已整体回退**：`miDebug.sh` 使用 `/usr/bin/curl`，`b2-curl` 候选树已删除 | 调用方已盘点；当前无部署对象，后续如需升级再按独立前缀评估 | 调用方清单与协议/选项需求 | `/usr/bin/curl` 保持 7.33.0；无私有 curl 运行 |
+| B3 | `nmbd` | **已切换**：4.25.1 私有 `nmbd` 持有 UDP 137/138；原厂 4.0.21 已退出 | 已完成切换 | 发现功能影响评估（电视/旧客户端） | 137/138 归私有树、单实例、`samba restart` 与冷启动后不被拉回原厂 |
 | B4 | MiniDLNA / ReadyMedia | 1.1.0；配置启用，管理链可拉起；**按在用处理** | 构建 1.3.3 候选并验证 App/电视发现 | 私有依赖（libexif/libjpeg/libid3tag/flac/vorbis/sqlite）与私有树布局 | `shareUpdate` 生成配置、索引、电视发现、重启持久性、App 门控 |
 | B5 | dnsmasq | 2.71；未运行、无 53 监听 | **低优先级候选**：仅当本机承担 DNS/DHCP 或出现明确的解析需求时构建 | 网络拓扑变更决定 | 构建 2.92rel2（含 2026 安全修复）并在隔离环境验证 DNS/DHCP/IPv6 与租约 |
-| B6 | WebDAV | 设备无 WebDAV 服务 | 新增独立 WebDAV 实例（lighttpd `mod_webdav`） | 端口盘点、撤权语义定稿、看护进程设计、认证/TLS 方案 | 撤权时延与 SMB 语义一致或明确记载差异；策略异常 fail-closed；并发读写与掉盘回归 |
+| B6 | WebDAV | **已上线**：`192.168.3.2:5005`，Basic 认证，双根 `本机储存/外接盘` + `/__ui/` 单页 | 新增独立 WebDAV 实例（lighttpd `mod_webdav`） | 端口盘点、撤权语义定稿、看护进程设计、认证/TLS 方案 | 撤权时延与 SMB 语义一致或明确记载差异；策略异常 fail-closed；并发读写与掉盘回归 |
 
 详细设计（B6）：[WebDAV 立项材料](webdav-proposal-unfiled-2026-11-09.md)。
 
@@ -59,15 +59,16 @@
 
 ## 2. 候选详述
 
-### 2.1 A0：Samba 1.0.7-r2d 收尾
+### 2.1 A0：Samba 1.0.8-r2d 收尾
 
-设备当前运行 Samba **4.25.1**；`1.0.7-r2d` 是兼容层/安装包版本，Samba payload 与 1.0.6 相同（SHA-256 `0101e0a7…eb2d58`），改动是访客网 SMB 规则与自愈。上游当前 stable 同为 4.25.1，因此**当前没有需要立即部署的 Samba 上游升级**。[Samba 发布记录](https://www.samba.org/samba/history/)
+设备当前运行 Samba **4.25.1**；现役安装树为 `versions/1.0.8-r2d/root`，`current` 与 `runtime` 两个指针指向同一棵树，`smbd -b` 的 17 项编译期路径全部落在 `.yunshu/live/samba/runtime`。`1.0.8-r2d` 与 1.0.6/1.0.7 使用同一套 Samba 4.25.1 payload，改动集中在兼容层、适配器与开机自愈：`homes=0` 隐藏、`.yunshu` 在 SMB 共享层 veto、私有 `nmbd` 接管。上游当前 stable 同为 4.25.1，因此**当前没有需要立即部署的 Samba 上游升级**。[Samba 发布记录](https://www.samba.org/samba/history/)
 
 | 工作项 | 现状 | 判定方式 | 完成标准 |
 |---|---|---|---|
-| 升级后整机冷启动 | 现有证据只覆盖安装、`samba restart`、cron 同步；装包早于当前 uptime，无冷启动记录 | `uptime -s`、`readlink /userdisk/data/s7root/current`、`netstat -ltnp \| grep -E ':(139\|445) '`、`iptables -S INPUT`、`crontab -l \| grep diskacl-sync` | 冷启动后 139/445 仍归 `samba-s5d`；`diskacl-status` 为 `chain=present jumps=2 legacy_chain=absent guest=enforced`；cron 行存在；SSH 22 与 Web 80/8443 正常 |
+| 升级后整机冷启动 | 已完成：`homes` 隐藏经三次冷启动验证（S15）；2026-11-10 01:45 的真实 `reboot` 同时覆盖 B1/B3 与 SMB | `uptime -s`、`readlink /userdisk/data/.yunshu/live/samba/current`、`netstat -ltnp \| grep -E ':(139\|445) '`、`iptables -S INPUT`、`crontab -l \| grep diskacl-sync` | 冷启动后 139/445 仍归 `samba-s5d`；`diskacl-status` 为 `chain=present jumps=2 legacy_chain=absent guest=enforced`；cron 行存在；SSH 22 与 Web 80/8443 正常 |
 | `homes` 运行时确认 | UCI `samba.@samba[0].homes=1`；适配器据此输出 `[homes]`（comment/browseable=no/read only=no/create mode=0750，无 `path`）；macOS `smbutil view -N` 列出 `homes`。已于 2026-11-10 改为隐藏（`homes=0`，枚举不再出现，见 S15） | `uci get samba.@samba[0].homes`；`testparm -s $ROOT/etc/smb.conf \| sed -n '/^\[homes\]/,/^\[/p'`；`smbutil view -N //guest@192.168.3.2` | 生产 smbd 实际加载的配置、渲染结果与枚举三者一致 |
 | `homes` 产品决策 | 设备私有 `smbpasswd` 为 0 字节、`pdbedit -L` 无用户；内容访问只能在隔离实例建测试用户 | 决策记录（保留 / 隐藏 / 删除）；**已选隐藏**：`homes=0` 由 `/etc/init.d/samba-homes-fix`（START=97 + 有界复检）在冷启动后恢复，不改 payload、不递增包版本（S15） | 决策有书面记录；改动走独立窗口并回归普通共享、App 与回滚 |
+| `.yunshu` 共享层隔离 | 白名单 Mac 通过 `[XiaoMi]`（`guest ok=yes` + `force user=root`）原本可枚举并读写 `.yunshu`；权限位对该共享无效 | 适配器为根在 `/userdisk/data` 的共享固定输出 `veto files = /.yunshu/` 与 `dont descend = .yunshu`；`samba-homes-fix` 增加开机断言与有界 reload（S21） | 白名单客户端枚举无 `.yunshu`、直访返回 ENOENT；`下载/共享/外接盘` 读写不变；`smbd`/`nmbd` 存活；reload 后仍生效 |
 
 访客网 SMB 端到端仍 BLOCKED：Broadcom 驱动 `WLC_SET_VAR(bss)` 失败，`wl1.2` 无法创建，`br-guest` 无成员。不得为补测继续改这台设备的无线配置。
 
@@ -173,7 +174,7 @@ A1 是正式候选，不是政策附注：上游一旦发布新 stable 或影响
 
 上述任一项未决时不进入部署窗口；条目保持候选状态。
 
-**2026-11-10 决策（S16）**：放弃 `macfilter` 联动的 5 秒撤权与 fail-closed 链，改为“真实认证 + 最小暴露目录 + 降权运行”。正式端口 `192.168.3.2:5005`，Digest 认证，只映射四个共享目录；看护改为 `run.sh` 内的 30 秒常驻子进程。五项前置中 1/2/5 被此方案取代，3/4 按“只绑 LAN、必须认证、不用 Basic”落实，TLS 因构建无 OpenSSL 暂缺并记录为限制。详见 `docs/decisions.md` S16。
+**2026-11-10 决策（S16，设备实况以 S20/S21 为准）**：放弃 `macfilter` 联动的 5 秒撤权与 fail-closed 链，改为“真实认证 + 最小暴露 + 降权运行”。正式端口固定为 `192.168.3.2:5005`，只监听 br-lan；认证为 lighttpd Basic（明文认证文件，当前两个账号：一个内置、一个用户自设，见 S21）；Web 根为双根：`本机储存`（绑定 8 个本机目录）与 `外接盘`（绑定 `/extdisks/sdb1`），另加 `/__ui/` 单页管理界面。看护改为 `run.sh` 内的 30 秒常驻子进程。五项前置中 1/2/5 被此方案取代，3/4 按“只绑 LAN、必须认证”落实；TLS 因构建无 OpenSSL 暂缺，Basic 明文只在 br-lan 内传输，记录为边界条件。详见 `docs/decisions.md` S16 与 S21。
 
 ## 3. 不纳入本轮的系统组件
 
@@ -257,7 +258,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 
 | 序 | 组件 | 锁定输入 / 现状 | 前置 | 产出 | 可执行性 |
 |---|---|---|---|---|---|
-| 1 | A0 Samba 兼容层 | 1.0.7 已交付 | 回滚资产 | 无新构建（仅兼容层包） | 可执行（仅收尾验证） |
+| 1 | A0 Samba 兼容层 | 1.0.8-r2d 已交付 | 回滚资产 | 无新构建（仅兼容层包） | 可执行（仅收尾验证） |
 | 2 | B3 `nmbd` | 复用现役树 4.25.1 产物 | 无 | 零构建 | 可执行（待决策） |
 | 3 | B1 Dropbear 2026.94 | SHA-256 `e098034a…b1ae81`，`.asc` 已验签 | 回退通道设计 | 私有树 + 并行端口测试包 | 可执行 |
 | 4 | B4 MiniDLNA 1.3.3 | SHA-256 `39026c6d…f96afa4`；依赖全部锁定 | 补齐 cmake/libtool | 私有树 + 索引测试 | BLOCKED：构建环境缺 cmake/libtool |
@@ -278,7 +279,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 3 | B1 Dropbear 接管 22 | 高（唯一维护入口） | SSH，进而所有远程维护 | SSH / 管理面 | 30–60 min | 备份还原 + `rollback-22.sh`，≤5 min | 已执行：备份校验 + 2223 双演练 + 独立看护；见 §11 |
 | 4 | B4 MiniDLNA 切换 | 中（索引与发现） | 电视播放/媒体索引 | 应用 / 管理面（App 开关） | 30–45 min | 切回原厂服务，≤10 min | BLOCKED：私有依赖链未构建 |
 | 5 | B2 curl 显式路径（逐调用方） | 低（旧二进制保留） | 无服务阻塞 | 仅调用方 | 每调用方 5–15 min | 改回原命令，即时 | 可进入：调用方已盘点（HTTP 脚本） |
-| 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | 已上线（2026-11-10）：5005 + Digest + 4 目录，冷启动通过；见 D-S16-01…07 |
+| 6 | B6 WebDAV 上线 | 中（新增对外端口） | 无（新服务），但策略错误会扩大访问面 | 管理面 / 访问控制 | 30–60 min | 停服务 + 撤端口，≤10 min | 已上线（2026-11-10）：`192.168.3.2:5005` + Basic + 双根（本机储存/外接盘）+ `/__ui/`，冷启动通过；见 D-S16-01…07、D-S21-01 |
 | 7 | B5 dnsmasq | 高（DNS/DHCP 是联网控制面） | 全网解析/DHCP | 无线 / 整机联网 | 30–60 min | 恢复上游 DNS/DHCP，≤10 min | BLOCKED：未触发 |
 | 8 | A1 新 Samba payload | 中 | SMB 全量 | SMB | 30–45 min | 切回上一树，≤5 min | BLOCKED：无新上游版本 |
 
@@ -376,7 +377,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 热插拔识别 | 插入/拔出后 `smbutil view`、`/etc/hotplug.d/block/90-s8-mounts` 日志 | 新共享出现/消失，无需重启 Samba |
 | 挂载派生共享 | 拔盘再插回 | 共享重建，路径正确 |
 | 掉盘容错 | 运行中拔盘 | SMB 不崩溃，恢复后可用 |
-| 真实设备 | 单口 U 盘 + 双分区 | 无设备时标“未重跑”，1.0.7 载荷未变 |
+| 真实设备 | 单口 U 盘 + 双分区 | 无设备时标“未重跑”，1.0.8-r2d 载荷与 1.0.7 相同 |
 
 ### 5.5 并发、签名与加密
 
@@ -400,6 +401,7 @@ sh /userdisk/data/s7root/xiaomi-smb-install.sh activate 1.0.7-r2d
 | 浏览/发现 | 电视、旧 Windows、App | 列表可见；无设备时标 BLOCKED |
 | 包装器重启 | `/etc/init.d/samba restart` | 不被拉回原厂路径 |
 | 冷启动 | 重启后复查 | 端口与身份保持 |
+| 仓库可重建 | `md5sum recipes/samba/s8-compat/samba.init.wrapper` 与设备 `/etc/init.d/samba` 比对；`sh -n` | 两者一致（`114d2850e14a362a95b26bd35069dcd1`），语法通过 |
 
 ### 5.8 Dropbear（B1）
 
@@ -421,7 +423,18 @@ TLS/CA/主机名/时钟/重定向/超时/代理/退出码；逐调用方比对�
 
 ### 5.11 dnsmasq（B5）与 WebDAV（B6）
 
-dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端口绑定面、撤权计时、断点上传、与 SMB 并发一致性。两者都在触发或前置未决项关闭后才执行。
+dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端口绑定面、Basic 认证、双根映射、`/__ui/`、与 SMB 并发一致性。两者都在触发或前置未决项关闭后才执行。
+
+### 5.12 SMB 共享层隔离（`.yunshu`，S21）
+
+| 用例 | 判定方式 | 通过标准 |
+|---|---|---|
+| 枚举隐藏 | 白名单 Mac `smbutil view //guest@192.168.3.2`；`smbclient -L`；`ls` 根目录 `grep -x '.yunshu'` | 列表与根目录均无 `.yunshu` |
+| 直接访问 | Mac `mount_smbfs` 后 `ls .yunshu` / `.YUNSHU` | ENOENT（被拒） |
+| 其他共享 | `下载`/`共享` 设备本地 `smbclient` put/get/del；`文档` 只读列举；`XiaoMi` 全盘 | 读写行为与加固前一致 |
+| 服务存活 | `netstat -ltnup \| grep -E ':(139\|445\|137\|138) '`；`pidof smbd`/`nmbd` | 四个端口在听，smbd 与 nmbd 均存活 |
+| reload 后 | `/etc/init.d/samba reload` 后重跑本表 | 仍生效 |
+| 持久化 | 适配器重渲染 `smb.conf` 后 `grep -n 'veto files'`；`samba-homes-fix check` | 每次渲染都带 `veto files = /.yunshu/` 与 `dont descend = .yunshu` |
 
 ## 6. 容量预算
 
@@ -439,7 +452,7 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 
 | 项 | 值 | 依据 |
 |---|---|---|
-| 1.0.7 包 | 14 308 996 B | 本地与设备一致 |
+| 1.0.8-r2d 包（载荷同 1.0.7） | 14 308 996 B | 本地与设备一致 |
 | payload tar | 14 397 433 B | 包内文件 |
 | 解包树 | ≈ 41 MiB（339 个文件） | 本地解包 `du -sm` |
 | 保留 N-1 | 2 棵树 ≈ 82 MiB | 2 × 41 MiB |
@@ -477,7 +490,7 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 | nmbd 当前身份 | 曾写“未知”，与快照矛盾 | `netstat -lunp \| grep -E ':(137\|138) '`；`readlink /proc/<pid>/exe`；`nmbd -V` | 已结案：PID 2071 / `samba_multicall` / 4.0.21；后续为切换决策 |
 | `homes` 是否可枚举 | “可见”不等于“可访问” | `uci get samba.@samba[0].homes`；`testparm -s $ROOT/etc/smb.conf`；`smbutil view -N` | 配置源、渲染结果、枚举三者一致 |
 | `homes` 内容访问 | 生产无“有效用户”，不可执行 | 隔离实例建测试用户后 `smbclient -U test%…` | 只在隔离实例判定；生产不建用户 |
-| 1.0.7 冷启动 | 无记录 | `uptime -s`、`current` 链接、139/445 归属、ACL 状态、cron 行 | §4.3 第 1 项全部通过 |
+| 1.0.8-r2d 冷启动 | 已完成（S15 三次冷启动 + 2026-11-10 真实 `reboot`） | `uptime -s`、`current` 链接、139/445 归属、ACL 状态、cron 行 | §4.3 第 1 项全部通过 |
 | 回滚可用 | 原为“需可回滚” | §4.1 的六条判定 | 全部通过 |
 | 访客端到端 | 规则面通过，端到端未验 | 真实访客客户端连 139/445 + `iptables -L INPUT -v -n` DROP 计数 | 无客户端时保持 BLOCKED，不以规则面代替 |
 | 构建可复现 | 原为“干净重建” | 两次构建 `sha256sum` 比对 + `smbd -b` | 字节一致且前缀正确 |
@@ -494,14 +507,14 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 
 | 问题 | 当前状态 | 影响的条目 |
 |---|---|---|
-| 1.0.7 冷启动后整机状态 | 无记录（装包早于当前 uptime） | A0 |
+| 1.0.8-r2d 冷启动后整机状态 | 已通过：S15 三次冷启动 + 2026-11-10 真实 `reboot`（139/445、ACL、cron、B1、B3 均保持） | A0 |
 | `homes` 产品去留 | 用户未决定；生产 passdb 无用户 | A0 |
 | 是否有客户端依赖 NetBIOS 发现 | 无电视/旧 Windows 实测证据 | B3 |
-| curl 的真实调用方与协议 | 已盘完：`miDebug.sh`（HTTP，已切）、`mitvapp`（scheme-less HTTP）、`helper.sh`（HTTPS/`-k`）、`wifishare.sh`（HTTP，只读 `/usr`）、`netspeed`（只读 `/usr`）；全量替换判定不可行 | B2 |
+| curl 的真实调用方与协议 | 已盘完：`miDebug.sh`（HTTP）、`mitvapp`（scheme-less HTTP）、`helper.sh`（HTTPS/`-k`）、`wifishare.sh`（HTTP，只读 `/usr`）、`netspeed`（只读 `/usr`）；私有 curl 方案整体不可行，已整体回退到 `/usr/bin/curl` 并删除候选树，B2 当前无部署对象 | B2 |
 | Dropbear 是否有带外恢复渠道 | 仓库无串口/实体维护入口证据；本轮按用户授权，以“完整备份 + 隔离双演练 + 独立看护 + 完整回退实测”替代带外通道，接管 22 | B1 |
 | MiniDLNA 当前实际使用情况 | 按“在用”处理；本轮用户决定推迟，未触碰 | B4 |
 | dnsmasq 是否由本机承担 DNS/DHCP | 当前未运行、无 53 监听 | B5 |
-| WebDAV 撤权语义与看护进程 | 已定稿：5 秒（按 MAC 全包 DROP）+ fail-closed + 租约/看护；与 SMB 10–22 秒的差异写入 D-S11-06 | B6 |
+| WebDAV 撤权语义与看护进程 | 已定稿（S20）：不接 `macfilter` 撤权链；5005 只监听 `192.168.3.2`，Basic 认证 + 双根 + `/__ui/`，降权 `nobody` 运行，`run.sh` 内 30 秒常驻看护；明文 Basic 仅限 br-lan | B6 |
 | 8443 能否在不动系统库的前提下收紧 TLS | 管理链未回归 | 系统 OpenSSL（§3） |
 
 ## 11. 阶段 4/5 最终状态（2026-11-10 更新）
@@ -510,16 +523,16 @@ dnsmasq：DNS 转发/缓存、DHCP 租约、IPv6、断网恢复。WebDAV：端�
 
 | 编号 | 组件 | 最终状态 | 说明 |
 |---|---|---|---|
-| A0 | Samba 1.0.7 | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留已定**隐藏**（2026-11-10）：`homes=0`，冷启动被厂商 `datacenter` 异步改回 1 后由 S97 init + 有界复检压回，枚举中无 `nobody`/`Home Directories`；三次冷启动验证通过（见 `decisions.md` S15） |
+| A0 | Samba 1.0.8-r2d | **PASS（冷启动）** | 重启后 139/445 归 `samba-s5d`；`chain=present jumps=2 legacy=absent guest=enforced`；cron 行持久；`smbutil` 可枚举。`homes` 产品去留已定**隐藏**（2026-11-10）：`homes=0`，冷启动被厂商 `datacenter` 异步改回 1 后由 S97 init + 有界复检压回，枚举中无 `nobody`/`Home Directories`；三次冷启动验证通过（见 `decisions.md` S15）。**`.yunshu` 已在 SMB 共享层隔离**：`[XiaoMi]` 生效 `veto files = /.yunshu/` + `dont descend = .yunshu`，白名单 Mac 不可枚举、直访 ENOENT，其他共享读写不变，reload 后仍生效（S21） |
 | A1 | Samba 上游维护 | **未触发** | 上游 stable 仍 4.25.1，无部署对象 |
 | B1 | Dropbear 2026.94 | **PASS（22 已接管，含冷启动）** | 原厂二进制/配置/host key/authorized_keys/init 先做字节备份并 `md5sum -c` 校验（`/userdisk/data/dropbear-state/backup-dropbear-v2011.54/`）。隔离 2223 双演练：成功路径写标记；强制失败路径由独立看护 15 s 到点杀掉新实例、22 保持原厂。22 接管后 banner `dropbear_2026.94`、既有公钥登录成功、`/proc/<pid>/exe` 指向私有树、认证方法 `publickey,password`、LuCI 200、SMB 未变；`/etc/init.d/dropbear` wrapper 的标记开/关 stop/start 与 `rollback-22.sh` 完整回退均实测。**2026-11-10 01:45 真实 `reboot`**：约 50 s 恢复，`/userdisk/data` 于 16.66 s 挂载、dropbear 37.29 s 启动，冷启动后 22 仍为 2026.94（未回退），host key 指纹与公钥登录正常；Samba/nmbd/ACL/cron/LuCI 无退化。见 [证据](../evidence/2026-11-10-b1-takeover/coldboot.md) |
-| B2 | curl 8.23.0 | **部分覆盖（全量替换不可行）** | `miDebug.sh` 已切；`mitvapp` 的 `localhost:` URL 无法用 `--proto-default`/`--proto =http` 覆盖（实测 http=000），只有改写调用方为 `http://` 才等价；`helper.sh` 的 `-skL` 依赖 HTTPS，私有 curl 仅 `Protocols: http`；`wifishare.sh`、`netspeed` 位于只读 `/usr`，PATH 全为只读目录，无法 shim。见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |
-| B3 | nmbd 4.25.1 | **PASS** | 137/138 归私有 `versions/1.0.7-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常 |
+| B2 | curl | **已整体回退（无部署）** | `miDebug.sh` 已改回 `/usr/bin/curl`（7.33.0 + PolarSSL）；`b2-curl` 候选树已删除；设备上无私有 curl 运行。`mitvapp`、`helper.sh`、`wifishare.sh`、`netspeed` 的约束仍成立，故本轮不部署任何私有 curl。原始分析见 [证据](../evidence/2026-11-09-followup/b2-curl-analysis.txt) |
+| B3 | nmbd 4.25.1 | **PASS（含仓库回写）** | 137/138 归私有 `versions/1.0.8-r2d/root/sbin/nmbd`；单实例；`samba restart` 与整机冷启动后均未被拉回原厂；NetBIOS 名称注册与浏览正常。B3 逻辑已回写仓库 `recipes/samba/s8-compat/samba.init.wrapper`，与设备 `/etc/init.d/samba` 及 `.yunshu/live/s8compat/versions/v1/samba.init.wrapper` 三者 md5 均为 `114d2850e14a362a95b26bd35069dcd1`（S21） |
 | B4 | MiniDLNA 1.3.3 | **推迟（本轮未触碰）** | 用户决定推迟，二进制与配置一行未动，8200 未监听。保留既有 BLOCKED 原因（App 清单 `status=6`；`supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 启停，改名切换会让启停/重载不可验证）作为恢复该项时的起点 |
 | B5 | dnsmasq 2.92rel2 | **未触发** | 本机不承担 DNS/DHCP，无 53 监听；阶段 2 已产出候选二进制，但无部署对象 |
-| B6 | WebDAV（lighttpd） | **PASS（生产）** | **已上线**：`192.168.3.2:5005`，Digest 认证（`realm=r2d-webdav`），降权 `nobody` 运行，只暴露 `下载/共享/图片/文档` 四个 bind mount；`.dev` 等未映射目录返回 404。设备与用户 Mac 的 curl 均完成 PROPFIND/PUT/GET/MOVE/MKCOL/DELETE 与 401 校验；`/etc/init.d/webdav`（START=99）等数据盘最多 180 s 后拉起，30 s 看护进程可自愈；整机冷启动后自动恢复并复测通过。§2.8 五项前置以 S16 的真实认证+最小暴露方案替代，不再引入 macfilter 5 秒撤权。见 D-S16-01…07 |
+| B6 | WebDAV（lighttpd） | **PASS（生产）** | **已上线**：`192.168.3.2:5005`，**Basic 认证**（明文认证文件，realm `r2d-webdav`，两个账号：一个内置、一个用户自设），降权 `nobody` 运行；Web 根为**双根**：`本机储存`（绑定 8 个本机目录）与 `外接盘`（绑定 `/extdisks/sdb1`），外加 `/__ui/` 单页管理界面；`.yunshu`/`.dev` 等未映射目录返回 404。设备与用户 Mac 的 curl 均完成 PROPFIND/PUT/GET/MOVE/MKCOL/DELETE 与 401 校验；`/etc/init.d/webdav`（START=99）等数据盘最多 180 s 后拉起，30 s 看护进程可自愈；整机冷启动后自动恢复并复测通过。无 TLS，Basic 明文仅在 br-lan 内传输，见 D-S16 / D-S21-01 |
 
-**边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B4 一行未动；B6 以独立实例新增 5005，不改任何现役服务配置，回退为停服务 + 删 rc.d 链接。
+**边界核对**：B1 已接管 22（原厂二进制仍在 `/usr/sbin/dropbear`，回退脚本实测可用）；未改 `macfilter`/`sysapi`/`shareUpdate` 语义；1.0.6 回滚树与 `state/previous` 保留；B2 无部署、`/usr/bin/curl` 保持原样；B4 一行未动；SMB 侧仅新增 `.yunshu` veto（不改 UCI、不改文件权限）；B6 以独立实例新增 5005，不改任何现役服务配置，回退为停服务 + 删 rc.d 链接。
 
 **不在八项候选内的系统组件**：内核、uClibc、BusyBox、iptables/ipset、系统 OpenSSL、`sysapihttpd`/nginx/uhttpd、无线栈、固件分支按 §3 结论保持不动。其中 OpenSSL 1.0.1j 的单独说明（现状、17 个消费者、为什么卡死、风险面）见 [系统 OpenSSL 为什么不在升级范围](../audits/openssl-not-upgraded-2026-11-10.md)。
 

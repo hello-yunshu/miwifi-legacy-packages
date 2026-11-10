@@ -17,6 +17,7 @@ EXTRA_HELP="	dryrun	Show what would be done, change nothing
 	check	Re-check once and fix if needed (idempotent, for cron)"
 
 LOG=/userdisk/data/.yunshu/live/samba-homes-fix.log
+SMB_CONF=/userdisk/data/.yunshu/live/samba/current/etc/smb.conf
 
 log() {
 	case "$LOG" in
@@ -27,6 +28,40 @@ log() {
 
 homes_val() { uci -q get samba.@samba[0].homes 2>/dev/null; }
 smbd_running() { pidof samba-s5d >/dev/null 2>&1 || pidof smbd >/dev/null 2>&1; }
+veto_ok() {
+	[ -r "$SMB_CONF" ] &&
+		grep -q '^[[:space:]]*veto files[[:space:]]*=[[:space:]]*/.yunshu/' "$SMB_CONF"
+}
+
+# 适配器在 render 时固定输出 .yunshu 的 veto/dont descend；这里只做开机
+# 断言与兜底。若 smb.conf 不是由当前适配器生成（或生成时漏了），reload
+# 一次即可让适配器重新渲染。和 homes 一样，不改 UCI，因此不会与 S19 的
+# config drift 判定冲突。
+ensure_veto() {
+	mode=$1
+	if veto_ok; then
+		log "veto ok"
+		[ "$mode" = "dry" ] && echo "[dry-run] .yunshu veto present"
+		return 0
+	fi
+	if [ "$mode" = "dry" ]; then
+		echo "[dry-run] .yunshu veto MISSING in $SMB_CONF; would reload samba"
+		return 0
+	fi
+	log "veto missing in $SMB_CONF, reloading samba"
+	/etc/init.d/samba reload
+	rc=$?
+	log "veto reload rc=$rc"
+	if ! smbd_running; then
+		log "smbd gone after veto reload, recovering (stop+start)"
+		/etc/init.d/samba stop >/dev/null 2>&1
+		sleep 1
+		/etc/init.d/samba start >/dev/null 2>&1
+		sleep 3
+	fi
+	if veto_ok; then log "veto ok after reload"; else log "veto STILL MISSING"; fi
+	return 0
+}
 
 apply() {
 	mode=$1
@@ -80,6 +115,7 @@ apply() {
 
 start() {
 	apply ${HOMES_FIX_DRY:+dry}
+	ensure_veto ${HOMES_FIX_DRY:+dry}
 	[ -n "$HOMES_FIX_DRY" ] && return 0
 
 	# 有界复检：累计 +240 秒后自行结束
@@ -95,6 +131,7 @@ start() {
 			else
 				log "recheck@+${acc}s: ok"
 			fi
+			ensure_veto real
 			# smbd 意外掉线时的兜底恢复
 			if ! smbd_running; then
 				log "recheck@+${acc}s: smbd absent, starting"
@@ -105,8 +142,8 @@ start() {
 	) &
 }
 
-dryrun() { apply dry; }
-check() { apply real; }
+dryrun() { apply dry; ensure_veto dry; }
+check() { apply real; ensure_veto real; }
 
 restore() {
 	cur=$(homes_val)
