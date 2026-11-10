@@ -411,6 +411,18 @@ render() {
 			fu=$(uci_get "samba.$sec.force_user")
 			[ -n "$fu" ] && echo "	force user = $fu"
 
+			# S8: keep the private .yunshu tree out of the whole-disk
+			# share.  File permissions cannot do this: the share is
+			# guest ok + force user = root, so mode bits are bypassed.
+			# veto files hides and denies the name; dont descend stops
+			# directory scans before they read it.
+			case "$pnorm" in
+			/userdisk/data)
+				echo '	veto files = /.yunshu/'
+				echo '	dont descend = .yunshu'
+				;;
+			esac
+
 			case "$sname" in
 			*摄像机*)
 				limit=$(uci_get misc.smb_ctl.limit)

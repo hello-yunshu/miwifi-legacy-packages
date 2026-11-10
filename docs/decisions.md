@@ -360,3 +360,48 @@
   顶层或构建机路径；③ 删除顶层条目之前先 `grep /etc`、`/etc/crontabs/root`，再查
   `/proc/*/maps` 与 `netstat`；④ 部署新 Samba 树一律 `install` + `activate`，不手工
   改 `current`/`runtime`。
+
+## S21（高危答复落地：WebDAV 账号、SMB `.yunshu` 隔离、B3 回写、B2 事实化）
+
+用户对审计中三个高危项给出明确答复：第二个 WebDAV 账号是本人设置的、以后长期使用；
+`.yunshu` 在 SMB 侧必须封住；B3 不能只活在设备上。本节记录由此产生的四项决定。
+
+- D-S21-01 **WebDAV 第二账号是用户自设账号，不删、不改口令。**
+  该账号由用户本人加入认证文件，用途是用户自己的客户端长期访问 WebDAV，
+  不属于历史遗留或误配；执行侧不得以“多余账号”“弱口令”为由删除或重置。
+  边界条件：认证为 lighttpd Basic 明文文件，服务只监听 `192.168.3.2:5005`（br-lan），
+  无 WAN 端口转发、无 TLS；因此凭据暴露面被限制在局域网链路内。本轮不记录、
+  不评估、不修改该账号的任何口令特征。后续若引入 TLS 或对外暴露，必须重新评估该账号。
+- D-S21-02 **SMB 侧用 Samba 原生 `veto files` + `dont descend` 封住 `.yunshu`。**
+  不走文件权限：共享 `[XiaoMi]` 是 `guest ok=yes` + `force user=root`，mode/owner
+  会被直接绕过。选择 `veto files = /.yunshu/`（枚举隐藏且访问被拒）叠加
+  `dont descend = .yunshu`（目录扫描在进入前停止），两者都是 Samba 自身语义，
+  对白名单与访客一视同仁，不依赖客户端行为。
+  持久化：规则硬编码在渲染器 `recipes/samba/xiaomi-smb-adapter.sh` 中，只对
+  `path` 根为 `/userdisk/data` 的共享输出；厂商 `datacenter`/`indexservice` 每次开机
+  整份重写 `/etc/config/samba` 后，适配器重渲染 `smb.conf` 仍会带上这两行。另在既有
+  `samba-homes-fix`（S97）中加入 `ensure_veto`：开机后断言 `smb.conf` 含该规则，
+  缺失则 `reload`，reload 后 smbd 不在则 stop+start，复检仍有界。选择并入 S97 而不是
+  新建 init：两者都在等数据盘挂载后修正同一份 `smb.conf`，合并可避免两个复检循环
+  竞争同一次 reload；执行顺序固定为先 `homes` 后 `veto`，每次复检都重跑两者。
+  与 S19 的关系：本项不写 UCI、不改 `/etc/config/samba`，因此不新增 config drift，
+  S19 记录的漂移判定与接受流程保持不变；漂移被接受后适配器仍会渲染出 veto。
+  实测（2026-11-11）：白名单 Mac 枚举无 `.yunshu`，直访 `.yunshu`/`.YUNSHU` 返回
+  ENOENT；`文档` 只读、`下载`/`共享` put/get/del 正常；139/445/137/138 在听，
+  `smbd`/`nmbd` 存活；`/etc/init.d/samba reload` 后复测仍生效。备份与回滚：
+  `/userdisk/data/.yunshu/backups/smb-yunshu-veto-20261111/`（适配器 `aecfdb69`、
+  v1 适配器 `aecfdb69`、`samba-homes-fix` `39008285`、v1 init `a3ec16bb`）；
+  回滚 = 还原两个文件 + `chmod 755` + `/etc/init.d/samba reload`，已演练一次
+  （还原后 Mac 重新看到 `.yunshu`，再恢复加固后再次隐藏）。
+- D-S21-03 **B3 nmbd 逻辑回写仓库，设备不再唯一持有。**
+  仓库 `recipes/samba/s8-compat/samba.init.wrapper` 以设备 `/etc/init.d/samba` 为准
+  整文件替换（含 `nmbd_private`/`nmbd_start`/`nmbd_stop` 与 `start_impl`/`stop` 调用），
+  不再是缺 B3 的旧版。设备侧 `.yunshu/live/s8compat/versions/v1/samba.init.wrapper`
+  同步为同一内容，旧 `.dev` 路径副本不再保留。重建校验：仓库文件、v1 副本、设备
+  `/etc/init.d/samba` 三者 `md5sum` 均为 `114d2850e14a362a95b26bd35069dcd1`，
+  `sh -n` 通过；从仓库重放该文件并 `chmod 755` 即得到带 B3 的 init。
+- D-S21-04 **B2 curl 已整体回退，按事实记录。**
+  `miDebug.sh` 使用 `/usr/bin/curl`（7.33.0 + PolarSSL），`b2-curl` 候选树已删除，
+  设备上没有私有 curl 运行。此前“已切私有 curl / 部分覆盖”的表述作废；后续如需
+  升级，按新条目重新评估调用方约束（`mitvapp` scheme-less URL、`helper.sh` 的
+  HTTPS、只读 `/usr` 调用方），不沿用旧结论。
