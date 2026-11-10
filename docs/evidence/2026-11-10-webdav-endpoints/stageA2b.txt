@@ -1,0 +1,37 @@
+# stage A2b: reads on fixtures   2026-11-10 22:05:32 +0800
+# GET  HEAD  PF0  PF1  path
+12 层目录就绪
+200   200   207  207  base
+200   200   207  207  a/b/c
+200   200   207  207  d1..d12
+200   200   207  207  中文 空格.txt
+200   200   207  207  hash#name.txt
+200   200   207  207  quest?name.txt
+200   200   207  207  pct%.txt
+200   200   207  207  plus+name.txt
+200   200   207  207  amp&name.txt
+200   200   207  207  200B 文件名
+## PROPFIND Depth 1 hrefs（客户端据此解码显示名）
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/quest%3Fname.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/amp%26name.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/%E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/a/
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/d1/
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/pct%25.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/plus%2Bname.txt
+  /%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/%E4%B8%8B%E8%BD%BD/.webdav-selftest-20261110/hash%23name.txt
+## 未编码特殊字符（URL 语法，不应命中文件）
+  hash#name  -> 404
+  quest?name -> 404
+  pct%       -> 200
+  plus+name  -> 200
+## 文件内容校验（PUT 的 body 应原样返回）
+  %E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC.txt          hello zh
+  hash%23name.txt                                      hash
+  quest%3Fname.txt                                     quest
+  pct%25.txt                                           pct
+  plus%2Bname.txt                                      plus
+  amp%26name.txt                                       amp
+# done

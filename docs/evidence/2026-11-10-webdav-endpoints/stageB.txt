@@ -1,0 +1,52 @@
+# stage B: method matrix   2026-11-10 22:06:42 +0800
+## 基础读写
+PUT 0B           -> 201
+PUT 5MB          -> 201
+PUT 覆盖已有     -> 204
+HEAD 0B 文件     -> 200 content-length=2
+GET  5MB 大小    -> 5242880 字节 / 本地 5242880 字节
+GET  5MB md5     -> 5f363e0e58a95f06cbe9bbc662c5dfb6 / 本地 5f363e0e58a95f06cbe9bbc662c5dfb6
+## MKCOL / COPY / MOVE
+MKCOL 新目录     -> 201
+MKCOL 已存在     -> 405
+MKCOL 缺父目录   -> 409
+MKCOL 无结尾斜杠 -> 201
+COPY 文件        -> 201
+COPY 目录 depth  -> 200
+COPY 无 Destination -> 400
+MOVE 文件        -> 201
+MOVE 已存在目标  -> 204
+MOVE 后源文件    -> 404（期望 404）
+## PROPPATCH / LOCK / UNLOCK
+PROPPATCH        -> 204
+LOCK             -> 200  token=urn:uuid:eb8b3160-d718-4725-9006-fcf2c11b2807
+PUT 未带 token   -> 423（期望 423）
+PUT 带 token     -> 201
+UNLOCK           -> 204
+UNLOCK 后 PUT    -> 204
+UNLOCK 再来一次  -> 409（期望 409/400）
+## PROPFIND Depth
+Depth: 0 -> 207  response 数=1
+Depth: 1 -> 207  response 数=13
+Depth: infinity -> 403  response 数=0
+Depth: 2（非法） -> 403
+## OPTIONS
+  HTTP/1.1 200 OK
+  DAV: 1,2,3
+  MS-Author-Via: DAV
+  Allow: PROPFIND, DELETE, MKCOL, PUT, MOVE, COPY, PROPPATCH, LOCK, UNLOCK, OPTIONS, GET, HEAD, POST
+## DELETE（只在测试目录内）
+DELETE 文件      -> 204
+DELETE 目录      -> 204
+DELETE 副本目录  -> 204
+DELETE 不存在    -> 404（期望 404）
+## 只读根（555）写试探：只 PUT/MKCOL，不 DELETE
+PUT  /本机储存/x.txt     -> 500
+MKCOL /本机储存/xdir/    -> 403
+PUT  /外接盘/x.txt       -> 201
+PUT  /x.txt（根）        -> 500
+MKCOL /xdir/（根）       -> 403
+## 只读根写入后应仍不存在
+GET  /本机储存/x.txt     -> 404
+GET  /外接盘/x.txt       -> 200
+# done

@@ -1,0 +1,106 @@
+# stage A2: deep / special / long paths   2026-11-10 22:01:02 +0800
+## /__ui/ 目录本身返回什么
+<!DOCTYPE html> <html> <head> <meta charset="utf-8"> <title>Index of /__ui/</title> <meta name="viewport" content="initial-scale=1"><link rel="stylesheet" type="text/css" href="/__ui/app.css"> </head> <body> <h2>Index of /__ui/</h2> <div class="list"> <table summary="Directory Listing" cellpadding="
+
+## 建夹具（只在这个测试目录内）
+MKCOL base        -> 201
+MKCOL a           -> 201
+MKCOL a/b         -> 201
+MKCOL a/b/c       -> 201
+PUT 中文 空格.txt -> 201
+PUT hash#name     -> 201
+PUT quest?name    -> 201
+PUT pct%          -> 201
+PUT plus+name     -> 201
+PUT amp&name      -> 201
+PUT 200B 文件名   -> 201
+# stage A2b: reads on fixtures   2026-11-10 22:05:28 +0800
+# GET  HEAD  PF0  PF1  path
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+12 层目录就绪
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      base
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      a/b/c
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      d1..d12
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      中文 空格.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      hash#name.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      quest?name.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      pct%.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      plus+name.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      amp&name.txt
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+timeout: can't execute '10': No such file or directory
+                      200B 文件名
+## PROPFIND Depth 1 hrefs（客户端据此解码显示名）
+timeout: can't execute '10': No such file or directory
+## 未编码特殊字符（URL 语法，不应命中文件）
+timeout: can't execute '10': No such file or directory
+  hash#name  -> 
+timeout: can't execute '10': No such file or directory
+  quest?name -> 
+timeout: can't execute '10': No such file or directory
+  pct%       -> 
+timeout: can't execute '10': No such file or directory
+  plus+name  -> 
+## 文件内容校验（PUT 的 body 应原样返回）
+timeout: can't execute '10': No such file or directory
+  %E4%B8%AD%E6%96%87%20%E7%A9%BA%E6%A0%BC.txt          
+timeout: can't execute '10': No such file or directory
+  hash%23name.txt                                      
+timeout: can't execute '10': No such file or directory
+  quest%3Fname.txt                                     
+timeout: can't execute '10': No such file or directory
+  pct%25.txt                                           
+timeout: can't execute '10': No such file or directory
+  plus%2Bname.txt                                      
+timeout: can't execute '10': No such file or directory
+  amp%26name.txt                                       
+# done

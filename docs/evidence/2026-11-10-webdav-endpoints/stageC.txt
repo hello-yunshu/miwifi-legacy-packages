@@ -1,0 +1,52 @@
+# stage C: auth / encoding / client sequences   2026-11-10 22:07:51 +0800
+## 1. 认证矩阵
+no-creds      401
+wrong-pass    401
+wrong-user    401
+empty-pass    401
+valid         200
+WWW-Authenticate: Basic realm="r2d-webdav", charset="UTF-8"
+valid on PUT (write path) 201
+valid on DELETE          204
+## 2. 编码
+UTF-8 目录名 PROPFIND    207
+百分号编码文件 GET       200
+小写百分号编码           200
+超长文件名 PUT           201
+超长文件名 GET           200
+超长文件名 DELETE        204
+900B 路径 MKCOL          409
+900B 路径 PROPFIND       404
+截断的百分号编码 %E4% -- 404
+非法 UTF-8 %FF          -- 400
+## 3. PROPPATCH 是否持久化
+PROPPATCH -> 204
+PROPFIND displayname -> 
+底层目录名 -> /userdisk/data/下载/.webdav-selftest-20261110/pp
+exists
+## 4. Finder mount_webdav 的请求序列（OPTIONS -> PROPFIND 0 -> PROPFIND 1）
+-- OPTIONS /
+   HTTP/1.1 200 OK
+   DAV: 1,2,3
+   Allow: PROPFIND, DELETE, MKCOL, PUT, MOVE, COPY, PROPPATCH, LOCK, UNLOCK, OPTIONS, GET, HEAD, POST
+   Content-Length: 0
+-- PROPFIND / Depth:0
+   207 application/xml;charset=utf-8 485B
+-- PROPFIND / Depth:1
+   207 1229B
+-- GET 根上的 中文 文件（Finder 双击下载路径）
+   200 text/plain;charset=utf-8 8B
+## 5. 资源管理器探测（OPTIONS + PROPFIND 0，带 Translate: f 的 GET）
+-- OPTIONS /
+   HTTP/1.1 200 OK
+   DAV: 1,2,3
+   MS-Author-Via: DAV
+   Allow: PROPFIND, DELETE, MKCOL, PUT, MOVE, COPY, PROPPATCH, LOCK, UNLOCK, OPTIONS, GET, HEAD, POST
+-- PROPFIND / Depth:0
+   207 485B
+-- GET 文件 with Translate: f
+   200 text/plain;charset=utf-8 8B
+-- LOCK/UNLOCK 探测（资源管理器打开文件会先 LOCK）
+   LOCK 200 token=urn:uuid:a8a86f8d-65c1-4963-a1d4-c22bb4301882
+   UNLOCK 204
+# done

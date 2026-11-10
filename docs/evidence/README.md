@@ -15,6 +15,9 @@
 | [2026-11-10-b1-takeover](2026-11-10-b1-takeover/) | 11-10 | B1 接管 22：备份清单、执行记录、回退演练、**冷启动**（`coldboot.md` + 基线与重启后原始输出） | B1 / S12 |
 | [2026-11-10-b6-webdav](2026-11-10-b6-webdav/) | 11-10 | B6 WebDAV 生产上线：重启前基线、冷启动后核对、Mac 客户端 CRUD 原始输出；403 修复的 Finder 探测日志与修复后矩阵；双根（本机储存/外接盘）与字符集修复矩阵 | B6 / S16 / S17 / S18 |
 | [2026-11-10-root-cleanup](2026-11-10-root-cleanup/) | 11-10 | 数据盘根目录清理：前后清单与逐项归类、`DT_RPATH` 等长改写后的实际值、进程映射、接口矩阵、`smbd -b` 编译期前缀证据 | S19 |
+| [2026-11-10-webdav-ui](2026-11-10-webdav-ui/) | 11-10 | WebDAV 中文界面：无 PCRE 下的静态单页 + PROPFIND 方案、生产 curl 矩阵、明/暗/窄屏截图 | B6 |
+| [2026-11-10-webdav-endpoints](2026-11-10-webdav-endpoints/) | 11-10 | WebDAV 全端点自检：路径/方法/认证/编码矩阵、`/__ui/` 与「外接盘」根写入两处修复、并发与只读边界 | B6 |
+| [2026-11-10-webdav-responsive](2026-11-10-webdav-responsive/) | 11-10 | 单页界面响应式：19 档宽度 × 明暗实测、生产截图、面包屑与点击目标修复 | B6 |
 | [2026-11-10-yunshu-cutover](2026-11-10-yunshu-cutover/) | 11-10 | `.dev` → `.yunshu` 迁移后 Samba 1.0.8-r2d 切换与冷启动：`smbd -b` 全量路径、共享枚举、WebDAV 矩阵、ACL/cron/netwatch、根目录终态与安装状态 | S20 |
 
 ## 使用约定

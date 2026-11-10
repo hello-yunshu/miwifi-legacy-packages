@@ -1,0 +1,9 @@
+# client hint deploy  2026-11-10 21:55:16 +0800
+GET / -> 200 text/html 1490B
+id="hint">浏览器内可浏览与下载；上传、改名、删除请用 WebDAV 客户端连接。
+GET /__ui/app.js -> 200 11539B
+GET /__ui/app.css -> 200 5763B
+PROPFIND / -> 207
+454a6c650852c855b722408ddd172487  /userdisk/data/.yunshu/live/webdav/ui/index.html
+7cb594152580bfbd036c2c1812341b95  /userdisk/data/.yunshu/live/webdav/ui/app.js
+db97cec8dcfe2e2b3e1f13f95f6658a1  /userdisk/data/.yunshu/live/webdav/ui/app.css

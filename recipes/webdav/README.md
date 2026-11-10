@@ -20,12 +20,19 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
   - `本机储存` → `/userdisk/data` 下所有可见顶层目录（`下载`、`共享`、`图片`、`文档`、
     `摄像机监控视频`、`数学`、`文件`、`照片视频` …），逐个 `mount --bind` 进来
   - `外接盘` → `/extdisks/` 下第一个已挂载分区（当前 `sdb1`），热插拔后由看护重新绑定
-- 两个根用 `chmod 555`（属主 root），在根上 `PUT`/`MKCOL`/`DELETE` 会被拒；子目录是独立
-  bind mount，权限仍是 0777/0666，可正常读写
+- 两个根在根这一层只读，但机制不同：
+  - `本机储存` 是 webroot 下的普通目录，`chmod 555`（属主 root）生效，根上
+    `PUT`/`MKCOL` 被拒（`PUT` 返回 500、`MKCOL` 403），子目录是独立 bind mount，
+    权限仍是 0777/0666，可正常读写
+  - `外接盘` 本身是 bind mount，根权限来自 U 盘文件系统（vfat 恒为 777），挂载后的
+    `chmod 555` 不生效。改由配置里的 `webdav.is-readonly` 只封集合本身
+    （`$HTTP["url"] == "/%E5%A4%96%E6%8E%A5%E7%9B%98/"`），`PUT` 根返回 400；
+    子路径仍可正常上传/改名/删除。这样避免一次误 `DELETE /外接盘/` 递归清空整块盘
 - `.yunshu` 与顶层兼容链接 **从不挂进 webroot**：点开头条目、符号链接
   和 `lost+found` 在 `sync_local()` 里直接跳过，因此它们既不可访问也不会出现在列表里
   （原先的 `r2d-cand` 链接已于 2026-11-10 消除，`samba-s2` 也在 Samba 重编后删除）
-- 目录列表已启用（`mod_dirlisting`）：浏览器 `GET /` 直接看到这两个入口，不返回 403
+- 根目录网页改为中文界面（见下节「界面」）：浏览器 `GET /` 返回静态页
+  `ui/index.html`，不再直接看到 lighttpd 自带的英文列表页
 - `dir-listing.encoding = "utf-8"`：同时给 HTML 加 `<meta charset>` 和
   `Content-Type: text/html; charset=utf-8`；不设时浏览器把 UTF-8 中文显示成乱码
 
@@ -38,6 +45,7 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
   sbin -> current/sbin                 lighttpd-angel 默认路径的落点
   conf/lighttpd.conf                   配置
   conf/users.basic                     凭据（user:password，0600 nobody）
+  ui/                                  中文界面（index.html / app.css / app.js / listing-shim.js）
   state/                               pid、error.log、上传临时目录、webdav.db
   state/usb.src                        当前绑定的外接盘路径（热插拔比对用）
   webroot/本机储存/                    数据盘可见顶层目录的 bind mount 点
@@ -48,6 +56,65 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
 /etc/init.d/webdav                     START=99，开机后台等待数据盘后拉起
 /etc/rc.d/S99webdav -> ../init.d/webdav
 ```
+
+## 界面
+
+浏览器打开 `http://192.168.3.2:5005/` 看到的是中文单页，而不是 lighttpd 自带的
+`Index of /` 页面：
+
+- 根目录列出 `本机储存` / `外接盘`，带文件夹图标；进入后按「目录优先 + 拼音」排序，
+  显示名称、大小、修改时间，顶部有面包屑、每层有 `返回上级`、右上角 `共 N 项`
+- 浅色 / 深色跟随 `prefers-color-scheme`，无主题开关；窄屏（390px）单列、不横向溢出
+- 底部「上传 / 改名 / 删除」提示按 UA 只显示一条：macOS 给访达 `⌘K`、Windows 给
+  「映射网络驱动器」并附「使用其他凭据」、手机与 Linux 说明浏览器内可直接浏览下载；
+  地址取自当前 `location.origin`，不写死 IP
+- 所有可见文案为中文；`Index of` / `Directory listing` / `Parent Directory` 不再出现
+- 视觉上只参考了 Aurora 的克制风格，不依赖 LuCI 的 CSS 或变量
+
+### 实现方式与代价
+
+`GET /` 时用 `mod_indexfile` + 条件 `server.document-root` 把请求切到 `ui/`，
+`/__ui/` 由 `mod_alias` 提供静态资源；目录条目由页面同源 `PROPFIND`（`Depth: 1`）
+读取后在浏览器渲染。WebDAV 方法与认证完全不变。
+
+没有选服务端渲染（`mod_cgi`）的原因：这版 lighttpd **没有编译 PCRE**，
+`url.rewrite-once` 与正则条件不可用，无法把任意目录的 GET 分发给 CGI；
+`mod_dirlisting` 的英文文案又硬编码在模块里，没有 i18n 开关。
+
+代价：
+
+- 列表依赖浏览器 JS；禁用 JS 时 `/` 是中文静态壳但没有条目，深层目录会退回
+  lighttpd 自带英文列表页（仍可浏览/下载）
+- 深层目录仍由 `mod_dirlisting` 生成（本构建无法重写 URL），`listing-shim.js`
+  会立即把浏览器转到 `/?p=...`；`curl` 抓深层目录 HTML 时仍会看到英文标题
+- 隐藏项目（`.` 开头）在 `PROPFIND` 响应里仍存在（与改造前一致），页面渲染时过滤，
+  不显示
+
+### 部署与回退
+
+```sh
+D=/userdisk/data/.yunshu/live/webdav
+# 部署界面文件（仅静态资源，不必重启；改了 lighttpd.conf 才需要 restart）
+tar -C recipes/webdav -cf - ui | tar -C $D -xf -
+chown -R root:root $D/ui && chmod 644 $D/ui/*
+
+# 配置（首次启用界面时）
+cp $D/conf/lighttpd.conf $D/conf/lighttpd.conf.bak-$(date +%Y%m%d)
+cp recipes/webdav/lighttpd.conf $D/conf/lighttpd.conf
+$D/current/sbin/lighttpd -m $D/current/lib -f $D/conf/lighttpd.conf -t && $D/run.sh restart
+
+# 回退
+cp $D/conf/lighttpd.conf.bak-<日期> $D/conf/lighttpd.conf
+mv $D/ui $D/ui.disabled
+$D/run.sh restart
+```
+
+界面证据（生产 curl 矩阵与明/暗/窄屏截图）：
+[`docs/evidence/2026-11-10-webdav-ui/`](../../docs/evidence/2026-11-10-webdav-ui/)。
+响应式实测（19 档宽度 × 明暗、深层目录页、面包屑修复）：
+[`docs/evidence/2026-11-10-webdav-responsive/`](../../docs/evidence/2026-11-10-webdav-responsive/)。
+端点自检（路径/方法/认证/编码、两处修复）：
+[`docs/evidence/2026-11-10-webdav-endpoints/`](../../docs/evidence/2026-11-10-webdav-endpoints/)。
 
 ## 编译期路径与 `r2d-cand`
 
@@ -109,7 +176,9 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 ## 已验证
 
 - 未认证 `GET /` 返回 401（`WWW-Authenticate: Basic`）
-- `GET /` 返回 200 且恰好列出两个入口：`本机储存`、`外接盘`；两者子目录 `GET` 均 200
+- `GET /` 返回 200，`<title>文件浏览</title>`；`/__ui/*` 三个静态资源均 200
+- 页面渲染后只有中文文案，根目录两个入口，子目录可继续进入并有 `返回上级`
+- 深层目录 `GET` 200 后由 `listing-shim.js` 转跳 `/?p=...`，落到中文界面
 - `PROPFIND /`、`/本机储存/`、`/外接盘/` 均 207；`OPTIONS /` 返回 200 与 `DAV: 1,2,3`
 - 目录页 `Content-Type: text/html; charset=utf-8` 且含 `<meta charset>`，中文名不再乱码
 - `本机储存/下载` 下 PUT 201 / GET 200（内容一致）/ DELETE 204
@@ -121,6 +190,14 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 
 ## 未验证 / 已知限制
 
+- `PROPFIND Depth: infinity`（以及非法的 `Depth: 2`）返回 403：`mod_webdav` 不支持
+  无限深度；Finder 与资源管理器只用 `Depth: 0/1`，不影响挂载
+- `PROPPATCH` 返回 204 但属性不持久化（`displayname` 回读为空），属于 `mod_webdav`
+  未实现 dead property；要改显示名请直接改名
+- `PROPFIND /__ui/*` 返回 404（`mod_webdav` 按 docroot 解析、不经过 alias）；
+  `GET /__ui/` 返回 403（已关闭目录列表），资源文件本身 200
+- 只读根的错误码不统一：`PUT /本机储存/x` 500、`MKCOL` 403、`PUT /x` 500、`PUT /` 400，
+  功能上都被拒
 - 对共享根发 `DELETE` 是 WebDAV 标准的递归删除语义，会清空目录内容（2026-11-10
   实测误删过 `共享/文件共享说明.jpg`，已从固件原件恢复，见 D-S16-07）；客户端批量操作需谨慎
 - `本机储存` 直接暴露数据盘上的用户内容。SMB 的 `XiaoMi` 根共享本来也覆盖同一片数据，
