@@ -181,6 +181,50 @@ ngx_http_load_usb
 80=200、8443=200、5005=401；139/445 仍归 `samba-s5d`，137/138 仍归 `nmbd`；
 回滚演练 emerg 回到 2 条，重新套用后回到 0。
 
+### 2.6 toolbar / domain-event 的 emerg 日志（已消除）
+
+`sysapihttpd -t` 里剩余 8 行：
+
+```text
+[emerg] Initializing MiWiFi toolbar shared context...
+[emerg] Unable to open rule file /tmp/rr/xqsystmp
+[emerg] Unable to close rule file /tmp/rr/xqsystmp
+[emerg] Unable to initialize MiWiFi toolbar shared context
+[emerg] Initializing MiWiFi domain event shared context...
+[emerg] Unable to open rule file /tmp/de_zone_data
+[emerg] Unable to close rule file /tmp/de_zone_data
+[emerg] Unable to initialize MiWiFi domain event shared context
+```
+
+排查：
+
+- 触发指令：`rr_config rr_zone 2M "RR_PATH_STUB";`（模板原第 573 行）与
+  `de_zone_config de_shmem 2M "DE_PATH_STUB";`（原第 616 行）；使用方是 8380/8382 的
+  `rr_filter` + `toolbar_config`，以及 8383/8385 的 `de_zone_set` +
+  `event_config` / `de_config`。
+- 生成方：`/usr/sbin/ngxld` 的 `gen_config` 只做 `mkdir -p /tmp/rr` 和 sed 路径，
+  不写 `/tmp/rr/xqsystmp` 与 `/tmp/de_zone_data`；`/etc/sysapihttpd/` 模板、
+  `/etc/init.d/*` 与各二进制里都没有写者。
+- 是否在用：`ad_filter` init 的 `start()` 第一行置 0 后返回（厂商 2017 起默认关闭），
+  `rule_mgr` 四个中心全 0；`http_event_proxy.settings.enabled=0`，无 `ipset rr_de`，
+  `tcp_proxy_action` 无这 4 个端口条目，端口无连接；App 侧广告插件 appid
+  `2882303761517236139` 未安装。
+- 可见范围：运行时 master 的 stderr 指向 `/dev/null`，syslog 无这些行；它们只出现在
+  start/reload 前置检查的 `/tmp/nginx_check.log`，即只在测试态可见。
+- 占位文件：建空文件后 open/close 两条消失，`Unable to initialize` 仍打印，不能作为修复。
+
+处理：注释模板中 9 行钩子（`rr_config`、`rr_filter`×2、`toolbar_config`、
+`de_zone_config`、`de_zone_set`×2、`event_config`、`de_config`），
+8380/8382/8383/8385 保留监听，作为普通反代。
+
+- 备份：`/userdisk/data/.yunshu/backups/toolbar-dezone-20261111/`
+  （`sysapihttpd.conf.before` md5 `2a0fb892…`，`MANIFEST.txt` 含原因与回滚命令）
+- 回滚：覆盖回 before 后 `/etc/init.d/sysapihttpd reload`
+
+验证：reload 与“删 `/tmp/sysapihttpdconf` 再 reload”后 `nginx_check.log` 无 emerg、
+`-t` 成功；80=200、8443=200、5005=401、8193=404；4 个代理端口仍在监听；
+139/445 仍归 `samba-s5d`，137/138 仍归 `nmbd`。
+
 ## 3. 结论汇总
 
 | 对象 | 结论 | 是否改动 |
@@ -190,3 +234,4 @@ ngx_http_load_usb
 | nmbd 监听面 | 保持；通配 socket 已被 `bind interfaces only` 过滤，实测 loopback 无响应 | 否 |
 | 8443 502 | 厂商 Host 头带端口导致 himan 空回复；改 `/etc/sysapihttpd/` 模板为 `$host` 修复 | 是（2026-11-11） |
 | `ngx_http_load_usb` emerg | USB 部署功能未启用、无生成方；占位文件无效，注释模板中 8193 的 `preload` 指令 | 是（2026-11-11） |
+| toolbar / domain-event emerg | 两模块默认关闭、规则文件无生成方；注释 9 行钩子，4 个代理端口保留监听 | 是（2026-11-11） |
