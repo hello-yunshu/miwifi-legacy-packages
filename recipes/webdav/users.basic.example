@@ -1,0 +1,4 @@
+# 部署时复制为 conf/users.basic，属主 nobody:nogroup，权限 0600。
+# 格式： user:password
+# 本仓库不保存真实部署使用的口令。
+r2d:replace-with-a-strong-password
