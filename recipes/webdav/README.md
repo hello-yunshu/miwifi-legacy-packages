@@ -22,8 +22,9 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
   - `外接盘` → `/extdisks/` 下第一个已挂载分区（当前 `sdb1`），热插拔后由看护重新绑定
 - 两个根用 `chmod 555`（属主 root），在根上 `PUT`/`MKCOL`/`DELETE` 会被拒；子目录是独立
   bind mount，权限仍是 0777/0666，可正常读写
-- `.dev` 与顶层兼容链接 `r2d-cand`、`samba-s2` **从不挂进 webroot**：点开头条目、符号链接
+- `.yunshu` 与顶层兼容链接 **从不挂进 webroot**：点开头条目、符号链接
   和 `lost+found` 在 `sync_local()` 里直接跳过，因此它们既不可访问也不会出现在列表里
+  （原先的 `r2d-cand` 链接已于 2026-11-10 消除，`samba-s2` 也在 Samba 重编后删除）
 - 目录列表已启用（`mod_dirlisting`）：浏览器 `GET /` 直接看到这两个入口，不返回 403
 - `dir-listing.encoding = "utf-8"`：同时给 HTML 加 `<meta charset>` 和
   `Content-Type: text/html; charset=utf-8`；不设时浏览器把 UTF-8 中文显示成乱码
@@ -31,8 +32,10 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
 ## 设备布局
 
 ```
-/userdisk/data/.dev/live/webdav/
+/userdisk/data/.yunshu/live/webdav/
   current -> versions/1.0.0-r2d/root   二进制 + mod_webdav + 私有 lib
+  lib -> current/lib                   DT_RPATH 补丁的落点（见下）
+  sbin -> current/sbin                 lighttpd-angel 默认路径的落点
   conf/lighttpd.conf                   配置
   conf/users.basic                     凭据（user:password，0600 nobody）
   state/                               pid、error.log、上传临时目录、webdav.db
@@ -40,12 +43,28 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
   webroot/本机储存/                    数据盘可见顶层目录的 bind mount 点
   webroot/外接盘/                      外接盘分区的 bind mount 点
   run.sh                               start|stop|restart|status|watch|heal
+  patch-rpath.sh                       改写 ELF 的 DT_RPATH（等长替换）
   webdav.log                           生命周期日志
 /etc/init.d/webdav                     START=99，开机后台等待数据盘后拉起
 /etc/rc.d/S99webdav -> ../init.d/webdav
 ```
 
-二进制通过 `-m <current>/lib` 加载模块，不依赖编译期候选目录；`r2d-cand` 兼容链接保持不变。
+## 编译期路径与 `r2d-cand`
+
+二进制与模块在构建时把 `DT_RPATH` 写死为构建前缀下的绝对路径，不会用 `-m` 或
+`LD_LIBRARY_PATH` 覆盖：实测 uClibc 先解析对象自身的 `DT_RPATH`，再查环境变量，
+所以只设 `LD_LIBRARY_PATH` 无效（`LD_PRELOAD` 也会再加载一份旧路径下的库）。
+
+处理方式是把 25 个 ELF 里的整段旧路径（构建机 `DESTDIR` 前缀 + 设备候选路径，共两段、
+112 字节）**等长**改写为 `/userdisk/data/.yunshu/live/webdav/lib`，不足的字节用 NUL 填充，
+再由 [`patch-rpath.sh`](patch-rpath.sh) 固化。等长是硬约束：改长短会让 ELF 后续偏移错位，
+表现为启动即 SIGILL。只替换子串（保留 `/work/stage2` 之类构建机前缀）会得到
+`/work/stage2/...` 的 RPATH，同样启动失败——脚本现在整段匹配。完成后数据盘根上的
+`r2d-cand` 链接与 `candidates/b6-webdav` 已删除。
+
+`bin/xmllint` 的帮助文本与 `sbin/lighttpd-angel` 的默认路径也含编译期前缀，同样做了等长
+改写，分别落到 `live/webdav/etc/xml/catalog` 与 `live/webdav/sbin/lighttpd`。`sbin`
+符号链接指向 `current`；原树本就不带 `etc`（xmllint 不依赖该 catalog），因此不保留 `etc` 链接。
 
 ## 开机与数据盘竞态
 
@@ -61,10 +80,18 @@ bind mount `本机储存` 的各个顶层目录与外接盘并启动；数据盘
 ## 部署 / 升级
 
 ```sh
-# 部署新版本树：复制到 versions/<ver>/root，再把 current 指过去
-ln -sfn versions/<ver>/root /userdisk/data/.dev/live/webdav/current
-/userdisk/data/.dev/live/webdav/run.sh restart
+# 部署新版本树：复制到 versions/<ver>/root
+cp -a <新树> /userdisk/data/.yunshu/live/webdav/versions/<ver>/root
+# 必须先改写 DT_RPATH，否则它仍指向构建机的绝对路径（见上一节）
+sh /userdisk/data/.yunshu/live/webdav/patch-rpath.sh \
+   /userdisk/data/.yunshu/live/webdav/versions/<ver>/root
+# 再把 current 指过去并重启
+ln -sfn versions/<ver>/root /userdisk/data/.yunshu/live/webdav/current
+/userdisk/data/.yunshu/live/webdav/run.sh restart
 ```
+
+`patch-rpath.sh` 只改长度完全匹配的旧 RPATH 字符串，改完校验文件字节数不变；
+若新树的构建前缀与 `b6-webdav` 不同，需要先改脚本里的旧串。
 
 修改用户：改 `conf/users.basic`（`user:password`），
 保持属主 `nobody:nogroup`、权限 0600，然后 `run.sh restart`。
@@ -72,7 +99,7 @@ ln -sfn versions/<ver>/root /userdisk/data/.dev/live/webdav/current
 ## 回退
 
 ```sh
-/userdisk/data/.dev/live/webdav/run.sh stop   # 停看护与 lighttpd，卸载 4 个 bind mount
+/userdisk/data/.yunshu/live/webdav/run.sh stop   # 停看护与 lighttpd，卸载 4 个 bind mount
 rm -f /etc/rc.d/S99webdav                     # 关开机自启
 rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 ```
@@ -87,7 +114,7 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 - 目录页 `Content-Type: text/html; charset=utf-8` 且含 `<meta charset>`，中文名不再乱码
 - `本机储存/下载` 下 PUT 201 / GET 200（内容一致）/ DELETE 204
 - 在 `本机储存` 根上 PUT 被拒（`mod_webdav` 返回 500，错误日志为 `Permission denied`）
-- `.dev`、`samba-s2`、`r2d-cand` 均 404，且不出现在 `GET /本机储存/` 的列表里
+- `.yunshu`、`samba-s2` 均 404，且不出现在 `GET /本机储存/` 的列表里（`r2d-cand` 已删除）
 - 摘掉 `外接盘` 的 bind mount 模拟拔盘：根列表仍 200、`外接盘` 为空目录；35 秒内看护自动重绑
 - `kill -9 lighttpd` 后由看护在 30 秒周期内自动重启
 - `init.d/webdav stop/start` 往返正常，139/445 与 22 不受影响

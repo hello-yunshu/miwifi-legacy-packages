@@ -5,12 +5,12 @@ STOP=10
 USE_PROCD=0
 
 start() {
-	NB=/userdisk/data/.dev/live/netwatch/run.sh
+	NB=/userdisk/data/.yunshu/live/netwatch/run.sh
 	( i=0; while [ ! -x "$NB" ] && [ "$i" -lt 180 ]; do sleep 1; i=$((i+1)); done
 	  [ -x "$NB" ] && "$NB" start ) >/dev/null 2>&1 &
 }
 
 stop() {
-	NB=/userdisk/data/.dev/live/netwatch/run.sh
+	NB=/userdisk/data/.yunshu/live/netwatch/run.sh
 	[ -x "$NB" ] && "$NB" stop >/dev/null 2>&1
 }

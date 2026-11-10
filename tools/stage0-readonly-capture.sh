@@ -78,10 +78,10 @@ for item in \
 	fi
 done
 
-if [ -x /userdisk/data/.dev/live/samba/current/sbin/samba-s5d ]; then
+if [ -x /userdisk/data/.yunshu/live/samba/current/sbin/samba-s5d ]; then
 	section active_samba_version
-	LD_LIBRARY_PATH=/userdisk/data/.dev/live/samba/current/lib:/userdisk/data/.dev/live/samba/current/lib/private \
-		/userdisk/data/.dev/live/samba/current/sbin/samba-s5d -V 2>&1
+	LD_LIBRARY_PATH=/userdisk/data/.yunshu/live/samba/current/lib:/userdisk/data/.yunshu/live/samba/current/lib/private \
+		/userdisk/data/.yunshu/live/samba/current/sbin/samba-s5d -V 2>&1
 fi
 
 taskmonitor_tool=$(command -v taskmonitorTool 2>/dev/null)
@@ -96,27 +96,27 @@ if [ -r /tmp/taskmonitor/taskmonitor.conf ] && command -v strings >/dev/null 2>&
 		head -n 100
 fi
 
-if [ -L /userdisk/data/.dev/live/samba/current ] || [ -d /userdisk/data/.dev/live/samba/current ]; then
+if [ -L /userdisk/data/.yunshu/live/samba/current ] || [ -d /userdisk/data/.yunshu/live/samba/current ]; then
 	section smb_current_release
-	ls -ld /userdisk/data/.dev/live/samba/current 2>&1
-	for f in /userdisk/data/.dev/live/samba/current/VERSION /userdisk/data/.dev/live/samba/current/MANIFEST.md5; do
+	ls -ld /userdisk/data/.yunshu/live/samba/current 2>&1
+	for f in /userdisk/data/.yunshu/live/samba/current/VERSION /userdisk/data/.yunshu/live/samba/current/MANIFEST.md5; do
 		if [ -r "$f" ]; then
 			printf '\n--- %s ---\n' "$f"
 			cat "$f" 2>&1
 		fi
 	done
-	if [ -r /userdisk/data/.dev/live/samba/current/MANIFEST.md5 ]; then
-		(cd /userdisk/data/.dev/live/samba/current && md5sum -c MANIFEST.md5) 2>&1
+	if [ -r /userdisk/data/.yunshu/live/samba/current/MANIFEST.md5 ]; then
+		(cd /userdisk/data/.yunshu/live/samba/current && md5sum -c MANIFEST.md5) 2>&1
 	fi
-	for f in /userdisk/data/.dev/live/samba/current/sbin/smbd /userdisk/data/.dev/live/samba/current/sbin/samba-s5d; do
+	for f in /userdisk/data/.yunshu/live/samba/current/sbin/smbd /userdisk/data/.yunshu/live/samba/current/sbin/samba-s5d; do
 		[ -f "$f" ] && md5sum "$f" 2>&1
 	done
 fi
 
 section smb_config_hashes
 md5sum \
-	/userdisk/data/.dev/live/samba/current/sbin/samba-s5d \
-	/userdisk/data/.dev/live/samba/current/etc/smb.conf \
+	/userdisk/data/.yunshu/live/samba/current/sbin/samba-s5d \
+	/userdisk/data/.yunshu/live/samba/current/etc/smb.conf \
 	/var/etc/smb.conf \
 	/etc/config/macfilter \
 	/etc/init.d/samba \
@@ -150,7 +150,7 @@ section homes_setting
 if command -v uci >/dev/null 2>&1; then
 	uci -q get 'samba.@samba[0].homes' 2>&1
 fi
-for f in /userdisk/data/.dev/live/samba/current/etc/smb.conf /var/etc/smb.conf; do
+for f in /userdisk/data/.yunshu/live/samba/current/etc/smb.conf /var/etc/smb.conf; do
 	[ -r "$f" ] || continue
 	printf '\n--- homes section: %s ---\n' "$f"
 	awk '
@@ -159,12 +159,12 @@ for f in /userdisk/data/.dev/live/samba/current/etc/smb.conf /var/etc/smb.conf; 
 		in_homes { print }
 	' "$f"
 done
-if [ -x /userdisk/data/.dev/live/samba/current/bin/pdbedit ]; then
+if [ -x /userdisk/data/.yunshu/live/samba/current/bin/pdbedit ]; then
 	section smb_passdb_users
-	ls -l /userdisk/data/.dev/live/samba/current/var/private/smbpasswd 2>&1
-	LD_LIBRARY_PATH=/userdisk/data/.dev/live/samba/current/lib:/userdisk/data/.dev/live/samba/current/lib/private \
-		/userdisk/data/.dev/live/samba/current/bin/pdbedit \
-		-s /userdisk/data/.dev/live/samba/current/etc/smb.conf -L 2>&1
+	ls -l /userdisk/data/.yunshu/live/samba/current/var/private/smbpasswd 2>&1
+	LD_LIBRARY_PATH=/userdisk/data/.yunshu/live/samba/current/lib:/userdisk/data/.yunshu/live/samba/current/lib/private \
+		/userdisk/data/.yunshu/live/samba/current/bin/pdbedit \
+		-s /userdisk/data/.yunshu/live/samba/current/etc/smb.conf -L 2>&1
 fi
 section unix_home_accounts
 awk -F: '$6 != "" && $6 != "/dev/null" { printf "%s uid=%s home=%s\n", $1, $3, $6 }' /etc/passwd 2>&1

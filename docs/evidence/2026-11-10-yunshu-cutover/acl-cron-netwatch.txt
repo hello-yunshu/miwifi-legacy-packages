@@ -1,0 +1,50 @@
+## iptables
+-N s8-diskacl
+-A s8-diskacl -m mac --mac-source F0:D5:BF:40:1D:2A -j DROP
+-A s8-diskacl -m mac --mac-source 18:BC:5A:19:B9:16 -j DROP
+-A s8-diskacl -m mac --mac-source 80:A5:89:86:B7:E5 -j DROP
+-A s8-diskacl -m mac --mac-source E2:54:2E:FB:8B:75 -j DROP
+-A s8-diskacl -m mac --mac-source 94:5C:9A:3F:B4:4C -j DROP
+-A s8-diskacl -m mac --mac-source D4:35:38:57:FD:80 -j DROP
+-A s8-diskacl -m mac --mac-source 5A:3D:A1:E4:04:E8 -j DROP
+-A s8-diskacl -m mac --mac-source 94:F8:27:D4:DD:E6 -j DROP
+-A s8-diskacl -j RETURN
+-A INPUT -i br-lan -p tcp -m multiport --dports 139,445 -j s8-diskacl
+-A INPUT -i br-lan -p udp -m multiport --dports 137,138 -j s8-diskacl
+-A INPUT -i br-guest -p tcp -m multiport --dports 139,445 -j DROP
+
+## cron
+*/3 * * * * /usr/sbin/ntpsetclock rand once >/dev/null 2>&1
+5 2 * * * /usr/sbin/crontab_record_camera.lua
+* * * * * /usr/sbin/startscene_crontab.lua `/bin/date "+%u %H:%M"`
+0 12 * * * /usr/sbin/recordscene_crontab.lua
+45 23 * * * /usr/sbin/points_sysset_pro.lua >/dev/null 2>&1
+0 20 * * * /usr/bin/stat_lan
+0 18 * * 1 /sbin/hdd_stat.sh sda
+0 10 * * * /usr/sbin/regularScanDiskDir.sh
+*/5 * * * * /sbin/disklogger.sh
+0 10 * * 1 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 636, \"push\": true}" >/dev/null 2>&1
+0 10 * * 6 /usr/sbin/datacenterClient -h localhost -p 9090 -i "{\"api\": 104, \"push\": true}" >/dev/null 2>&1
+0 5 * * 3 /etc/init.d/web_filter_record restart >/dev/null 2>&1
+0 3 * * * /etc/init.d/sysapihttpd restart >/dev/null 2>&1
+5 3 * * * /usr/sbin/reset_svc.sh "etm" "20" "/etc/init.d/xunlei restart"
+0 8,19 * * * /usr/sbin/netdig.sh >/dev/null 2>&1
+
+49 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1
+* * * * * /userdisk/data/.yunshu/live/s8compat/versions/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl
+*/1 * * * * /usr/sbin/ap_mode.sh check_gw
+28 4 * * * /usr/sbin/quarkd >/dev/null 2>&1
+0 */1 * * * /usr/sbin/qactive.sh >/dev/null 2>&1
+0 6 * * * /etc/mixbox/apps/filebrowser/scripts/filebrowser.sh restart #mixbox-cru
+*/10 * * * * /etc/mixbox/scripts/monitor.sh #mixbox-cru
+
+## crond
+ 1198 ?        00:00:00 crond
+
+## netwatch
+running pid 11922
+NETWATCH_ENABLED=1
+NETWATCH_INTERVAL=5
+NETWATCH_KEEP=200
+snapshots: 200
+bytes:     4780KB

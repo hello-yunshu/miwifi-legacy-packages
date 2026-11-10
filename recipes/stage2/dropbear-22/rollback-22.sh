@@ -1,8 +1,8 @@
 #!/bin/sh
 # 将 22 端口还原为原厂 dropbear 2011.54。
 # 只依赖 BusyBox + 原厂二进制，不依赖新 dropbear。
-ROOT=/userdisk/data/.dev/live/dropbear
-B=/userdisk/data/.dev/backups/dropbear-state/backup-dropbear-v2011.54
+ROOT=/userdisk/data/.yunshu/live/dropbear
+B=/userdisk/data/.yunshu/backups/dropbear-state/backup-dropbear-v2011.54
 LOG=$ROOT/log/rollback.log
 exec >>"$LOG" 2>&1
 echo "[$(date)] rollback start"

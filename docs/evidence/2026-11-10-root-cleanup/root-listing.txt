@@ -1,0 +1,48 @@
+R2D /userdisk/data 根目录清单（2026-11-10，清理前 -> 清理后）
+采集命令：ls -la /userdisk/data
+
+== 清理前（17:20 左右的盘点），与清理后的差异只有两处 ==
+lrwxrwxrwx 1 root root 19 ... r2d-cand -> .dev/candidates      <- 兼容链接，已删
+/userdisk/data/.dev/candidates/ 内容：b1-dropbear-relax b2-curl b4-dlna b5-dnsmasq b6-webdav
+                                        （b2/b4/b5 于任务 C 删除，b6 于本次删除，仅剩 b1）
+
+== 清理后原始输出（17:36）==
+drwxrwxrwx   18 root     root          4096 Nov 10 17:31 .
+drwxrwxrwx    7 root     root           576 Nov  9 17:39 ..
+drwxr-xr-x   13 root     root          4096 Oct 16  2018 .Entware
+drwxrwxrwx    2 root     root          4096 Jan  5  2017 .cache_dir
+drwxr-xr-x    7 root     root          4096 Nov 10 02:52 .dev
+drwx------    2 root     root          4096 Oct 16  2018 .filetransfer_tmp
+-rw-r--r--    1 root     root     268435456 Oct 16  2018 .swapfiles
+drwxrwxrwx   16 root     root          4096 Jun 17  2015 .sysapihttpd
+drwxr-xr-x    7 root     root          4096 Aug 30  2017 .systemconfig
+drwx------    2 root     root          4096 Oct 16  2018 .upload_tmp
+-rw-rw-rw-    1 root     root      60353238 Sep 30  2023 2023-09-30 上午6.32.10.mp3
+-rw-rw-rw-    1 root     root     483376704 Sep 30  2023 2023-09-30 上午6.32.10.mp4
+-rwxrw-rw-    1 root     root    2055752700 Sep 30  2023 2023-09-30 下午2.15.56.mp4
+-rw-rw-rw-    1 root     root        679868 Oct 17  2023 WhatsApp Chat - Yun Shu SRS.zip
+drwx------    2 root     root          4096 Oct 16  2018 lost+found
+lrwxrwxrwx    1 root     root            33 Nov 10 02:48 samba-s2 -> /userdisk/data/.dev/live/samba-s2
+drwxrwxrwx    6 root     root          4096 Nov 10 16:55 下载
+drwxrwxrwx    4 root     root          4096 Nov 10 16:40 共享
+drwxrwxrwx    2 root     root          4096 Nov 10 07:27 图片
+drwxrwxrwx    4 nobody   nogroup       4096 Nov  8 03:24 摄像机监控视频
+drwxrwxrwx    3 root     root          4096 Jun 26  2022 数学
+drwxr-xr-x    8 51723371 51723371      4096 Nov  1 01:51 文件
+drwxrwxrwx    3 root     root          4096 Nov 10 16:36 文档
+drwxrwxrwx    2 root     root          4096 Nov 11  2024 照片视频
+-rwxrw-rw-    1 root     root           434 May 21  2025 笔记 2025年2月9日 上午3_24_10.txt
+-rwxrw-rw-    1 root     root          3806 Sep 23  2025 软路由所有docker.txt
+
+== 逐项归类（清理后 24 项，清理前 25 项）==
+类别              条目
+----------------  --------------------------------------------------------------
+用户数据          *.mp3 *.mp4 WhatsApp*.zip 笔记*.txt 软路由所有docker.txt
+                  （散落文件，WebDAV 不 bind 文件，SMB [XiaoMi] 直接可见）
+用户共享目录      下载 共享 图片 摄像机监控视频 数学 文件 文档 照片视频
+厂商/系统隐藏项   .Entware .cache_dir .filetransfer_tmp .swapfiles .sysapihttpd
+                  .systemconfig .upload_tmp（7 个）
+文件系统          lost+found
+开发产物（隐藏）  .dev（唯一允许的开发根）
+兼容链接          samba-s2 -> .dev/live/samba-s2（Samba 编译期前缀，不能删）
+```

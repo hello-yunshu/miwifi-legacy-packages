@@ -21,7 +21,9 @@ STATE_DIR=${WEBDAV_STATE_DIR:-/userdisk/data/s8webdav}
 PORT=${WEBDAV_PORT:-18084}
 CHAIN=${WEBDAV_CHAIN:-WEBDAV-ACL}
 UCI_DIR=${WEBDAV_UCI_DIR:-/etc/config}
-LIGHTTPD=${WEBDAV_LIGHTTPD:-/userdisk/data/.dev/candidates/b6-webdav/root/sbin/lighttpd}
+# NOTE: the default binary moved from candidates/b6-webdav to the live tree when
+# the data-disk root link r2d-cand was removed (2026-11-10).
+LIGHTTPD=${WEBDAV_LIGHTTPD:-/userdisk/data/.yunshu/live/webdav/current/sbin/lighttpd}
 CONF=${WEBDAV_CONF:-$STATE_DIR/lighttpd.conf}
 PIDFILE=${WEBDAV_PIDFILE:-$STATE_DIR/lighttpd.pid}
 LEASE_MAX=${WEBDAV_LEASE_MAX:-5}

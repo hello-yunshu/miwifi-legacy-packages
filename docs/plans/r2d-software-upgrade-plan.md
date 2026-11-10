@@ -10,7 +10,7 @@
 - 最新只读现场证据：[2026-11-09 14:29 快照](../evidence/2026-11-09-stage0/readonly-capture.txt)
 - SMB 当前状态审计：[1.0.7-r2d 审计](../audits/smb-1.0.7-audit-2026-11-09.md)
 - 说明：设备清点、固件可行性、阶段 0 快照与 SMB 审计已随本轮收口纳入版本控制，链接可直达；原始输出索引见 [证据目录](../evidence/README.md)。
-- **路径变更（2026-11-10）**：设备开发产物已全部迁入 `/userdisk/data/.dev/`（见 `decisions.md` S14）。本文历史章节中的 `/userdisk/data/s7root`、`/userdisk/data/s8compat`、`/userdisk/data/dropbear-2026.94`、`/userdisk/data/r2d-cand` 分别对应当前的 `.dev/live/samba`、`.dev/live/s8compat`、`.dev/live/dropbear`、`.dev/candidates`；新命令请直接用新路径。
+- **路径变更（2026-11-10）**：设备开发产物已全部迁入 `/userdisk/data/.yunshu/`（`.dev` → `.yunshu`，见 `decisions.md` S14/S20）。本文历史章节中的 `/userdisk/data/s7root`、`/userdisk/data/s8compat`、`/userdisk/data/dropbear-2026.94` 分别对应当前的 `.yunshu/live/samba`、`.yunshu/live/s8compat`、`.yunshu/live/dropbear`；数据盘根上的 `r2d-cand` 与 `samba-s2` 链接均已删除（S19/S20），不要再按旧路径建链接。
 
 ## 0. 本版改动
 

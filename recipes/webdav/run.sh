@@ -1,7 +1,7 @@
 #!/bin/sh
 # R2D WebDAV lifecycle (lighttpd 1.4.85 + mod_webdav, port 5005 on br-lan).
 #
-# Layout under /userdisk/data/.dev/live/webdav:
+# Layout under /userdisk/data/.yunshu/live/webdav:
 #   current -> versions/<ver>/root   binaries, modules and private libs
 #   conf/lighttpd.conf               config
 #   conf/users.basic                 basic credentials (0600 nobody)
@@ -10,13 +10,13 @@
 #   webroot/外接盘/                   bind mount of the first mounted /extdisks/*
 #
 # Two roots mirror the SMB entries XiaoMi (/userdisk/data) and XiaoMi-usb0
-# (/extdisks/sdb1). Dot entries (.dev, .systemconfig, ...) and the top-level
+# (/extdisks/sdb1). Dot entries (.yunshu, .systemconfig, ...) and the top-level
 # compatibility symlinks are never mounted, so they cannot be listed or fetched.
 #
 # Usage: run.sh start|stop|restart|status|watch|heal
 set -u
 
-BASE=/userdisk/data/.dev/live/webdav
+BASE=/userdisk/data/.yunshu/live/webdav
 ROOT=$BASE/current
 CONF=$BASE/conf/lighttpd.conf
 STATE=$BASE/state
@@ -144,6 +144,12 @@ cleanup_legacy() {
 lighttpd_start() {
 	[ -x "$ROOT/sbin/lighttpd" ] || { log "binary missing: $ROOT/sbin/lighttpd"; return 1; }
 	umask 000
+	# The binary and modules are built with an absolute DT_RPATH pointing at the
+	# data-disk root. patch-rpath.sh rewrites that string, with identical length,
+	# to /userdisk/data/.yunshu/live/webdav/lib, so nothing outside .yunshu is
+	# needed and LD_LIBRARY_PATH is not required: uClibc resolves an object's own
+	# DT_RPATH before the environment variable. Re-run patch-rpath.sh on any new
+	# tree (it matches the build-host DESTDIR prefix as well).
 	"$ROOT/sbin/lighttpd" -m "$ROOT/lib" -f "$CONF"
 	rc=$?
 	[ "$rc" -eq 0 ] || { log "lighttpd failed rc=$rc"; return 1; }

@@ -1,6 +1,6 @@
 #!/bin/sh
 # netwatch 控制入口。删除本目录 + /etc/init.d/netwatch + /etc/rc.d/S98netwatch 即为卸载。
-BASE=/userdisk/data/.dev/live/netwatch
+BASE=/userdisk/data/.yunshu/live/netwatch
 PIDF=$BASE/netwatch.pid
 STOPF=$BASE/netwatch.stop
 ENVF=$BASE/netwatch.env
@@ -21,7 +21,7 @@ start)
 	i=0
 	while [ ! -x "$BASE/netwatch.sh" ] && [ "$i" -lt 180 ]; do sleep 1; i=$((i+1)); done
 	[ -x "$BASE/netwatch.sh" ] || { echo "netwatch.sh not found, give up"; exit 1; }
-	mkdir -p /userdisk/data/.dev/evidence/netwatch
+	mkdir -p /userdisk/data/.yunshu/evidence/netwatch
 	rm -f "$STOPF"
 	nohup "$BASE/netwatch.sh" >> "$BASE/netwatch.log" 2>&1 &
 	echo $! > "$PIDF"
@@ -35,14 +35,14 @@ stop)
 status)
 	if running; then echo "running pid $(cat "$PIDF")"; else echo "not running"; fi
 	[ -f "$ENVF" ] && grep -E '^NETWATCH_(ENABLED|INTERVAL|KEEP)=' "$ENVF"
-	echo "snapshots: $(ls -1 /userdisk/data/.dev/evidence/netwatch/*.snap 2>/dev/null | wc -l)"
-	echo "bytes:     $(du -sk /userdisk/data/.dev/evidence/netwatch 2>/dev/null | awk '{print $1}')KB"
+	echo "snapshots: $(ls -1 /userdisk/data/.yunshu/evidence/netwatch/*.snap 2>/dev/null | wc -l)"
+	echo "bytes:     $(du -sk /userdisk/data/.yunshu/evidence/netwatch 2>/dev/null | awk '{print $1}')KB"
 	;;
 uninstall)
 	echo 1 > "$STOPF"
 	running && kill "$(cat "$PIDF")" 2>/dev/null
 	rm -f "$PIDF" /etc/rc.d/S98netwatch /etc/init.d/netwatch
-	echo "uninstalled (evidence kept at /userdisk/data/.dev/evidence/netwatch)"
+	echo "uninstalled (evidence kept at /userdisk/data/.yunshu/evidence/netwatch)"
 	;;
 *)
 	echo "usage: $0 {start|stop|status|uninstall}"

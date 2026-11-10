@@ -1,7 +1,7 @@
 #!/bin/sh
 # 在 22 端口用 dropbear 2026.94 接管；任何一步失败立即回退原厂。
 # 由看护脚本 watchdog-22.sh 独立兜底。
-ROOT=/userdisk/data/.dev/live/dropbear
+ROOT=/userdisk/data/.yunshu/live/dropbear
 MARK=$ROOT/run/takeover.ok
 LOG=$ROOT/log/takeover.log
 PIDFILE=/var/run/dropbear.2026.pid

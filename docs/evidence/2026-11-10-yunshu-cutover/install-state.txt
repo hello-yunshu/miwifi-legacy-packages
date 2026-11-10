@@ -1,0 +1,18 @@
+## install.log tail
+2026-11-09 16:23:01 install 1.0.6-r2d tar_md5=0f6001010c84a016cd46f129dbe47388 tree=/userdisk/data/s7root/versions/1.0.6-r2d/root
+2026-11-09 16:23:01 rollback-target: none
+2026-11-09 16:23:13 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:14 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:15 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:23:16 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+2026-11-09 16:23:32 activate 1.0.6-r2d previous=1.0.7-r2d
+2026-11-09 16:23:33 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+2026-11-09 16:24:12 activate 1.0.7-r2d previous=1.0.6-r2d
+2026-11-09 16:24:12 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+2026-11-10 18:22:12 install 1.0.8-r2d tar_md5=e048777c6d591f2061cd926efe3f09ff tree=/userdisk/data/.yunshu/live/samba/versions/1.0.8-r2d/root
+2026-11-10 18:22:13 rollback-target: 1.0.6-r2d verified tree+baked-prefix, not started
+2026-11-10 18:22:43 activate 1.0.8-r2d previous=1.0.7-r2d
+2026-11-10 18:22:44 rollback-target: 1.0.7-r2d verified tree+baked-prefix, not started
+
+## previous
+1.0.7-r2d

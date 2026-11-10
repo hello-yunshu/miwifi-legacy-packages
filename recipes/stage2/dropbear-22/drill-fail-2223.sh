@@ -1,7 +1,7 @@
 #!/bin/sh
 # 演练"起得来但验证不过"：新实例在 2223 运行，但永不写成功标记；
 # 由同一个 watchdog-22.sh（改 ROOT/ROLLBACK 指向演练）在 deadline 后清掉它。
-ROOT=/userdisk/data/.dev/live/dropbear
+ROOT=/userdisk/data/.yunshu/live/dropbear
 D=$ROOT/run/drill
 PIDFILE=/var/run/dropbear.drill.pid
 LOG=$ROOT/log/drill.log

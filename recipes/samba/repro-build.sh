@@ -128,9 +128,10 @@ export SAMBA_CODEGEN_EXECUTOR="$WORK/run-arm.sh"
 export PYTHONHASHSEED=1 WAF_MAKE=1
 export CC=$TARGET-gcc AR=$TARGET-ar RANLIB=$TARGET-ranlib LINK_CC=$TARGET-gcc
 export CPPFLAGS="-I$PREFIX/opt/samba-next/include"
-export LDFLAGS="-L$PREFIX/opt/samba-next/lib -L$PREFIX/opt/samba-next/lib64 -Wl,-rpath,/userdisk/data/samba-s2/root/lib -Wl,-rpath-link,$PREFIX/opt/samba-next/lib -Wl,-rpath-link,$PREFIX/opt/samba-next/lib64"
+export LDFLAGS="-L$PREFIX/opt/samba-next/lib -L$PREFIX/opt/samba-next/lib64 -Wl,-rpath,/userdisk/data/.yunshu/live/samba/runtime/lib -Wl,-rpath-link,$PREFIX/opt/samba-next/lib -Wl,-rpath-link,$PREFIX/opt/samba-next/lib64"
 
-./configure --prefix=/userdisk/data/samba-s2/root --libdir=/userdisk/data/samba-s2/root/lib \
+./configure --prefix=/userdisk/data/.yunshu/live/samba/runtime \
+  --libdir=/userdisk/data/.yunshu/live/samba/runtime/lib \
   --cross-compile --hostcc=gcc --cross-execute="$WORK/run-arm.sh" \
   --disable-python --without-ad-dc --without-ads --without-ldap --without-pam --without-winbind \
   --without-gpgme --without-regedit --without-winexe --without-systemd --without-systemd-userdb \
@@ -146,7 +147,18 @@ echo "SAMBA_BUILD_RC=$?" >> "$LOGS/REPORT.txt"
 make install DESTDIR="$ROOTFS" > "$LOGS/samba-install.log" 2>&1
 echo "SAMBA_INSTALL_RC=$?" >> "$LOGS/REPORT.txt"
 
-R=$ROOTFS/userdisk/data/samba-s2/root
+R=$ROOTFS/userdisk/data/.yunshu/live/samba/runtime
+# Samba links gnutls/nettle/gmp dynamically; the device tree carries them in
+# its own lib/ (uClibc resolves DT_RPATH before LD_LIBRARY_PATH), so a tree
+# without them starts but cannot negotiate TLS.  Install them like 1.0.8 does.
+for f in libgnutls.so.30 libgnutls.so.30.42.0 libnettle.so.8 libnettle.so.8.11 \
+         libhogweed.so.6 libhogweed.so.6.11 libgmp.so.10 libgmp.so.10.5.0; do
+  cp -f "$PREFIX/opt/samba-next/lib/$f" "$R/lib/" 2>/dev/null || \
+    echo "DEP_LIB_MISSING=$f" >> "$LOGS/REPORT.txt"
+done
+# The service entry in the device tree is a copy of smbd under the instance
+# name used by the adapter (S5_PROC_NAME); keep the payload identical.
+cp -f "$R/sbin/smbd" "$R/sbin/samba-s5d"
 {
   echo "HASHES id=$ID"
   md5sum "$R/sbin/smbd" "$R/sbin/samba-s5d" "$R/bin/smbclient" \

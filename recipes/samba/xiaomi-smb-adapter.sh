@@ -20,7 +20,7 @@
 
 set -u
 
-ROOT=${S5_ROOT:-/userdisk/data/samba-s5/root}
+ROOT=${S5_ROOT:-/userdisk/data/.yunshu/live/samba/current}
 CONF_SRC=${S5_UCI_DIR:-/etc/config}
 PORT=${S5_PORT:-1445}
 BIND=${S5_BIND:-}

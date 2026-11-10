@@ -1,9 +1,9 @@
 #!/bin/sh
 # netwatch - read-only network snapshot ring buffer.
-# Writes only under /userdisk/data/.dev/evidence/netwatch/. Never touches config,
+# Writes only under /userdisk/data/.yunshu/evidence/netwatch/. Never touches config,
 # never reloads/restarts any service.
-BASE=/userdisk/data/.dev/live/netwatch
-OUT=/userdisk/data/.dev/evidence/netwatch
+BASE=/userdisk/data/.yunshu/live/netwatch
+OUT=/userdisk/data/.yunshu/evidence/netwatch
 ENVF=$BASE/netwatch.env
 LOG=$BASE/netwatch.log
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 # 演练用回退：只清 2223 上的新实例，并确认 22 仍是原厂。不启动/停止 22。
-ROOT=/userdisk/data/.dev/live/dropbear
+ROOT=/userdisk/data/.yunshu/live/dropbear
 PIDFILE=/var/run/dropbear.drill.pid
 LOG=$ROOT/log/drill.log
 exec >>"$LOG" 2>&1

@@ -17,7 +17,7 @@ mkdir -p "$LOG" "$STAGE/work"
 # usage: setup_prefix <name>  -> sets PREFIX (device path) and DEST (staging root)
 setup_prefix() {
   local name=$1
-  PREFIX=/userdisk/data/.dev/candidates/$name/root
+  PREFIX=/userdisk/data/.yunshu/candidates/$name/root
   DEST=$STAGE/$name/root
   mkdir -p "$DEST"
   export CPPFLAGS="-I$DEST$PREFIX/include"

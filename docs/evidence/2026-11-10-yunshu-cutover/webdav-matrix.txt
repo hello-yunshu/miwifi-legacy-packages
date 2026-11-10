@@ -1,0 +1,6 @@
+anon_root=401
+auth_root=200
+local=200
+usb=200
+propfind=207
+dot_yunshu=404
