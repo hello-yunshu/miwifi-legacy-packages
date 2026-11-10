@@ -405,3 +405,69 @@
   设备上没有私有 curl 运行。此前“已切私有 curl / 部分覆盖”的表述作废；后续如需
   升级，按新条目重新评估调用方约束（`mitvapp` scheme-less URL、`helper.sh` 的
   HTTPS、只读 `/usr` 调用方），不沿用旧结论。
+
+## S22（清理收尾：归档与保留口径，2026-11-11）
+
+清理完成后把口径固定下来，避免数据盘再次堆成多份同名备份与历史包。
+
+- D-S22-01 **`releases/` 只保留“当前版本 + 上一版回退”两个包。**
+  当前为 `miwifi-smb-1.0.7-r2d.tar.gz` 与 `yunshu-samba-1.0.8-r2d-root.tar.gz`；
+  原 `releases/release/` 空目录已删，1.0.7 包已上移一层。以后发布新版本时同步删除
+  更早的包，删除前确认 `live/samba/state/previous` 与 `versions/` 中对应树仍可回退。
+- D-S22-02 **`builds/` 只保留“未部署”或“需要复现构建失败”的候选树。**
+  已上线且线上二进制与候选 md5 一致的候选直接删除，复现能力由 `recipes/` 保留。
+  本轮删除 `builds/b1-dropbear-relax`（与 live 二进制同为 `fd9574db…`），`builds/`
+  现为空目录。
+- D-S22-03 **`backups/` 以“被文档引用即保留”为准，不按时间一刀切。**
+  删除前核对 `docs/decisions.md`、设备 `.yunshu/LAYOUT.txt`、各 `MANIFEST.txt`/
+  `ROLLBACK.txt` 与 `state/previous` 指针是否仍指向该目录。本轮删除
+  `backups/s7root-backup`（14,088 KB，`versions/1.0.7-r2d/root` 仍在，回退链不缺）；
+  其余 12 项均被文档或回滚脚本引用，保留。当前 backups 合计约 7.7 MB，数据盘
+  445.9 GB 可用，不存在容量压力。
+- D-S22-04 **`evidence/` 只增不裁。**
+  冷启动、netwatch 环形快照、切换/接管/回滚证据按时间保留；`evidence/coldboot-20261110/`
+  必须含可核对的原始输出（`baseline.txt`、`after.txt`、`2026-11-10-post-coldboot.txt`），
+  不允许空壳目录冒充阶段完成。
+- D-S22-05 **根分区 20.1 MB 不能靠清理增长。**
+  `/` 是只读 ubifs，`/tmp` 是 99.4 MB tmpfs（本轮删 `/tmp/5m.bin` 与
+  `/tmp/webdav-stageC.sh` 只回收内存，不改变根分区余量）。根分区要腾空间只能重刷
+  或调整分区，不属清理范围。
+
+## S23（8443 502 修复：改模板而非改运行时，2026-11-11）
+
+- D-S23-01 **8443 的 502 修在 `/etc/sysapihttpd/sysapihttpd.conf` 模板，不在 `/tmp`。**
+  `reload` 会 source `/usr/sbin/ngxld`，其 `env_init` 先 `rm -rf /tmp/sysapihttpdconf`
+  再从 `/etc/sysapihttpd/` 复制模板，因此任何只改 `/tmp` 的 init 方案都会被下一次
+  reload 自己冲掉。改模板等价于“每次重生成后自动套上补丁”，无需额外开机脚本。
+- D-S23-02 **只改 8443 server 块的 `proxy_set_header Host`：`$http_host` → `$host`。**
+  `$http_host` 带 `:8443`，himan 的 vhost 只认不带端口的主机名，匹配失败即断连，
+  nginx 报 502。文件内其余 4 处 `$http_host`（591/612/634/655）属其它 App 代理通道，
+  保持原样，避免扩大影响面。
+- D-S23-03 **不改 himan、不另起反代。** himan 是二进制 + 云端规则，无本地 vhost 文件；
+  自建反代需抢占 8443 或改端口，会动 App、证书与 SNI，影响面最大。
+- D-S23-04 备份与回滚固定为
+  `backups/8443-hostfix-20261111/{sysapihttpd.conf.etc-before,sysapihttpd.conf.tmp-before,MANIFEST.txt}`；
+  回滚 = 覆盖回 `etc-before` 后 `/etc/init.d/sysapihttpd reload`，已实测 502→200 可逆。
+
+## S24（`ngx_http_load_usb` emerg 日志：摘指令，不补文件，2026-11-11）
+
+- D-S24-01 **结论是“功能未启用”，不是“该生成但生成失败”。**
+  `preload` 指令由 `ngx_http_load_usb` 实现，读 `/tmp/usbDeployRootPath.conf` 作为
+  USB 部署根。全 rootfs 只有 `sysapihttpd` 自身引用该文件名，`/usr/sbin/ngxld`、
+  `/etc/sysapihttpd/` 模板与厂商启动脚本里都没有生成方，UCI 也没有 usb deploy 配置。
+  属厂商通用固件带的死能力，本机从未触发。
+- D-S24-02 **不做“补生成”。** 没有生成逻辑可修，也没必要为一条诊断日志新增一套
+  USB 部署状态文件；`/tmp` 每次重启清空，任何补文件方案都要额外挂开机脚本，收益为零。
+- D-S24-03 **占位文件无效，实测否掉。**
+  空文件仍打印 `"" usb root is`，写入路径会多一条 `cache_dir is`；模块对这两条是无条件
+  `NGX_LOG_EMERG`，与文件内容无关。因此“放一个语义明确的空配置”这条路在本模块上不成立。
+- D-S24-04 **处理：注释掉 `/etc/sysapihttpd/sysapihttpd.conf` 第 407 行的 `preload` 指令。**
+  改模板而非 `/tmp`，理由同 D-S23-01。保留 `preload_zone zone=web_preload_zone:16k;`
+  （8194 的 `preload_statistics` 仍引用）与 8193 的 `/http_proxy` location；
+  8193 由 500 变 404，两者都不可用，无功能损失。
+- D-S24-05 **不摘 `ngx_http_load_usb` 模块本身。** 模块只由 `preload` 指令触发，
+  注释该指令后不再有调用点，效果等同禁用且不碰编译期模块表，影响面最小。
+- D-S24-06 备份与回滚固定为
+  `backups/usbpreload-20261111/{sysapihttpd.conf.before,MANIFEST.txt}`；
+  回滚 = 覆盖回 `sysapihttpd.conf.before` 后 `/etc/init.d/sysapihttpd reload`，
+  已实测 emerg 由 0 回到 2、重新套用后回 0。
