@@ -9,6 +9,7 @@
 | `client-mac.txt` | 从用户 Mac 用 curl 实测：未认证 401、根目录只列 4 个共享、PUT/GET/MOVE/MKCOL/DELETE、`.dev` 404 |
 | `finder-probe.txt` | 403 定位证据：临时开 accesslog 抓到 Finder `WebDAVLib/1.3` 只发一次 `OPTIONS /` → Digest 401 不重试 |
 | `client-fix-matrix.txt` | 403 修复后的完整矩阵：未认证 401、`GET /` 200 四目录、子目录 200、PROPFIND 207、OPTIONS 200、`.dev` 404、PUT/GET/DELETE |
+| `client-two-roots.txt` | 双根改造后的矩阵：`GET /` 只列 `本机储存`/`外接盘`、charset 正确、两级列表、PROPFIND 207、根写入被拒、`.dev`/符号链接 404、外接盘断链自愈 |
 
 设备侧原始证据在 `/userdisk/data/.dev/evidence/webdav-20261110/`。
 

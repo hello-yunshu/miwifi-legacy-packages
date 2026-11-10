@@ -265,3 +265,16 @@
 - 验证（Mac curl，证据 `docs/evidence/2026-11-10-b6-webdav/client-fix-matrix.txt`）：`GET /` 200 且列出四个目录；四个子目录 GET 均 200；五处 PROPFIND 均 207；OPTIONS 200；未认证 401 且 `WWW-Authenticate: Basic`；`.dev` 404；PUT 201 / GET 内容一致 / DELETE 204。
 - 未完成：Finder GUI 级挂载未能在自动化环境完成（`mount_webdav -S` 在发请求前阻塞，AppleScript 停在系统凭据框），需人工 `⌘K` 确认；服务端已按 Finder 要求提供 Basic + `OPTIONS 200` + `PROPFIND 207` + `GET / 200`。
 - 回退：服务回退同 D-S16-08；若需恢复 Digest，把 `auth.backend`、`auth.backend.*.userfile`、`auth.require` 的 `method` 改回 htdigest 版本（仓库上一提交可查）并 `run.sh restart`。
+
+## S18（WebDAV 中文乱码修复 + 根结构对齐 SMB 双入口，2026-11-10）
+
+- D-S18-01 乱码定位在两条路径分别处理：
+  - 浏览器/目录页：`mod_dirlisting` 生成的 HTML 只有 `Content-Type: text/html`、无 `<meta charset>`，UTF-8 中文按 Latin-1 显示。加 `dir-listing.encoding = "utf-8"` 后 `Content-Type` 变为 `text/html; charset=utf-8` 且页面带 `<meta charset="utf-8">`（设备 18085 临时实例与正式 5005 均实测）。
+  - WebDAV 协议：`PROPFIND` 已经是 `Content-Type: application/xml;charset=utf-8`，`D:href` 是标准 UTF-8 百分号编码（`下载` = `%E4%B8%8B%E8%BD%BD`），服务端这一层无乱码来源。lighttpd 1.4.85 的 `mod_webdav` **不输出 `D:displayname`**（显式请求也返回空值 + 404 status），Finder 的显示名只能来自 `D:href` 解码。若访达仍显示乱码，剩余可能只在该客户端对无 `displayname` 响应的解码，需换 WebDAV 实现或给模块打补丁，不能在现有配置里修；本轮未改协议层。
+- D-S18-02 根结构：由“平铺四个共享”改为与 SMB 的 `XiaoMi` / `XiaoMi-usb0` 对应的两个根——`本机储存`（`/userdisk/data` 的可见顶层目录逐个 bind）与 `外接盘`（`/extdisks/` 下当前挂载分区）。已核实 SMB 两条：`[XiaoMi] path = /userdisk/data`、`[XiaoMi-usb0] path = /extdisks/sdb1`。顶层兼容链接 `r2d-cand`、`samba-s2` 是符号链接，`sync_local()` 显式跳过，避免把 `.dev` 内容带出来。
+- D-S18-03 `.dev` 不可见改由“从未挂进 webroot”保证，而不是依赖 URL 拒绝：点开头条目、符号链接、`lost+found` 一律不 bind，因此 `.dev` 在列表中不存在、访问也是 404。两个根目录属主 root、`chmod 555`，`nobody` 不能在根上 PUT/MKCOL/DELETE；子目录是独立 bind mount，仍 0777，读写正常。代价：根上写入被拒时 `mod_webdav` 返回 500（日志 `Permission denied`）而非 403，功能上已拒绝。
+- D-S18-04 外接盘热插拔：看护每 30 秒扫描 `/extdisks/*` 的挂载点，与 `state/usb.src` 记录的当前绑定比较，变化就重绑；`/proc/mounts` 对 bind mount 只报底层设备，所以用状态文件而非解析 source。拔盘后 `外接盘` 变空目录、根列表仍 200；实测摘掉 bind 后 35 秒内自动重绑。真实物理拔插未执行（会同时影响 SMB/其它服务），以“源消失 → 空目录 → 重绑”这一等价状态验证。
+- D-S18-05 数据面风险（已知差异，未擅自屏蔽）：`本机储存` 暴露数据盘上的全部用户内容，包括 `摄像机监控视频`。SMB 对该共享有 `vfs object = readonly` + 时间窗策略，WebDAV 没有等价限制，即持有 WebDAV 口令者可绕过时间窗写入。SMB 的 `[XiaoMi]` 根本来就以整盘暴露同一片数据（D-S14-06 已记），因此这不是新增的数据暴露面，但策略差异已写入 README；如要求 WebDAV 也遵守相机时间窗，需要在 `run.sh` 的挂载清单里排除该目录或另加策略。
+- D-S18-06 其他取舍：数据盘根部的散落文件不逐个 bind（文件被替换后 bind 会指向旧 inode），所以 `本机储存` 只呈现目录树；新增/删除顶层目录由 30 秒看护跟进。旧的四目录平铺 mount 由 `cleanup_legacy()` 在启动时自动卸载并 `rmdir`，无需人工清理。
+- D-S18-07 验证（Mac curl，证据 `docs/evidence/2026-11-10-b6-webdav/client-two-roots.txt`）：未认证 401；`GET /` 200 且只列两个入口；`本机储存`/`外接盘` 均 200；`PROPFIND` 三处 207；`下载` 下 PUT 201 / GET 200 内容一致 / DELETE 204；根上 PUT 500（拒绝）；`.dev`、`samba-s2` 404 且不出现在列表；外接盘断链后根仍 200 并自动重绑。
+- D-S18-08 回退：`run.sh stop` 停看护/lighttpd 并卸载全部 bind（含两个根的子项），不删数据；`rm -f /etc/rc.d/S99webdav` 关自启。若要恢复四目录平铺，检出 S17 提交的 `run.sh`/`lighttpd.conf` 覆盖后 `run.sh restart` 即可，`cleanup_legacy()` 不会破坏新结构。

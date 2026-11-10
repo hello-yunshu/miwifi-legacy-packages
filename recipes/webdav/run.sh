@@ -4,9 +4,14 @@
 # Layout under /userdisk/data/.dev/live/webdav:
 #   current -> versions/<ver>/root   binaries, modules and private libs
 #   conf/lighttpd.conf               config
-#   conf/users.htdigest              digest credentials (0600 nobody)
+#   conf/users.basic                 basic credentials (0600 nobody)
 #   state/                           pid, error.log, upload tmp, webdav.db
-#   webroot/{下载,共享,图片,文档}      bind mounts of the SMB shares
+#   webroot/本机储存/                 bind mounts of every visible top-level dir of /userdisk/data
+#   webroot/外接盘/                   bind mount of the first mounted /extdisks/*
+#
+# Two roots mirror the SMB entries XiaoMi (/userdisk/data) and XiaoMi-usb0
+# (/extdisks/sdb1). Dot entries (.dev, .systemconfig, ...) and the top-level
+# compatibility symlinks are never mounted, so they cannot be listed or fetched.
 #
 # Usage: run.sh start|stop|restart|status|watch|heal
 set -u
@@ -16,16 +21,20 @@ ROOT=$BASE/current
 CONF=$BASE/conf/lighttpd.conf
 STATE=$BASE/state
 WEBROOT=$BASE/webroot
+LOCAL_ROOT=$WEBROOT/本机储存
+USB_ROOT=$WEBROOT/外接盘
+DATA_ROOT=/userdisk/data
+USB_BASE=/extdisks
 PIDF=$STATE/lighttpd.pid
 LOG=$BASE/webdav.log
 
-SHARES="下载 共享 图片 文档"
 BOOT_WAIT=${WEBDAV_BOOT_WAIT:-180}
 WATCH_INTERVAL=${WEBDAV_WATCH_INTERVAL:-30}
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$LOG" 2>/dev/null; }
 
 data_mounted() { grep -q ' /userdisk/data ' /proc/mounts 2>/dev/null; }
+is_mounted() { grep -q " $1 " /proc/mounts 2>/dev/null; }
 
 running_pid() {
 	[ -f "$PIDF" ] || return 1
@@ -34,29 +43,102 @@ running_pid() {
 	return 1
 }
 
-mount_share() {
-	src=/userdisk/data/$1
-	dst=$WEBROOT/$1
-	mkdir -p "$dst" 2>/dev/null
-	grep -q " $dst " /proc/mounts 2>/dev/null && return 0
+mount_one() {
+	src=$1
+	dst=$2
+	[ -d "$src" ] || return 1
+	mkdir -p "$dst" 2>/dev/null || return 1
+	is_mounted "$dst" && return 0
 	mount --bind "$src" "$dst" || return 1
 	return 0
 }
 
-umount_shares() {
-	for s in $SHARES; do
-		dst=$WEBROOT/$s
-		grep -q " $dst " /proc/mounts 2>/dev/null && umount "$dst" 2>/dev/null
+umount_one() {
+	is_mounted "$1" || return 0
+	umount "$1" 2>/dev/null || umount -l "$1" 2>/dev/null
+	return 0
+}
+
+# Bind every visible top-level directory of the data partition, then drop
+# entries whose source directory disappeared (unplugged/renamed).
+sync_local() {
+	for src in "$DATA_ROOT"/*; do
+		[ -e "$src" ] || continue
+		[ -L "$src" ] && continue
+		[ -d "$src" ] || continue
+		case "${src##*/}" in .*|lost+found) continue ;; esac
+		mount_one "$src" "$LOCAL_ROOT/${src##*/}" || log "bind failed: $src"
 	done
+	for dst in "$LOCAL_ROOT"/*; do
+		[ -e "$dst" ] || continue
+		is_mounted "$dst" || continue
+		# /proc/mounts reports the backing device for bind mounts, not the source
+		# path, so stale detection compares against the expected source directory.
+		if [ ! -d "$DATA_ROOT/${dst##*/}" ]; then
+			log "prune stale local mount: $dst"
+			umount_one "$dst"
+			rmdir "$dst" 2>/dev/null
+		fi
+	done
+	for dst in "$LOCAL_ROOT"/*; do
+		[ -d "$dst" ] || continue
+		is_mounted "$dst" || rmdir "$dst" 2>/dev/null
+	done
+}
+
+usb_source() {
+	for d in "$USB_BASE"/*; do
+		[ -d "$d" ] || continue
+		is_mounted "$d" || continue
+		echo "$d"
+		return 0
+	done
+	return 1
+}
+
+# Follow the external disk: bind whichever partition is mounted under /extdisks.
+# The bound source is remembered in state/usb.src because /proc/mounts only
+# reports the backing device for bind mounts.
+sync_usb() {
+	src=$(usb_source)
+	cur=$(cat "$STATE/usb.src" 2>/dev/null)
+	if [ -n "$src" ]; then
+		[ "$cur" = "$src" ] && is_mounted "$USB_ROOT" && return 0
+		umount_one "$USB_ROOT"
+		if mount_one "$src" "$USB_ROOT"; then
+			echo "$src" >"$STATE/usb.src"
+		else
+			log "usb bind failed: $src"
+		fi
+	else
+		if is_mounted "$USB_ROOT"; then
+			log "prune usb mount: $cur"
+			umount_one "$USB_ROOT"
+		fi
+		rm -f "$STATE/usb.src"
+	fi
 	return 0
 }
 
 prepare() {
-	mkdir -p "$STATE/tmp" "$WEBROOT" 2>/dev/null
-	for s in $SHARES; do mkdir -p "$WEBROOT/$s" 2>/dev/null; done
+	mkdir -p "$STATE/tmp" "$WEBROOT" "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
 	chown nobody:nogroup "$STATE" "$STATE/tmp" 2>/dev/null
 	chmod 750 "$STATE" 2>/dev/null
 	chmod 700 "$STATE/tmp" 2>/dev/null
+	# Read-only for nobody at the two root levels so PUT/MKCOL/DELETE of the
+	# roots themselves fail; children are separate bind mounts with their own modes.
+	chown root:root "$WEBROOT" "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
+	chmod 755 "$WEBROOT" 2>/dev/null
+	chmod 555 "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
+}
+
+# Remove the pre-2026-11-10 flat layout (webroot/{下载,共享,图片,文档}).
+cleanup_legacy() {
+	for old in 下载 共享 图片 文档; do
+		d=$WEBROOT/$old
+		is_mounted "$d" && umount "$d" 2>/dev/null
+		[ -d "$d" ] && rmdir "$d" 2>/dev/null
+	done
 }
 
 lighttpd_start() {
@@ -101,9 +183,9 @@ do_start() {
 		return 1
 	fi
 	prepare
-	for s in $SHARES; do
-		mount_share "$s" || log "start: bind mount failed for $s"
-	done
+	cleanup_legacy
+	sync_local
+	sync_usb
 	if p=$(running_pid); then
 		log "start: already running pid=$p"
 	else
@@ -121,7 +203,7 @@ do_stop() {
 		log "stop: pid=$p"
 	fi
 	rm -f "$PIDF"
-	umount_shares
+	for dst in "$LOCAL_ROOT"/* "$USB_ROOT"; do umount_one "$dst"; done
 	return 0
 }
 
@@ -131,17 +213,21 @@ do_status() {
 	echo "watch_pid: $(cat "$STATE/watch.pid" 2>/dev/null || echo none)"
 	echo "listen:"
 	netstat -lnt 2>/dev/null | grep ':5005 ' || echo "  not listening"
-	echo "shares:"
-	for s in $SHARES; do
-		grep -q " $WEBROOT/$s " /proc/mounts 2>/dev/null \
-			&& echo "  $s mounted" || echo "  $s NOT mounted"
+	echo "本机储存:"
+	for d in "$LOCAL_ROOT"/*; do
+		[ -e "$d" ] || continue
+		is_mounted "$d" && echo "  ${d##*/} mounted" || echo "  ${d##*/} NOT mounted"
 	done
+	echo "外接盘:"
+	src=$(cat "$STATE/usb.src" 2>/dev/null)
+	[ -n "$src" ] && is_mounted "$USB_ROOT" && echo "  mounted from $src" || echo "  no external disk"
 }
 
 do_watch() {
 	while :; do
 		if data_mounted; then
-			for s in $SHARES; do mount_share "$s" >/dev/null 2>&1; done
+			sync_local
+			sync_usb
 			if ! running_pid >/dev/null; then
 				log "watch: lighttpd absent, restarting"
 				lighttpd_start
@@ -154,7 +240,9 @@ do_watch() {
 do_heal() {
 	data_mounted || { log "heal: data not mounted"; return 1; }
 	prepare
-	for s in $SHARES; do mount_share "$s" || log "heal: bind mount failed for $s"; done
+	cleanup_legacy
+	sync_local
+	sync_usb
 	running_pid >/dev/null || { log "heal: restarting lighttpd"; lighttpd_start; }
 	return 0
 }

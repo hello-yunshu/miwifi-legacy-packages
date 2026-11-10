@@ -1,0 +1,58 @@
+# Mac client capture: two-root layout + charset, 2026-11-10 16:59 CST
+# endpoint http://192.168.3.2:5005/ (Basic, user r2d)
+# layout: 本机储存 -> /userdisk/data visible top-level dirs; 外接盘 -> /extdisks/sdb1
+
+## headers GET /
+HTTP/1.1 200 OK
+Content-Type: text/html;charset=utf-8
+<meta charset="utf-8">
+
+## root entries (exactly two)
+href="%E5%A4%96%E6%8E%A5%E7%9B%98/"     外接盘/
+href="%E6%9C%AC%E6%9C%BA%E5%82%A8%E5%AD%98/"  本机储存/
+
+## 本机储存 entries
+../ 下载/ 共享/ 图片/ 摄像机监控视频/ 数学/ 文件/ 文档/ 照片视频/
+# no .dev, no r2d-cand, no samba-s2, no lost+found
+
+## 外接盘 entries (live USB content)
+../ H/ 下载/ 临时备份/ 备份 杂/ 家庭相册/ 工作备份/ 音乐/ cost-dashboard.zip
+世界大局 地图全解读.pdf 和梓涵妈妈的聊天.json 错误的ip.png
+
+## status codes
+GET /本机储存/ -> 200
+GET /外接盘/ -> 200
+GET /本机储存/下载/ -> 200
+PROPFIND / -> 207
+PROPFIND /本机储存/ -> 207
+PROPFIND /外接盘/ -> 207
+OPTIONS / -> 200
+
+## CRUD inside 本机储存/下载
+PUT -> 201
+GET -> 200, body identical
+DELETE -> 204
+
+## root-level write (expected denied)
+PUT /本机储存/s18root.txt -> 500
+# mod_webdav maps EACCES to 500; error.log: "open() tmpfile ... Permission denied"
+
+## hidden paths
+/.dev/LAYOUT.txt -> 404
+/本机储存/.dev/LAYOUT.txt -> 404
+/本机储存/samba-s2/ -> 404
+
+## unauthenticated
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Basic realm="r2d-webdav", charset="UTF-8"
+
+## external-disk loss drill (bind removed, real mount untouched)
+GET / -> 200
+GET /外接盘/ -> 200 (empty, only "../")
+# after 35 s the 30-second watcher rebound /extdisks/sdb1; listing restored (12 hrefs)
+
+## process posture
+pid 22269, /proc/<pid>/exe -> .../versions/1.0.0-r2d/root/sbin/lighttpd
+Uid: 65534 65534 65534 65534  (nobody)
+Gid: 65534 65534 65534 65534  (nogroup)
+listen: 192.168.3.2:5005
