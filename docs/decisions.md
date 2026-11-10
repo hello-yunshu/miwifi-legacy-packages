@@ -471,3 +471,32 @@
   `backups/usbpreload-20261111/{sysapihttpd.conf.before,MANIFEST.txt}`；
   回滚 = 覆盖回 `sysapihttpd.conf.before` 后 `/etc/init.d/sysapihttpd reload`，
   已实测 emerg 由 0 回到 2、重新套用后回 0。
+
+## S25（toolbar / domain-event emerg：摘钩子、保留监听，2026-11-11）
+
+- D-S25-01 **两条链路都属“功能未启用”，不是“该生成但失败”。**
+  `rr_config` / `rr_filter` / `toolbar_config` 是 MiWiFi toolbar（工具条/广告）链路，
+  规则文件 `/tmp/rr/xqsystmp`；`de_zone_config` / `de_zone_set` / `event_config` /
+  `de_config` 是 domain-event 链路，数据文件 `/tmp/de_zone_data`。`/usr/sbin/ngxld`
+  的 `gen_config` 只把这两个路径 sed 进配置并 `mkdir -p /tmp/rr`，从不写文件；
+  全系统没有其它写者。
+- D-S25-02 **功能侧证据一致指向关闭。** `ad_filter` 的 init `start()` 第一行就置 0 并返回
+  （厂商 2017-07-27 起的默认关闭），`rule_mgr.switch.ad_filter_center=0`；
+  `http_event_proxy.settings.enabled=0`，无 `ipset rr_de`，`tcp_proxy_action` 中没有
+  8380/8382/8383/8385 的条目，四个端口无任何连接；广告插件 appid
+  `2882303761517236139` 未安装。
+- D-S25-03 **占位文件只能消一半。** 建空 `/tmp/rr/xqsystmp` 与 `/tmp/de_zone_data` 后，
+  `Unable to open/close rule file` 消失，但 `Unable to initialize ... shared context`
+  仍打印（模块把“无有效规则”判为初始化失败，且该日志同样无条件按 emerg 输出）。
+- D-S25-04 **处理：在模板里注释 9 行钩子，不摘端口。**
+  注释 `rr_config`、两处 `rr_filter`、`toolbar_config`、`de_zone_config`、两处
+  `de_zone_set`、`event_config`、`de_config`。8380/8382/8383/8385 仍作为普通反代监听，
+  只去掉过滤与统计钩子，`upgrade_config` 等其它指令不动。改 `/etc` 模板而非 `/tmp`，
+  理由同 D-S23-01。
+- D-S25-05 **代价与恢复条件。** 若将来开启 ad_filter center 或 http_event_proxy，
+  这 4 个端口会退化成不带 toolbar / 事件统计的普通代理，需要同时恢复这 9 行和规则文件
+  生成方。当前两者都是厂商默认关闭，没有现网依赖。
+- D-S25-06 备份与回滚固定为
+  `backups/toolbar-dezone-20261111/{sysapihttpd.conf.before,MANIFEST.txt}`
+  （before md5 `2a0fb892…`，after `bf182208…`）；回滚 = 覆盖回 before 后
+  `/etc/init.d/sysapihttpd reload`。
