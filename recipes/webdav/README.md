@@ -188,6 +188,43 @@ rm -f /etc/init.d/webdav                      # 彻底移除入口（可选）
 - `kill -9 lighttpd` 后由看护在 30 秒周期内自动重启
 - `init.d/webdav stop/start` 往返正常，139/445 与 22 不受影响
 
+## 外接盘首访问延迟
+
+2026-11-11 实测（证据见 [`docs/evidence/2026-11-11-usb-first-access/`](../../docs/evidence/2026-11-11-usb-first-access/)）：
+
+- 外接盘不休眠：空闲 900 秒后第一次未缓存 4 KB 块读 **20 ms**，`/sys/block/sdb/device/state` 始终
+  `running`，没有 USB autosuspend 节点，`dmesg` 无重新枚举。**因此没有加常驻保活**——盘不 park 磁头，
+  保活只会增加读写与磨损。
+- 系统安静时，`本机储存` 与 `外接盘` 的首访问、`OPTIONS`/`HEAD`/`PROPFIND Depth 0/1`/`GET` 都是 **7–12 ms**，
+  两者无差别；根目录只有十几项，不存在 stat 风暴。
+- 变慢来自这台 254 MB 机器的资源争抢，不是盘：设备上残留脚本把 `load` 顶到 4.15 时，`HEAD /外接盘/`
+  169–716 ms、裸读 140–250 ms；Mac 把 SMB 共享挂进 Finder 后 Spotlight 索引，`smbd` 常驻 145 MB、
+  swap 108 MB，WebDAV 也会被拖到 100–400 ms。移除后分别回到 7–12 ms。
+- Mac 侧挂 SMB 建议 `mount_smbfs -o nobrowse`（或把该卷加进「聚焦 → 隐私」），避免索引路由器上的盘；
+  WebDAV 不会被 Spotlight 索引。
+
+## 调优实测（2026-11-11）
+
+在设备上做了六组「一次只改一个变量、测完回滚」的对照实验，证据与逐项数字见
+[`docs/evidence/2026-11-11-webdav-tuning/`](../../docs/evidence/2026-11-11-webdav-tuning/)。
+结论是**全部不保留，配置保持原样**：
+
+- `server.stream-request-body = 2`、`server.stream-response-body = 1`、
+  `server.network-backend = "linux-sendfile"`、`server.stat-cache-engine = "inotify"`、
+  `mod_deflate`、`server.max-connections = 64` 六组改动，64 MB 写读、200×4 KB 小文件、
+  200 项 `PROPFIND` 全部落在基线的 ±10% 噪声内。
+- 原因是瓶颈在 Wi-Fi 链路：设备本机 loopback PUT 29.9 MB/s、GET 35 MB/s，
+  4 路并发聚合 37.1 MB/s；同一台机器经 Wi-Fi 单流只有 9–16 MB/s。
+- `server.max-request-size` 单位是 KB、默认不限，显式设小会直接拒绝大文件 PUT，因此不设；
+  TSO/GSO 因无 `ethtool`、无 sysfs features 不可测；`server.max-worker = 2` 对单流无帮助，
+  且会让缓冲区翻倍，不做。
+- 不要引入 `mod_deflate`：`mod_webdav` 的 207 响应不经过它，200 项 `PROPFIND` 响应仍为
+  52429 B。也不要为了"看起来更快"改 `stat-cache-engine`，根目录只有十几项。
+- 客户端差异远大于服务端变量：同一批 200 个 4 KB 文件，keep-alive 0.99 s、
+  每文件一个 `curl` 进程 5.80 s、`xargs -P 8` 2.39 s。要提速小文件应换客户端或加并发。
+
+设备上留有一份 `conf/lighttpd.conf.bak-b0`（B0 副本），确认无调优痕迹后可直接删除。
+
 ## 未验证 / 已知限制
 
 - `PROPFIND Depth: infinity`（以及非法的 `Depth: 2`）返回 403：`mod_webdav` 不支持

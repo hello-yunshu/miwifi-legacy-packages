@@ -19,6 +19,8 @@
 | [2026-11-10-webdav-endpoints](2026-11-10-webdav-endpoints/) | 11-10 | WebDAV 全端点自检：路径/方法/认证/编码矩阵、`/__ui/` 与「外接盘」根写入两处修复、并发与只读边界 | B6 |
 | [2026-11-10-webdav-responsive](2026-11-10-webdav-responsive/) | 11-10 | 单页界面响应式：19 档宽度 × 明暗实测、生产截图、面包屑与点击目标修复 | B6 |
 | [2026-11-10-yunshu-cutover](2026-11-10-yunshu-cutover/) | 11-10 | `.dev` → `.yunshu` 迁移后 Samba 1.0.8-r2d 切换与冷启动：`smbd -b` 全量路径、共享枚举、WebDAV 矩阵、ACL/cron/netwatch、根目录终态与安装状态 | S20 |
+| [2026-11-11-usb-first-access](2026-11-11-usb-first-access/) | 11-11 | 外接盘首访问延迟：900 秒空闲裸读、冷/热分段计时、干扰源前后对比（残留进程 / Spotlight 索引）、SMB 与 WebDAV 实测对比 | B6 |
+| [2026-11-11-webdav-tuning](2026-11-11-webdav-tuning/) | 11-11 | WebDAV 受控调优：六个变量前后对照（全部无收益）、loopback 与并发上限、客户端 keep-alive/curl/xargs 对照；结论为不改配置 | B6 |
 
 ## 使用约定
 
