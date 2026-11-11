@@ -500,3 +500,46 @@
   `backups/toolbar-dezone-20261111/{sysapihttpd.conf.before,MANIFEST.txt}`
   （before md5 `2a0fb892…`，after `bf182208…`）；回滚 = 覆盖回 before 后
   `/etc/init.d/sysapihttpd reload`。
+
+## S26（SMB 存储侧调优：九组全部不采纳，2026-11-11）
+
+- D-S26-01 判据固定为“小文件优先”：`200 × 4 KB` 写/读与 `200` 项列举任一改善 ≥8%，
+  且顺序读写退化不得超过 8%。理由是本机定位是小 NAS，实际手感由小文件与目录列举决定，
+  顺序吞吐只作为“不能退化”的约束。数据见 `docs/audits/smb-tuning-2026-11-11.md`。
+- D-S26-02 九组实验全部未过门槛，因此**不改任何 Samba 或块层参数**：
+  `noop`/`deadline` 调度（本地小写 +8.8% 但小读 −9.9%；列举 −30%）、
+  预读 1024→512 KB（顺序读 −13.6%）、`max_sectors_kb` 720（本地读写各 −18%）、
+  `strict allocate`（顺序读 −36%）、`use sendfile = no`（结构性无效）、
+  `vfs objects = aio_pthread`（并发对照 10.60 vs 10.60）、USB IRQ 迁 CPU1（同期对照后判为漂移）、
+  `smb2 max read/write` 256 KB（4 KB 请求远低于上限，天然无效）、
+  `strict sync = no`（不触发 write-through，无变化）。
+- D-S26-03 机制结论：单文件开销约 90% 在 CREATE（≈49 ms）+ CLOSE（≈20 ms），
+  服务端只占约 31%，其余在 macOS 客户端与协议往返；块层队列、VFS、SMB 缓冲参数都改不动这两步。
+  Mac 端理论天花板是从 69 ms 降到约 48 ms，实测没有任何一项产生 ≥8% 的 SMB 端改善。
+- D-S26-04 明确不动的两项：`fail_safe` 保持开启（tntfs 的容错语义，关掉换不来速度）；
+  不迁 ntfs3（5.15 才合入，本机 2.6.36），不换 ext4（约 400 GB 数据、单份、迁移 9–10 小时量级）。
+- D-S26-05 基线必须同期重测：tntfs 元数据缓存预热会让本地小文件在无改动时漂 6–10%
+  （小写 8.2 → 5.1 ms），任何“看起来变好”的本地数字都要有回滚后的同期对照才成立。
+- D-S26-06 落点：本结论不产生配置改动，`recipes/samba/xiaomi-smb-adapter.sh`、
+  hotplug hook、`init.d`、UCI 键均保持原样，`config_guard` 不触发。
+  将来若出现通过判据的项，Samba 参数只进渲染器的 `[global]` 段，块层参数进
+  hotplug `block/41-*`（排在厂商 `40-mount` 之后），不手改 `etc/smb.conf`。
+
+## S27（CPU 侧调优：旋钮基本不存在，保留 0 项，2026-11-11）
+
+- D-S27-01 先证伪再实验：`/sys/devices/system/cpu/cpu*/cpufreq/` 不存在，
+  `/proc/kallsyms` 中 `cpufreq|thermal_zone|devfreq` 命中 0，`/lib/modules/2.6.36` 无对应模块，
+  `/sys/class/thermal`、`/sys/class/hwmon` 均不存在，`/etc/init.d` 无 cpufreq 服务；
+  cpu cgroup 不可用（`mount -t cgroup -o cpu` 返回 ENOENT）。CPU 固定工作在启动时校准的约 700 MHz。
+  **governor、频率档位、温度阈值与降频策略在本机不存在，不按 SoC 型号推断。**
+- D-S27-02 存在的三个旋钮实测均放弃：eth0 IRQ 179 迁 CPU1（小写 0%、小读 −5.2%、列举 −0.6%）；
+  `samba-s5d` renice −10（小写 0%、顺序写 −13.8%）；`ionice` realtime（小写 −8.1%）；
+  eth0 RPS→CPU1（无稳定收益，且出现一次 `Errno 22` 传输失败）。系统 93–95% 空闲，没有 CPU 竞争可抢。
+- D-S27-03 关服务不采纳：累计 CPU 占用最高的是 `taskmonitorServer`（3:29 / 9h43m ≈ 0.6%），
+  可回收总量不足 1%，且属厂商管理面。`chrt` 实时、`taskset` 绑核、CPU1 下线均判定为有害或降级，不做。
+- D-S27-04 flow offload 与 SMB 无关：`ctf` 只作用于 FORWARD，SMB 是本机 INPUT → smbd → 本地盘，
+  从不经过转发路径，因此不开也不关。
+- D-S27-05 无可观测热降频：两核满载下固定循环计时在 20/80/140 s 分别为 6.48 / 4.34 / 6.41 s，
+  没有单调变慢；也没有可读的温度通道，只能记录“无此机制”。
+- D-S27-06 落点：保留 0 项，仓库无改动。若将来重评，IRQ 亲和需 `init.d`（stop 恢复 `3`），
+  nice/ionice 需启动包装器并由子进程继承，RPS 需 hotplug 在 `eth0` up 后写入，三者数据可复用。
