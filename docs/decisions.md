@@ -745,4 +745,16 @@
   同轮审计的其他写者上限：Samba 日志 500 KB×约 6 个文件、`messages` 4.4 MB、
   tdb 约 2 MB、`webdav.db` 20 KB，稳态合计约 10 MB；峰值来自 OTA 预下载
   （`49 3,4,5 * * *` 写 `/tmp/<hash>.img`，约 20–30 MB，只走网络不唤醒磁盘）。
+- D-S28-16 仓库隐私审计与历史重写（2026-11-19）：`docs/evidence/2026-11-09-diskacl/
+  final-state-after-guest-restore.txt` 自 11-09 归档起就带着访客 WiFi 的明文
+  `key=`，同批证据里还有真实 MAC、SSID、NetBIOS 尾号与 IPv6 link-local。仓库是
+  public，这些值对任何 clone 可见。处理分两步：先在工作树脱敏（当前 HEAD 的
+  `key=[<redacted>]`、MAC 统一为 `02:00:5E:xx:yy:zz`），再按用户决定用
+  `git filter-repo --replace-text` 重写全部历史（48 个 MAC、bridge id、SSID、
+  NetBIOS 尾号、link-local、`key=` 一并替换），然后 force push main。
+  重写顺带修正了首轮脱敏的两处**事实错误**：广播 MAC `FF:FF:FF:FF:FF:FF` 与
+  br-guest 的全零 bridge id `7fff.000000000000` 不是隐私，已还原（工作树因此与
+  重写前只差这 3 行）。后果与边界：所有旧提交 SHA 都变了，其他 clone 必须重新
+  拉取；GitHub 在 GC 前仍能按旧 SHA 直接取到对象，因此**明文密钥必须视为已泄露**，
+  访客 WiFi 口令需轮换（用户自行操作，本仓库不记录新值）。
 
