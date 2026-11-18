@@ -17,6 +17,20 @@ ADAPTER=$S8DIR/xiaomi-smb-adapter.sh
 [ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/.yunshu/live/samba/xiaomi-smb-adapter.sh
 SMBROOT=${S8_SMB_ROOT:-/userdisk/data/.yunshu/live/samba/current}
 PORTS=${S8_PORTS:-139 445}
+# crond runs diskacl-sync.sh once a minute.  Executing it from the version
+# tree would read from the internal HDD every minute and keep noflushd from
+# spinning the disk down, so cron points at this tmpfs copy instead and the
+# start path refreshes it after a reboot (D-S28-04).
+RT=${S8_RUNTIME_DIR:-/tmp/samba-runtime}
+RT_BIN=$RT/bin
+
+stage_cron_script() {
+	mkdir -p "$RT_BIN" 2>/dev/null || return 0
+	cp "$S8DIR/diskacl-sync.sh" "$RT_BIN/diskacl-sync.sh.tmp" 2>/dev/null &&
+		mv "$RT_BIN/diskacl-sync.sh.tmp" "$RT_BIN/diskacl-sync.sh" 2>/dev/null &&
+		chmod 755 "$RT_BIN/diskacl-sync.sh" 2>/dev/null ||
+		log "cannot stage diskacl-sync.sh on tmpfs"
+}
 
 log() {
 	logger -t s8compat "$*" 2>/dev/null || true
@@ -28,6 +42,7 @@ usable() {
 
 case "${1:-}" in
 start)
+	stage_cron_script
 	if ! usable; then
 		log "compat tree unavailable; falling back to vendor supervisord"
 		/usr/sbin/supervisord start

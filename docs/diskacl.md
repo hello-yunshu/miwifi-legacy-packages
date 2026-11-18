@@ -67,8 +67,8 @@ iptables -I INPUT <原厂 ACCEPT 之前的行号> \
 | `macfilter` 不存在 / 不可读 / 解析出 0 段 | 2 | `unavailable` | 不建链、不动 INPUT |
 
 任何异常的最坏结果是"名单内设备被拦"，不存在"全员 DROP"。状态写入
-`$ROOT/var/state/diskacl.state`（`mode / decision / allowed / denied / entries / unset / bad / updated`），
-日志写入 `$ROOT/var/log/adapter.log`。
+`$RT/state/diskacl.state`（`mode / decision / allowed / denied / entries / unset / bad / updated`），
+日志写入 `$RT/log/adapter.log`；`$RT` 为 `$S8_RUNTIME_DIR`，默认 `/tmp/samba-runtime`。
 
 ## 5. cron 兜底与 md5 缓存
 

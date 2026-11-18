@@ -7,7 +7,8 @@
 #  1) datacenter 的配置重写是“异步”的，S97 一次检查可能早于重写；
 #     因此后台做有界复检（+15/+30/+45/+60/+90 秒），发现被改回 1 就再压一次。
 #  2) 复检时点可能与 sda1 热插拔触发的 samba reload 撞车，reload 会失败并把服务带停；
-#     因此 reload 后必须校验 smbd 是否还在，若已消失则 stop+start 兜底。
+#     因此 reload 后必须校验 smbd 是否还在。已消失时只补 start，不做 stop：
+#     stop 会把一次可恢复的 reload 失败放大成空窗。
 START=97
 STOP=10
 USE_PROCD=0
@@ -53,9 +54,7 @@ ensure_veto() {
 	rc=$?
 	log "veto reload rc=$rc"
 	if ! smbd_running; then
-		log "smbd gone after veto reload, recovering (stop+start)"
-		/etc/init.d/samba stop >/dev/null 2>&1
-		sleep 1
+		log "smbd gone after veto reload, starting (no stop)"
 		/etc/init.d/samba start >/dev/null 2>&1
 		sleep 3
 	fi
@@ -100,9 +99,7 @@ apply() {
 		rc=$?
 		log "samba reload rc=$rc"
 		if ! smbd_running; then
-			log "smbd gone after reload, recovering (stop+start)"
-			/etc/init.d/samba stop >/dev/null 2>&1
-			sleep 1
+			log "smbd gone after reload, starting (no stop)"
 			/etc/init.d/samba start >/dev/null 2>&1
 			sleep 3
 			if smbd_running; then log "recover ok"; else log "recover FAILED"; fi

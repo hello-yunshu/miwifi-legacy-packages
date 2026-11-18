@@ -19,7 +19,7 @@
 - D-S2-07 重建时显式预建 waf 输出目录 `bin/c4che`。全新解压的 4.25.1 树没有 `bin/`，`configure` 在 store 阶段写 `bin/c4che/build.config.py` 时不会自建父目录，导致 `FileNotFoundError`；预建目录不改源码、不改参数，属于构建环境准备，不掩盖任何编译问题。
 - D-S2-08 本机运行验证用 `/userdisk -> <DESTDIR>/userdisk` 临时符号链接补齐编译期绝对路径。前缀已经是设备路径，QEMU 进程按绝对路径访问 `/userdisk/...` 时在容器里找不到；设备上该路径原生存在，因此这只是本机验证脚手架，验证结束即删除，不进入任何部署脚本。
 - D-S2-09 本轮隔离实例沿用原厂协议下限（`server min protocol = LANMAN1`），不提前关闭 SMB1。开发计划 S2 测试组写的是“SMB1 禁用”，但那是产品策略目标；当前阶段要回答的是“新 Samba 能否承接原厂现有客户端”。等 macOS/Emby/摄像机/电视的客户端矩阵给出证据后，再决定是否抬到 SMB2，避免先关协议再回头补兼容。
-- D-S2-10 部署脚本必须预建 `var/lock`、`var/locks`、`var/cache`、`var/private`、`var/log`、`var/run/ncalrpc`。`ncalrpc` 目录来自编译期默认值，smbd 不会代为逐级创建，缺失时直接以 `Failed to create pipe directory` 退出；把它写进部署清单比运行期再加 `ncalrpc dir` 配置更少分叉。
+- D-S2-10 部署脚本必须预建运行时目录：`var/private` 留在持久树，其余 `lock`、`locks`、`state`、`cache`、`log`、`run`、`run/ncalrpc` 建在 `$S8_RUNTIME_DIR`（默认 `/tmp/samba-runtime`）。`ncalrpc` 目录来自编译期默认值，smbd 不会代为逐级创建，缺失时直接以 `Failed to create pipe directory` 退出；把它写进启动前的预建清单比运行期再加 `ncalrpc dir` 配置更少分叉。
 - D-S2-11 TDB robust mutex 在本工具链组合下不可用（`mutexes requested but not available` 打印在 level 0），不回退到改源码或关日志。先用 fcntl 锁跑完隔离回归，把该项作为实机并发用例的显式检查点；如果实机上出现锁语义问题，再评估换锁实现或调整 build 参数，不在 S2 静默掩盖。
 - D-S2-12 启动脚本固定导出 `LD_LIBRARY_PATH=<root>/lib:<root>/lib/private`，不依赖编译期 `RPATH`。实测 uClibc 0.9.33.2 不会用主程序的 `DT_RPATH` 去解析“依赖库的依赖”：只设默认时缺 `libsecrets3-private-samba.so`，只加 `lib/private` 时缺 `libhogweed.so.6`，两者都加才正常。因此不再为补齐 `RPATH` 重建或打补丁。
 - D-S2-13 `libidmap-private-samba.so` 的两个未解析 winbind 符号按“调用不到”归档，不为此改源码、不补桩。处置是：不把 libidmap 及 `lib/idmap/*.so` 交付给 smbd 使用；若将来启用 winbindd 或需要 idmap 后端模块，必须在同一构建里同时产出 winbindd，否则 `lib/util/modules.c` 的 `RTLD_NOW` 会在加载时被这两个符号卡住。
@@ -180,7 +180,7 @@
 ## S10（阶段 4 维护窗口部署与阶段 5 收口，2026-11-09）
 
 - D-S10-01 装前快照与回滚门禁：进窗口前落盘 `current`/`versions/`/`state/previous`、链结构、INPUT 六条、crontab、各服务 pid、`/etc/config` 与启动脚本 md5、端口、容量；确认 `state/previous=1.0.6-r2d` 且树内 `sbin/smbd` 可执行后才开始写入。快照见 `docs/evidence/2026-11-09-stage4/pre-install-snapshot.txt`。
-- D-S10-02 B3 nmbd 切换方式：只改 `/etc/init.d/samba` 的 nmbd 启停入口，私有树 `current/sbin/nmbd` 优先、原厂 `/usr/sbin/nmbd -D` 兜底；启动参数补 `-s current/etc/smb.conf`、`-l current/var/log/nmbd`，并用 `--option` 复刻原厂 `interfaces=br-lan`、`local/preferred/domain master=yes`，避免切换二进制改变浏览语义。私有 nmbd 的 `-l` 需要已存在的日志目录，已预建 `var/log/nmbd`（否则只写 stderr、不落盘）。
+- D-S10-02 B3 nmbd 切换方式：只改 `/etc/init.d/samba` 的 nmbd 启停入口，私有树 `current/sbin/nmbd` 优先、原厂 `/usr/sbin/nmbd -D` 兜底；启动参数补 `-s current/etc/smb.conf`、`-l /tmp/samba-runtime/log/nmbd`（wrapper 负责 `mkdir -p`），并用 `--option` 复刻原厂 `interfaces=br-lan`、`local/preferred/domain master=yes`，避免切换二进制改变浏览语义。日志目录必须在 tmpfs 上，否则 nmbd 每 5 分钟一条的浏览日志会把休眠中的内置盘叫醒，见 D-S28-01。
 - D-S10-03 B3 验证口径：切换后 `137/138` 归 `versions/1.0.7-r2d/root/sbin/nmbd` 单实例；`nmblookup -A 192.168.3.2` 返回 `XIAOMI_002D<00/03/20>` 与 `WORKGROUP<00/1e>` 即视为名称注册与浏览正常；`samba restart` 与整机冷启动后都必须仍是私有路径。回滚 = 恢复 `state/samba.init.pre-stage4.bak` 后 restart。
 - D-S10-04 B1 Dropbear 记 BLOCKED，不部署：备用端口 2222 实例可启动，但密钥认证被 Dropbear 的祖先目录权限检查拒绝。实测 `/etc/dropbear`（700，但父 `/etc` 为 775）与 `/tmp/dbkeys`（700）两种放法都失败，根因是 `/` 属主为 uid 1000、且某级祖先组可写。可行修法是改 `/` 属主或重编放宽检查，前者动只读根、后者超出阶段范围，均不采用。候选实例与临时 host key 已清理，22 端口全程未动。
 - D-S10-05 B2 curl 范围：只切换 `/etc/init.d/miDebug.sh`（显式 `http://`、仅 `-s`）到私有 HTTP-only curl，并保留 `/usr/bin/curl` 兜底。`mitvapp` 不切换：其 `curl localhost:/cgi-bin/...` 依赖旧版 scheme 猜测，8.23.0 报 `Protocol "localhost" not supported`，切换即回归。`/etc/mixbox/scripts/helper.sh` 不切换（`-skL` 的下载目标可能是 HTTPS，HTTP-only 构建会失败）；`/usr/sbin/wifishare.sh`、`/usr/bin/netspeed` 位于只读根分区，无法改调用路径。
@@ -543,3 +543,206 @@
   没有单调变慢；也没有可读的温度通道，只能记录“无此机制”。
 - D-S27-06 落点：保留 0 项，仓库无改动。若将来重评，IRQ 亲和需 `init.d`（stop 恢复 `3`），
   nice/ionice 需启动包装器并由子进程继承，RPS 需 hotplug 在 `eth0` up 后写入，三者数据可复用。
+
+## S28（内置盘频繁启停：运行时目录迁 tmpfs，2026-11-17）
+
+- D-S28-01 现象与证据：`/dev/sda`（ST1000VM002）`Start_Stop_Count=Load_Cycle_Count=57214`，
+  通电 15152 h（约 91 次/天）；固件 `noflushd -n 5` 即空闲 5 分钟休眠。`block_dump` 抓到
+  `nmbd ... dirtied inode (log.nmbd) on sda1`，随后 `flush-8:0`/`jbd2` 落盘；另有 Samba 每 30 分钟
+  重载日志、`indexservice` 每小时 :00 写 115 MB `backup.db`。结论是后台服务把日志/锁/状态留在 HDD，
+  与 5 分钟休眠形成共振，不是盘或链路故障（`UDMA_CRC=0`、无 ata reset、33 °C）。
+  （`backup.db` 整点写这条 2026-11-18 复核不成立，见 D-S28-05。）
+- D-S28-02 落点：`pid/lock/state/cache/log/ncalrpc` 全部迁到 `$S8_RUNTIME_DIR`（默认
+  `/tmp/samba-runtime`），`prepare_dirs` 每次启动重建；`private` 仍留 `$ROOT/var/private`，因为它只在
+  改账号或机器 SID 时写，迁走会在重启后丢 `smbpasswd`/SID，代价大于收益。nmbd 的 `-l` 与
+  `diskacl-sync.sh` 的状态/日志同步指向同一目录。渲染器新增“内容相同则跳过发布”，避免厂商每
+  30 分钟重跑 generate 时重写 `smb.conf` 的 inode 与元数据。2026-11-18 补：`private dir` 里唯一
+  高频写入的是运行期的 `msg.sock/`，已单独 bind mount 到 tmpfs，见 D-S28-07。
+- D-S28-03 验证口径：重启服务后 `smb.conf` 的各运行时路径必须落在 `/tmp/samba-runtime`，
+  139/445 与 137/138 正常；`block_dump` 观察窗口内不得再出现 samba/nmbd 对 sda1 的写入，
+  `hdparm -C /dev/sda` 应长期保持 standby。
+  （原记“已知残留唤醒：`indexservice` 每小时 :00 写 `backup.db`、固件每日目录扫描”——2026-11-18
+  复核推翻了前半句，见 D-S28-05；每日目录扫描未复现，暂不列入。）
+- D-S28-04 每分钟 reconciler 本身不能放在 HDD：迁移运行时目录后 `block_dump` 仍抓到
+  `sh(3340): READ block ... on sda1`，间隔恰好 60 s，来源是 `install.sh` 写进
+  `/etc/crontabs/root` 的 `* * * * * /userdisk/data/.yunshu/live/s8compat/versions/v1/diskacl-sync.sh`——
+  crond 每次 fork 的 shell 都要从 sda 读脚本，5 分钟空闲计时因此永远走不完。处置：权威副本仍在
+  `versions/v1`（版本树可回滚、可校验），cron 改指 `$S8_RUNTIME_DIR/bin/diskacl-sync.sh`；
+  `install.sh` 安装时落一份、`hook.sh` 的 `start` 每次启动刷新（tmpfs 重启即空）；
+  `install.sh` 的 cron 行改为“删旧行再追加”，让老设备升级时自动离开 HDD 路径；`verify` 同时
+  检查 tmpfs 副本存在与 cron 行不再指向版本树。
+- D-S28-05 迁移后的实测残留（2026-11-17 22:40–11-18 00:01）：`hdparm -C` 在静置 5 分钟后进入
+  `standby`，9 分钟 `block_dump` 窗口内 sda I/O 为 0；`smbclient -L` / 列目录按需唤醒，再静置
+  6 分钟回到 `standby`。仍会偶发唤醒的是 webdav 的 `sh run.sh watch`：每 30 s 执行
+  `sync_local`/`sync_usb`，会读自身脚本与 `state/usb.src`，页缓存缺失时才真正读盘
+  （`sh`+`cat` 各一块）。已在 D-S28-06 消除。
+  2026-11-18 复核（11-17 版记的两条“vendor 残留”一条被推翻、一条被归因并于当天修复）：
+  ① `indexservice` **不是**每小时写 `backup.db`：`/userdisk/data/.systemconfig/DataBase/backup.db`
+  （115 MB）mtime = 2026-11-17 20:00:03，11-18 05:15–05:49 观察窗口内未变；同目录
+  `mediadeltainfo.db` mtime 停在 11-10 07:26。进程确实常驻持有这两个 fd，但不在整点写。
+  原“每小时 :00 写”是把 `Start_Stop_Count` 的增长往整点对齐后推出来的，没有文件 mtime 支撑，
+  撤销该结论。
+  ② “约 15–25 分钟一次、每次 112 扇区”不是独立的周期写，固定的是“同样 6 个元数据块 + 一次
+  日志提交”这个组合，而非间隔：实测 05:16:19、05:19:20、05:31:22，中间还有 9–12 分钟完全静默。
+  112 扇区 = 14×4 KiB = 8 个 jbd2 日志块（约 sector 973,394,xxx，即盘内约 498 GB 处的日志区）
+  + 6 个固定元数据块，用块号 `dd` 解出来分别是：block 0（ext4 超级块，magic 0x53EF）、
+  block 56（GDT）、218103936（inode bitmap 所在组）、218104064 与 218104144（inode table）、
+  218141272（目录块）。目录块解出 inode 106668，父 inode 101135 = `$ROOT/var/private`，
+  条目全是 PID 命名的 unix socket；该目录 mtime 05:31:15 对应 05:31:22 的提交，
+  05:19:14 新建的 socket `30645`（正是 `smbd[192.168.3.x]` 子进程）对应 05:19:20 的提交。
+  结论是 Samba 子进程每次起/停都在数据盘的 `private dir/msg.sock` 里建删 socket，改目录块
+  + inode table + inode bitmap + GDT + 超级块并提交日志；修复见 D-S28-07。
+  ③ 同窗口里 `comm=uci` 的 sda1 写（block 56、222298120/128、222298368/376）不是 uci 在盘上写
+  配置：`messagingagent` 每 ~20 s 用 uci commit 重写的是 `/etc/config/messaging`，落在 ubifs
+  （`.messaging.uci-*`），对 sda 无写入；那次提交触发了全文件系统 sync，把 Samba 刚弄脏的
+  sda1 元数据一起冲出，comm 才记到 uci 头上。
+- D-S28-06 webdav 同样迁 tmpfs：`WEBDAV_RUNTIME_DIR`（默认 `/tmp/webdav-runtime`）承载
+  `state/`（pid、error.log、上传临时目录、webdav.db、usb.src、watch.pid）与 `webdav.log`，
+  `lighttpd.conf` 的 `server.errorlog`、`server.pid-file`、`server.upload-dirs`、
+  `webdav.sqlite-db-name` 四点同步改指该目录。watch 循环改从 tmpfs 副本运行（`stage_self`
+  在 `start` 时比对并刷新），因为 ash 会长期持有脚本页，从数据盘读它会在页缓存被挤出时
+  变成对 sda 的周期读。`webroot`、bind mount 与二进制仍留在数据盘；启动时若 `/tmp` 被清空，
+  `prepare` 重建目录、`sync_usb` 重新推导 `usb.src`，不需要持久化。切换时注意：旧 watch 进程
+  是从数据盘脚本起的，`stop_watch` 读的是新 state 里的 `watch.pid`，杀不到它；本次升级就遇到
+  旧 watch 继续每 30 s 往数据盘 `webdav.log` 写“重启失败”，只能按 cmdline 精确找出旧 PID 后
+  `kill`。旧 lighttpd 同理（pid 文件随 state 迁移而丢失），需先停旧进程再 `start`，否则
+  `bind() Address already in use`。
+- D-S28-07 `msg.sock` 单独 bind mount 到 tmpfs：`private dir` 不能整体迁走（机器 SID 与
+  `smbpasswd` 要持久），但其中只有 `msg.sock/` 是高频写的，所以只换它。`$RT/msg.sock`
+  （默认 `/tmp/samba-runtime/msg.sock`）由 `prepare_dirs` 建好并 `chmod 700`，再
+  `mount --bind` 到 `$ROOT/var/private/msg.sock`；`cmd_stop` 的三条返回路径都先
+  `unstage_msg_sock`，实例停止不留挂载点。三个必须照做的细节：
+  ① 只能用 bind mount，不能用符号链接。Samba 的 `directory_create_or_exist_strict()` 把
+  符号链接判成 “isn't a directory” 并拒绝启动。
+  ② 目录权限必须恰好 0700，0755 会报 `invalid permissions on directory ... should be 0700`
+  启动失败，所以 tmpfs 侧显式 `chmod`。
+  ③ `/proc/mounts` 记的是解析后的真实路径（`current` → `versions/<ver>/root`），判断已挂载
+  必须先用 `cd ... && pwd -P` 解析，否则重复 `start` 会叠加多层 bind mount。
+  切换时注意：实例存活时 `/etc/init.d/samba restart` 实际走 reload，旧的 messaging 上下文
+  无法重建（报 `Unable to initialize messaging context`），必须 `stop` 再 `start`。
+  `install.sh verify` 增加“`msg.sock` 不得是符号链接”的硬校验，`state` 输出
+  `msg.sock: tmpfs bind mounted`。
+  验证（2026-11-18）：重启后 8 个 socket 全部落在 `/tmp/samba-runtime/msg.sock`，
+  `grep msg.sock /proc/mounts` 只有 1 条；`smbclient -L` 能列出全部共享。随后 12 分钟
+  `block_dump`（05:48:17–06:00:18）的 48 条 sda1 写全部集中在 05:48:17–05:49:40（启动回写
+  + uci 全局 sync），此后 10.5 分钟零 I/O，期间做了 6 次 `smbclient -L` 连接；
+  06:01:13 `hdparm -C` 为 `drive state is: standby`。
+- D-S28-08 后台周期性任务的收尾审计（2026-11-18）：
+  ① `indexservice` 实际节奏是**每天两次**（10:00、20:00）而不是每小时。Syslog 里两次统计
+  `BackupManager::statistics` → `getNextStatisticsTime` 分别是 `now 06:35:44 next 10:00:00`
+  与 `now 10:00:03 next 20:00:00`；`backup.db`（115 MB）mtime 同步落在 11-17 20:00:03 与
+  11-18 10:00，每次统计约 3 秒。启动后还会补算一次（06:21 起机，06:35 补算，约 14 分钟延迟）。
+  `mediadeltainfo.db` 自 11-10 07:26 起未变，说明增量库不常写。
+  它是 MiniDLNA 的媒体索引器：读 `/etc/config/minidlna` 的 `media_dir`（只有内置盘 5 个目录：
+  下载/共享/图片/摄像机监控视频/文档，**不含外接盘**），靠 inotify 跟踪文件变化，维护
+  `mediadeltainfo.db`（23 MB，Path/Hash/MimeType/Size/Duration/ThumbnailPath 等字段）、
+  生成缩略图、按需 `/etc/init.d/minidlna reload`，并在 10:00/20:00 把索引备份成 `backup.db`
+  （115.7 MB，耗时约 3 秒）。它不参与 SMB/webdav 的文件访问路径。当前 `minidlna` 守护进程
+  并未运行（配置 `enabled=1`），所以这套索引只服务小米 App 的媒体浏览/DLNA。
+  ② 同一分钟还有厂商 cron `0 10 * * * /usr/sbin/regularScanDiskDir.sh`（`datacenterClient
+  api 101`，让 datacenter 扫全盘目录），每日一次读目录树。另有 `*/5` 的 `disklogger.sh`
+  只跑 `hdparm -C /dev/sda` 并把状态写进 syslog，不触盘；`0 18 * * 1 /sbin/hdd_stat.sh sda`
+  为每周 SMART 读取。
+  ③ 2026-11-18 决定停用 indexservice（用户确认）。`minidlna` 守护进程本来就没在跑，索引的
+  唯一去处是 App 的相册/影视浏览；停掉后 10:00/20:00 的 `backup.db` 写入、缩略图与索引更新
+  全部消失。执行：`/etc/init.d/indexservice.init stop`（supervisord 托管，只停该任务）+
+  `/etc/init.d/indexservice.init disable`（rc.common 删除 `/etc/rc.d/S78indexservice.init`，
+  开机不再拉起）。验证：停止后 60 s 进程未复活，Samba（pid 30441，5 个共享）与 webdav 不受影响；
+  静置 5 分钟后 `hdparm -C` 回到 `standby`，150 秒 `block_dump` 内 sda1 为 0 条
+  （中途那次 `active/idle` 与 2124 条 I/O 是本机遗留的 `grep -r /userdisk/data/.systemconfig`，
+  已 kill，不是系统任务）。
+  恢复：`/etc/init.d/indexservice.init enable && /etc/init.d/indexservice.init start`。
+  仍保留的是 `0 10 * * * /usr/sbin/regularScanDiskDir.sh` 这条 cron。它的全部内容是
+  `datacenterClient -h localhost -p 9090 -i '{"api":101}'`，即让 datacenter 通过 Thrift 调
+  indexservice 重扫文件树（datacenter 里的 `callIndexService`、`getIndexIgnoredFolders`，
+  indexservice 侧遍历 `/userdisk` 与 `/extdisks`，维护 `Path/Name/FolderPath` 目录索引并
+  生成缩略图），供小米 App 的文件管理/相册使用。它只读元数据，发现变化才写索引，所以正常
+  情况下是一次“读盘唤醒”。indexservice 停掉后这条 cron 只剩每天一次 Thrift 连接失败日志，
+  不再读盘；2026-11-18 已按用户要求把该行注释掉（原文件备份在
+  `/etc/crontabs.root.bak-20261118`），`/etc/init.d/cron restart` 后 crond 为 pid 18526；
+  恢复时去掉行首 `#` 再重启 cron。
+  ④ 外接 USB 盘（`/dev/sdb1`，tntfs，挂 `/extdisks/sdb1` 并绑定到 webdav `外接盘`）稳态无
+  周期 I/O：10 分钟 `block_dump` 里 `sdb1` 只有 41 条 READ，全部来自审计时本机执行的
+  `find /`（进程 comm=find），此后 9 分钟 sda1/sdb1 均为 0 条。webdav 的 30 s
+  `sync_usb` 只读 tmpfs 的 `/extdisks` 目录项、`/proc/mounts` 与 `state/usb.src`，不读盘。
+  SMART：sdb `Start_Stop_Count=8725`、`Power_On_Hours=52735`（约 0.17 次/小时，历史正常），
+  sda 同期 `Start_Stop_Count=57255`、`Power_On_Hours=15162`、`Load_Cycle_Count=57255`。
+  ⑤ 每次启停会打断 5 分钟空闲计时，因此“零启停”与“任何周期任务”不可共存；本阶段按
+  D-S28-03 的验收口径（无后台写入、静置进入 standby）收尾。
+  ⑥ 11-18 06:20 那次重启是**计划任务**，不是故障：`/etc/smartcontroller/SmartTask.db`
+  （SQLite 场景库）里有一条 `normal_reboot`（name `MiWiFi 2.0`），timer `enabled=true`、
+  `time=06:20:00`、`repeat="3"`（周三）；同库另一条 `normal_shutdown`（11:30，repeat 0-6）
+  为 `enabled=false`。`/bin/reboot_safe.sh` 的唯一调用者是 `/usr/sbin/smartcontroller`，
+  它重启前置 `misc.boot.sched_reboot=1`（当前仍为 1），与 App 里“每周三 06:20 重启”一致。
+  复核开机路径时就以这次重启为准：Samba、webdav、`msg.sock` bind mount 均自动恢复。
+- D-S28-09 内存盘防满（2026-11-18）：`/tmp` 是 99.4 MB tmpfs，与整个固件共享，实测
+  `/tmp` 用量 2.4 MB（samba-runtime 1.7 MB，其中 `state/` 的 3 个 tdb 各 412 KB、
+  `lock/` 420 KB；webdav-runtime 52 KB）。风险在日志：`adapter.log` 与 `webdav.log` 原先
+  只追加不封顶，一次“USB 拔掉/重启失败”式的循环就能把它写满。处置：两个 `log()` 在
+  写入前检查大小，超过 `S5_LOG_MAX` / `WEBDAV_LOG_MAX`（默认 262144 字节）就清空后
+  再写，保留最新消息；Samba 侧已有 `max log size = 500`（KB）并且日志本身在 tmpfs。
+  另在渲染器加 `syslog = 0`：Samba 默认把 level-0 消息同时送 syslog，nmbd 每 5 分钟的
+  domain-master 广播因此往 `/tmp/messages` 写约 4 行（实测该文件 118 KB 主要是启动突发，
+  稳态约 5.5 KB/h），关掉后只进 tmpfs 上的日志文件。`diskacl-sync` 与 webdav 的 30 s
+  自愈日志只在状态变化时写，不需要额外限流。
+- D-S28-10 在线碎片整理工具（2026-11-18）：原厂镜像只有 e2fsprogs 1.41，没有
+  `e4defrag`/`filefrag`，也没有编译器；内核 2.6.36 本身支持 `EXT4_IOC_MOVE_EXT`。
+  处置是用 Xiaomi SDK 工具链交叉编译 e2fsprogs 1.45.6 的 `e4defrag`，静态链接后落到
+  `/userdisk/data/.yunshu/live/tools/bin/e4defrag`（506 KB），仓库侧产物为
+  `recipes/defrag/`（`build.sh`、`e4defrag-uclibc.patch`、`e4defrag.sh`）。补丁只有一处：
+  uClibc 没有 `fallocate64()`，且其变参 `syscall()` 在 ARM EABI 上会把 64 位参数放进
+  奇数寄存器对（表现为 `EINVAL`/`EFBIG`），因此用内联汇编把 offset 放进 r2:r3、len 放进
+  r4:r5 直接发系统调用。实测：150 个 extent 的测试文件整理后变为 1 个，`dmesg` 无异常。
+  现状：2 GB 视频 31 个 extent、平均 64 MB/段（score 0）；`backup.db` 31 段、平均 3.6 MB
+  （score 1），**全盘不需要整理**。使用约束：e4defrag 不加写锁，不得对正在写入的文件
+  （摄像机录像、SMB/webdav 上传）运行；全盘整理在 2.6.36 上很慢，按目录分批跑。
+- D-S28-11 存储清理（2026-11-18）：`.systemconfig/.thumbnails` 实测约 **8.7 GB**
+  （`middleIcons` 下 256 个目录、每个目录大量缩略图，`du` 都跑不完），indexservice 停用后
+  已无生成者，整目录清空；`backup.db`（110 MB）与 `mediadeltainfo.db`（22 MB）一并删除，
+  恢复 indexservice 会重建。根目录 3 个 2023 年的散落媒体文件（2.6 GB）移入
+  `下载/2023-09-30/`，不删除。`.swapfiles`（256 MB）按用户要求保留。
+  结果：`df` 由 435.7 GB 可用变为 **444.6 GB 可用（+8.9 GB）**；清理后 SMB 139/445
+  正常、webdav 10 个挂载正常、indexservice 无进程，22:26 复查磁盘 `standby`。
+- D-S28-12 调度器/预读/noflushd（2026-11-18）：`cfq → deadline`（sda、sdb），sda
+  `read_ahead_kb 128 → 512`。sysfs 掉电即失效，因此新增 `/etc/init.d/hdd-tune`（S99，
+  启动后补设一次并等待 USB 盘探测最多 10 s）与 `/etc/hotplug.d/block/85-hdd-tune`
+  （USB 后插入时补设），工具本体 `hdd-tune.sh` 放在
+  `/userdisk/data/.yunshu/live/tools/`，仓库侧为 `recipes/hdd-tune/`（含 `install.sh`
+  与 `revert`）。
+  `noflushd` 由 `-n 5` 改为 `-n 10`（改 `/etc/init.d/noflushd` 的 `PROCLINE`，
+  备份 `noflushd.bak-20261118`）。实测其语义是“每 N 分钟检查一次、下次检查才执行
+  spindown”，因此实际空闲 10–20 分钟后才停转（`-n 5` 时为 5–10 分钟）；23:28 复查
+  `standby`，读请求仍由内核即时唤醒，不受影响。重启服务必须走
+  `/etc/init.d/noflushd stop; start`（`supervisord` 只是 TaskMonitor 的注册包装）。
+  zram 不可行：内核 2.6.36 早于 zram 进主线（3.0），镜像内无 `zram.ko`/`ramzswap.ko`、
+  无 `/sys/block/zram*`，补建模块需要厂商内核源码与匹配 vermagic；且当时可用内存约
+  180 MB，本无压缩需求。swap 维持 256 MB + `swappiness 0`（用户决定，仅作 OOM 保险）。
+- D-S28-13 SMART 自检（2026-11-18）：`smart-check.sh` 每月 1 日 03:30 跑 short，
+  1/4/7/10 月改跑 long；同日 06:00 收集结果（long 约 2 小时，能在 06:20 计划重启前
+  完成）。外接盘一并纳入（`-d sat`，不在位时静默跳过）。结果追加到
+  `tools/smart.log`，并在 `Reallocated_Sector_Ct`/`Current_Pending_Sector`/
+  `Offline_Uncorrectable` 非 0 或最近一次自检非 clean 时写 syslog（`logger -t smart`）。
+  首次验证：sda 15179 h、sdb 52752 h 均 `Completed without error`，四项计数全 0。
+  代价是 long 的 4 次/年各约 2 小时转盘，short 各约 2 分钟。
+  2026-11-19 补：厂商 `/sbin/hdd_stat.sh sda`（每周一 18:00 读 SMART 上报
+  `hdd_stat_v2_R2D=...`）并入 `collect` 的 `stat_record`，只保留同一条 syslog 记录、
+  格式逐字段一致（实测仅 raw 计数前移）；该 cron 已注释，App 硬盘面板改为每月刷新。
+  收集时间也拆成两档以复用自检的转盘窗口：short 月 03:50、long 月 06:00，
+  因此 SMART 相关唤醒收敛为 **每月 1 次**（quarter 月 1 次 long）。
+- D-S28-14 tmpfs 兜底（2026-11-19）：`/tmp/messages` 由 syslog-ng 直接写文件、无轮转，
+  实测约 310 KB/天；`/tmp` 共 99.4 MB，与 Samba/webdav 运行时共用。加一条每日 04:10
+  的守卫：超过 4 MB 时保留最后 128 KB 到 `messages.old` 后**原地截断**（`syslog-ng`
+  持有文件描述符，`mv` 会让它继续写已解除链接的 inode）。保留每周三重启时该规则
+  不会触发（正常峰值约 2 MB），只在取消重启的情况下生效。实测 10 KB → 截断为 0、
+  `.old` 保留 1 KB（用 4 KB 阈值模拟）。
+- D-S28-15 webdav 上传暂存挪回数据盘（2026-11-19，深度审计 tmpfs 时发现）：此前
+  `server.upload-dirs` 指向 `/tmp/webdav-runtime/state/tmp`，而本构建没有开
+  `server.stream-request-body`，lighttpd 会把**整个请求体**先落到 upload-dirs 再交给
+  mod_webdav。于是任何超过约 95 MB 的 PUT 都会把 99.4 MB 的 tmpfs 写满，连带
+  Samba/webdav 的运行时 tdb 一起写失败。改为 `/userdisk/data/.yunshu/live/webdav/
+  state/tmp`（0700 nobody，run.sh 启动时创建）：上传本身就要落盘，暂存放同一文件
+  系统不增加任何唤醒。实测 150 MB PUT 到内置盘 201/16.9 s，全程 `/tmp` 恒定 3.4 MB。
+  同轮审计的其他写者上限：Samba 日志 500 KB×约 6 个文件、`messages` 4.4 MB、
+  tdb 约 2 MB、`webdav.db` 20 KB，稳态合计约 10 MB；峰值来自 OTA 预下载
+  （`49 3,4,5 * * *` 写 `/tmp/<hash>.img`，约 20–30 MB，只走网络不唤醒磁盘）。
+

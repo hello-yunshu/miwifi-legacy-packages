@@ -103,7 +103,7 @@
                            smbd/smb2_nttrans.c
 --- /dev/null
 +++ b/source3/smbd/xiaomi_mac_policy.c
-@@ -0,0 +1,455 @@
+@@ -0,0 +1,456 @@
 +/*
 +   Xiaomi MAC based share policy, Samba 4.25.x port.
 +
@@ -140,6 +140,7 @@
 +#include "smbd/smbd.h"
 +#include "smbd/xiaomi_mac_policy.h"
 +#include "../lib/tsocket/tsocket.h"
++#include "system/threads.h"
 +
 +#define XIAOMI_DEFAULT_LOGIN_MAC_FILE "/tmp/loginMac.cfg"
 +#define XIAOMI_DEFAULT_NONLOGIN_MAC_FILE \

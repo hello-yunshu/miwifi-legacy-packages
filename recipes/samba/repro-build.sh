@@ -111,11 +111,12 @@ exec /usr/bin/qemu-arm-static -L /toolchain/arm-xiaomi-linux-uclibcgnueabi/sysro
 EOF
 chmod +x "$WORK/run-arm.sh"
 
-# Samba: fresh tree + all seven patches
+# Samba: fresh tree + all eight patches
 cd "$SRC/samba-4.25.1" || exit 1
 : > "$LOGS/samba-patch.log"
 for p in samba-cross-asn1-rule samba-cross-codegen-executor samba-sdk-generic-selection \
-         samba-sdk-reflink-guard samba-sdk-spawn samba-s3-mac-policy samba-s4-readonly-timewindow; do
+         samba-sdk-reflink-guard samba-sdk-spawn samba-s3-mac-policy samba-s4-readonly-timewindow \
+         samba-sock-reuseport-eopnotsupp; do
   echo "== $p" >> "$LOGS/samba-patch.log"
   prc=0
   patch -p1 < "/work/patches/$p.patch" >> "$LOGS/samba-patch.log" 2>&1 || prc=$?

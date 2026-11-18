@@ -1,0 +1,6 @@
+#!/bin/sh
+# Block hotplug hook: the USB disk can appear (or be re-plugged) long after
+# boot, and its scheduler would otherwise stay at the kernel default.
+[ -x /userdisk/data/.yunshu/live/tools/hdd-tune.sh ] &&
+	/userdisk/data/.yunshu/live/tools/hdd-tune.sh apply >/dev/null 2>&1
+exit 0

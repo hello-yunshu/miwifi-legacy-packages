@@ -1,0 +1,33 @@
+--- a/misc/e4defrag.c
++++ b/misc/e4defrag.c
+@@ -196,7 +196,29 @@
+ #endif
+ 
+ #ifndef HAVE_FALLOCATE64
+-#error fallocate64 not available!
++/*
++ * uClibc 0.9.33.2 has no fallocate64().  e4defrag only needs it to reserve
++ * space for the donor inode, so issue the fallocate syscall directly.  The
++ * argument layout is written out because uClibc's variadic syscall() places
++ * 64-bit arguments in an odd register pair on ARM EABI (offset must be in
++ * r2:r3, len in r4:r5).
++ */
++#include <sys/syscall.h>
++static int fallocate64(int fd, int mode, long long offset, long long len)
++{
++#ifdef __NR_fallocate
++	register int r0 asm("r0") = fd;
++	register int r1 asm("r1") = mode;
++	register long long r2 asm("r2") = offset;
++	register long long r4 asm("r4") = len;
++	register int r7 asm("r7") = __NR_fallocate;
++	asm volatile("svc 0" : "+r"(r0) : "r"(r1), "r"(r2), "r"(r4), "r"(r7)
++		     : "memory");
++	return r0;
++#else
++	return -1;
++#endif
++}
+ #endif /* ! HAVE_FALLOCATE64 */
+ 
+ /*

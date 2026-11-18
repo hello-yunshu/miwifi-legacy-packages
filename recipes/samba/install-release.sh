@@ -79,6 +79,21 @@ cmd_verify() {
 	echo "OK"
 }
 
+# Carry the per-instance database (machine SID / account store) from the tree
+# that is currently active into the freshly unpacked one.  The config itself is
+# re-rendered from UCI on start, so only var/private has to survive a switch.
+carry_private() {
+	v=$1
+	src=$BASE/runtime/var/private
+	dst=$BASE/versions/$v/root/var/private
+	[ -d "$dst" ] || mkdir -p "$dst"
+	for f in secrets.tdb smbpasswd; do
+		if [ -f "$src/$f" ] && [ ! -f "$dst/$f" ]; then
+			cp -p "$src/$f" "$dst/$f" || echo "note: could not carry $f" >&2
+		fi
+	done
+}
+
 cmd_install() {
 	v=$(version)
 	check_payload
@@ -87,6 +102,8 @@ cmd_install() {
 	say "install tree $v"
 	sh "$PKG/xiaomi-smb-install.sh" install "$PKG/payload/samba-tree.tar.gz" "$v" ||
 		die "tree install failed" $?
+	say "carry private state"
+	carry_private "$v"
 	say "activate $v"
 	sh "$PKG/xiaomi-smb-install.sh" activate "$v" || die "activate failed" $?
 	say "install adapter + compat layer"

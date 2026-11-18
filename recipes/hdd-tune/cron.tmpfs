@@ -1,0 +1,7 @@
+# tmpfs guard (hdd-tune): syslog-ng writes /tmp/messages without any rotation,
+# so without the weekly reboot it would grow ~310 KB/day and eventually fill
+# the 99 MB tmpfs shared with the Samba/webdav runtime.  Cap it at 4 MB while
+# keeping the last 128 KB; under the current weekly reboot this never triggers.
+# Truncate in place: syslog-ng keeps its file descriptor, so moving the file
+# away would leave it writing to an unlinked inode.
+10 4 * * * [ $(wc -c < /tmp/messages) -gt 4194304 ] && { tail -c 131072 /tmp/messages > /tmp/messages.old; : > /tmp/messages; }

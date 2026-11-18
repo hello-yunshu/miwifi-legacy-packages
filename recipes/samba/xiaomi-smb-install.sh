@@ -100,8 +100,40 @@ current_name() {
 baked_prefix() {
 	smbd=$1/sbin/smbd
 	[ -x "$smbd" ] || return 1
-	sb=$(LD_LIBRARY_PATH="$1/lib:$1/lib/private" "$smbd" -b 2>/dev/null |
-		sed -n 's/^[[:space:]]*SBINDIR:[[:space:]]*//p')
+	# Every tree bakes the absolute $BASE/runtime prefix into DT_RPATH, and
+	# DT_RPATH is searched before LD_LIBRARY_PATH.  While another tree occupies
+	# that prefix the probe would load *its* libraries (a glibc tree dies on
+	# libc.so.0 when the prefix still names 1.0.8).  Point the prefix at this
+	# tree for the probe only, then put it back; cmd_activate does the real
+	# switch.  Applies to both flavours so a rollback target can always be
+	# verified before activation.
+	rt=$BASE/runtime
+	old=
+	swapped=
+	if [ -L "$rt" ] || [ ! -e "$rt" ]; then
+		old=$(readlink "$rt" 2>/dev/null || true)
+		if [ "$(readlink -f "$1")" != "$(readlink -f "$rt" 2>/dev/null || true)" ]; then
+			ln -sfn "$1" "$rt" 2>/dev/null && swapped=1
+		fi
+	fi
+	if [ -x "$1/lib/glibc/ld-linux.so.3" ]; then
+		# A tree linked against the private glibc runtime cannot start through
+		# the system interpreter; run it through its own loader.
+		sb=$("$1/lib/glibc/ld-linux.so.3" \
+			--library-path "$1/lib/glibc:$1/lib:$1/lib/private" \
+			"$smbd" -b 2>/dev/null |
+			sed -n 's/^[[:space:]]*SBINDIR:[[:space:]]*//p')
+	else
+		sb=$(LD_LIBRARY_PATH="$1/lib:$1/lib/private" "$smbd" -b 2>/dev/null |
+			sed -n 's/^[[:space:]]*SBINDIR:[[:space:]]*//p')
+	fi
+	if [ -n "$swapped" ]; then
+		if [ -n "$old" ]; then
+			ln -sfn "$old" "$rt"
+		else
+			rm -f "$rt"
+		fi
+	fi
 	[ -n "$sb" ] || return 1
 	dirname "$sb"
 }

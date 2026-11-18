@@ -18,9 +18,14 @@ INIT=/etc/init.d/samba
 VENDOR=/etc/init.d/samba.vendor
 SMBROOT=/userdisk/data/.yunshu/live/samba/current
 ADAPTER_SRC=/userdisk/data/.yunshu/live/samba/xiaomi-smb-adapter.sh
-S2_LINK=/userdisk/data/samba-s2/root
 HOTPLUG=/etc/hotplug.d/block/90-s8-mounts
 CRON=/etc/crontabs/root
+# The once-a-minute reconciler must not live on the internal HDD: crond forks a
+# shell that reads the script from sda every minute, which is exactly the
+# periodic read that keeps noflushd from letting the disk spin down.  Keep the
+# authoritative copy in the version tree and run a tmpfs copy (D-S28-04).
+RT=${S8_RUNTIME_DIR:-/tmp/samba-runtime}
+RT_BIN=$RT/bin
 STAGE=$(dirname "$0")
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -44,6 +49,11 @@ cmd_install() {
 		die "copy diskacl sync"
 	chmod 755 "$VERS/v1/hook.sh" "$VERS/v1/xiaomi-smb-adapter.sh" \
 		"$VERS/v1/diskacl-sync.sh"
+	mkdir -p "$RT_BIN" || die "mkdir $RT_BIN"
+	cp "$STAGE/diskacl-sync.sh" "$RT_BIN/diskacl-sync.sh.tmp" &&
+		mv "$RT_BIN/diskacl-sync.sh.tmp" "$RT_BIN/diskacl-sync.sh" &&
+		chmod 755 "$RT_BIN/diskacl-sync.sh" ||
+		die "stage diskacl sync on tmpfs"
 	for f in "$VERS/v1/hook.sh" "$VERS/v1/samba.init.wrapper" \
 		"$VERS/v1/diskacl-sync.sh"; do
 		sh -n "$f" || die "syntax error: $f"
@@ -62,21 +72,22 @@ cmd_install() {
 	sh -n "$HOTPLUG" || die "hotplug syntax"
 	md5sum "$HOTPLUG" | awk '{print $1}' > "$VERS/v1/hotplug.md5"
 	ln -sfn versions/v1 "$CUR"
-	# The new tree was built with prefix /userdisk/data/samba-s2/root.  The
-	# adapter refuses to start unless that prefix resolves to this real tree,
-	# so this symlink is part of the install, not test debris.
-	real=$(readlink -f "$SMBROOT" 2>/dev/null || echo "$SMBROOT")
-	mkdir -p "$(dirname "$S2_LINK")" || die "mkdir $(dirname "$S2_LINK")"
-	ln -sfn "$real" "$S2_LINK" || die "prefix symlink $S2_LINK"
+	# No /userdisk/data/samba-s2 compatibility link: 1.0.9 and later are built
+	# with the runtime prefix inside .yunshu, so nothing outside that tree is
+	# referenced.  Re-creating the link would violate S20 of the device contract.
 	# One-shot md5 watcher: 'lan=no -> yes' does not restart samba, so the
 	# DROP has to be removed by a short-lived cron job, not a daemon.  It
-	# points at the concrete v1 path (stable across 'current' switches) and
-	# exits immediately unless current -> versions/v1.
-	CRON_ENTRY="* * * * * $VERS/v1/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl"
+	# points at the tmpfs copy (refreshed by hook.sh on every start) and
+	# exits immediately unless current -> versions/v1.  Rewrite the line
+	# instead of only appending, so a tree installed before D-S28-04 is
+	# migrated off the HDD path.
+	CRON_ENTRY="* * * * * $RT_BIN/diskacl-sync.sh >/dev/null 2>&1 # s8-diskacl"
 	mkdir -p "$(dirname "$CRON")" || die "mkdir $(dirname "$CRON")"
 	if [ -f "$CRON" ]; then
-		grep -q "diskacl-sync.sh" "$CRON" ||
-			printf '%s\n' "$CRON_ENTRY" >>"$CRON" ||
+		grep -v 'diskacl-sync\.sh' "$CRON" >"$CRON.tmp" 2>/dev/null ||
+			die "rewrite cron"
+		printf '%s\n' "$CRON_ENTRY" >>"$CRON.tmp" || die "install cron entry"
+		cat "$CRON.tmp" >"$CRON" && rm -f "$CRON.tmp" ||
 			die "install cron entry"
 	else
 		printf '%s\n' "$CRON_ENTRY" >"$CRON" || die "install cron entry"
@@ -107,10 +118,14 @@ cmd_verify() {
 	sh -n "$INIT" || die "init syntax"
 	[ -x "$CUR/hook.sh" ] || die "active hook missing"
 	sh -n "$CUR/hook.sh" || die "hook syntax"
-	real=$(readlink -f "$SMBROOT" 2>/dev/null || echo "$SMBROOT")
-	linked=$(readlink -f "$S2_LINK" 2>/dev/null)
-	[ "$linked" = "$real" ] ||
-		die "prefix symlink mismatch ($S2_LINK -> ${linked:-missing}, want $real)"
+	# S20 of the device contract: nothing of ours may live outside .yunshu.
+	[ ! -e /userdisk/data/samba-s2 ] && [ ! -L /userdisk/data/samba-s2 ] ||
+		die "/userdisk/data/samba-s2 present: violates contract S20"
+	# Samba's directory_create_or_exist_strict() treats a symlinked msg.sock as
+	# "isn't a directory" and refuses to start; the relocation must be a bind
+	# mount (D-S28-07).
+	[ ! -L "$SMBROOT/var/private/msg.sock" ] ||
+		die "msg.sock must not be a symlink: Samba refuses to start"
 	echo "== version manifest =="
 	cat "$VERS/v1/MANIFEST"
 	(cd "$VERS/v1" && md5sum -c MANIFEST) || die "manifest mismatch"
@@ -118,8 +133,12 @@ cmd_verify() {
 	sh -n "$HOTPLUG" || die "hotplug syntax"
 	[ -x "$VERS/v1/diskacl-sync.sh" ] || die "diskacl sync missing"
 	sh -n "$VERS/v1/diskacl-sync.sh" || die "diskacl sync syntax"
-	[ -f "$CRON" ] && grep -q "diskacl-sync.sh" "$CRON" ||
-		die "diskacl cron entry missing"
+	[ -x "$RT_BIN/diskacl-sync.sh" ] || die "diskacl sync tmpfs copy missing"
+	sh -n "$RT_BIN/diskacl-sync.sh" || die "diskacl sync tmpfs syntax"
+	[ -f "$CRON" ] && grep -qF "$RT_BIN/diskacl-sync.sh" "$CRON" ||
+		die "diskacl cron entry missing or still on the HDD tree"
+	grep -qF "$VERS/v1/diskacl-sync.sh >/dev/null" "$CRON" &&
+		die "diskacl cron entry still points at the HDD tree"
 	[ "$(md5sum "$HOTPLUG" | awk '{print $1}')" = \
 		"$(cat "$VERS/v1/hotplug.md5" 2>/dev/null)" ] ||
 		die "hotplug checksum mismatch"
@@ -131,6 +150,15 @@ cmd_verify() {
 
 cmd_state() {
 	echo "current=$(readlink "$CUR")"
+	ms=$SMBROOT/var/private/msg.sock
+	# /proc/mounts shows the resolved path; $SMBROOT may go through current.
+	if grep -q "var/private/msg.sock " /proc/mounts 2>/dev/null; then
+		echo "msg.sock: tmpfs bind mounted"
+	elif [ -d "$ms" ]; then
+		echo "msg.sock is a directory on the data disk (adapter start relocates it)"
+	else
+		echo "msg.sock absent"
+	fi
 	echo "vendor.md5=$(cat "$VERS/v0-vendor/vendor.md5" 2>/dev/null)"
 	echo "vendor.copy=$(md5sum "$VENDOR" 2>/dev/null | awk '{print $1}')"
 	echo "init.md5=$(md5sum "$INIT" 2>/dev/null | awk '{print $1}')"

@@ -1,0 +1,16 @@
+--- a/source3/lib/util_sock.c	2026-11-13 09:09:37.808207492 +0000
++++ b/source3/lib/util_sock.c	2026-11-13 09:09:37.816129433 +0000
+@@ -291,7 +291,12 @@
+ #ifdef SO_REUSEPORT
+ 	ret = setsockopt(
+ 		sock, SOL_SOCKET, SO_REUSEPORT, (char *)&val, sizeof(val));
+-	if (ret == -1) {
++	/*
++	 * Kernels before 3.9 do not implement SO_REUSEPORT; the header still
++	 * defines it, so setsockopt() fails with ENOPROTOOPT.  That is a
++	 * capability difference, not an error: keep going without it.
++	 */
++	if (ret == -1 && errno != ENOPROTOOPT) {
+ 		ret = -errno;
+ 		DBG_DEBUG("setsockopt(SO_REUSEPORT) failed: %s\n",
+ 			  strerror(errno));

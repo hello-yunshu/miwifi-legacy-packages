@@ -26,6 +26,14 @@ PORT=${S5_PORT:-1445}
 BIND=${S5_BIND:-}
 PROC_NAME=${S5_PROC_NAME:-samba-s5d}
 SNAPSHOT=${S5_CONFIG_SNAPSHOT:-}
+# Runtime state (pid/lock/state/cache/log/ncalrpc) lives on tmpfs: the internal
+# HDD spins down after 5 minutes idle, and any routine write to the runtime
+# tree -- nmbd's 5-minute browse log, tdb updates, log rotation -- woke it back
+# up ~90 times a day.  Keeping these in RAM means only real share traffic
+# touches the disk.  'private' stays on the persistent tree because it holds
+# the machine SID and smbpasswd; it is written only when either changes, and
+# losing it on reboot would break existing clients.
+RT=${S8_RUNTIME_DIR:-/tmp/samba-runtime}
 # Mount table used by the mount-derived share layer.  Tests point this at a
 # fixture; production reads the live kernel table.
 MOUNTS_FILE=${S8_MOUNTS_FILE:-/proc/mounts}
@@ -105,7 +113,7 @@ Options:
   -p port    TCP port(s) for this instance, e.g. '139 445' (default $PORT)
   -b addr    bind address (default: network.lan.ipaddr, else all)
   -n name    process name used to start the binary (default $PROC_NAME)
-  -B file    accepted-config baseline (default <root>/var/state/config-baseline)
+  -B file    accepted-config baseline (default $RT/state/config-baseline)
   -P         allow stock ports 139/445 for an authorised takeover
   -N         start without regenerating the configuration
   -R         dry run: print the iptables commands instead of executing them
@@ -127,10 +135,77 @@ die() {
 	exit "${2:-1}"
 }
 
+# /tmp is a ~99 MB tmpfs shared with the whole firmware, so a condition that
+# repeats (a vendor reload loop, an unreachable share path) must not be able
+# to fill it.  Drop the file past S5_LOG_MAX; the newest lines are kept.
 log() {
-	[ -d "$ROOT/var/log" ] || mkdir -p "$ROOT/var/log" || return 0
-	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$ROOT/var/log/adapter.log"
+	[ -d "$RT/log" ] || mkdir -p "$RT/log" || return 0
+	logf=$RT/log/adapter.log
+	if [ -f "$logf" ]; then
+		sz=$(wc -c <"$logf" 2>/dev/null)
+		[ "${sz:-0}" -gt "${S5_LOG_MAX:-262144}" ] && : >"$logf"
+	fi
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$logf"
 }
+
+# --- serialisation -------------------------------------------------------
+# At boot several entry points drive this adapter concurrently: S96 start,
+# S97 reload, the sda1 hotplug handler, the once-a-minute diskacl sync, and
+# the vendor stack's own '/etc/init.d/samba reload|restart'.  Without a lock
+# two of them render into the same path, one mv()s the file away while the
+# other is still validating it, and testparm then rejects what it was handed.
+# That is the boot-time start/stop flap this lock exists to remove.
+#
+# busybox here ships neither flock nor lockfile ('applet not found'), so the
+# lock is an atomic mkdir(2) on the same ext4 tree.  Nested invocations (the
+# adapter calling /etc/init.d/samba, which calls the adapter again) inherit
+# S5_LOCK_HELD and skip the lock instead of deadlocking on it.
+LOCK_DIR=
+LOCK_OWNED=0
+
+lock_take() {
+	[ "${S5_LOCK_HELD:-0}" = 1 ] && return 0
+	LOCK_DIR="$RT/run/adapter.lock"
+	mkdir -p "$RT/run" 2>/dev/null || return 1
+	i=0
+	while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+		owner=$(cat "$LOCK_DIR/pid" 2>/dev/null | tr -dc '0-9')
+		if [ -n "$owner" ]; then
+			[ -d "/proc/$owner" ] || { rm -rf "$LOCK_DIR" 2>/dev/null; continue; }
+		elif [ "$i" -ge 10 ]; then
+			# The directory exists but its owner never wrote a pid.
+			rm -rf "$LOCK_DIR" 2>/dev/null
+			continue
+		fi
+		i=$((i + 1))
+		if [ "$i" -ge 60 ]; then
+			# Never leave the service down over a lock.  Degrade to
+			# unlocked operation and say so, once.
+			echo "adapter: lock timeout ($LOCK_DIR), proceeding unlocked" >&2
+			log "lock timeout, proceeding unlocked"
+			return 1
+		fi
+		sleep 1
+	done
+	echo $$ >"$LOCK_DIR/pid" 2>/dev/null
+	LOCK_OWNED=1
+	S5_LOCK_HELD=1
+	export S5_LOCK_HELD
+	return 0
+}
+
+lock_drop() {
+	[ "$LOCK_OWNED" = 1 ] || return 0
+	rm -rf "$LOCK_DIR" 2>/dev/null
+	LOCK_OWNED=0
+	S5_LOCK_HELD=0
+	export S5_LOCK_HELD
+	return 0
+}
+
+trap 'lock_drop' EXIT
+trap 'lock_drop; exit 130' INT
+trap 'lock_drop; exit 143' TERM
 
 uci_get() {
 	uci -c "$CONF_SRC" -q get "$1" 2>/dev/null
@@ -167,11 +242,62 @@ need_root() {
 	fi
 }
 
+# Samba puts one unix socket per process (every smbd child, nmbd, ...) in
+# private dir/msg.sock.  While that directory sits on the data disk, each
+# child start or exit rewrites its directory block plus an inode table block,
+# the inode bitmap, a GDT block and the superblock -- six 4 KiB metadata
+# blocks and an ext4 journal commit, which spins the idle HDD up (measured
+# 2026-11-18: socket 30645 created at 05:19:14, journal commit at 05:19:20).
+# Samba's directory_create_or_exist_strict() rejects a symlink ("isn't a
+# directory"), so the tmpfs directory is bind mounted over the HDD one;
+# secrets.tdb and smbpasswd stay on the data disk because they must survive a
+# reboot (D-S28-07).
+msg_sock_dir() {
+	# /proc/mounts reports the resolved path, and $ROOT may be a symlink
+	# (current -> versions/<ver>/root), so resolve it before comparing.
+	if real=$(cd "$ROOT/var/private" 2>/dev/null && pwd -P); then
+		echo "$real/msg.sock"
+	else
+		echo "$ROOT/var/private/msg.sock"
+	fi
+}
+
+msg_sock_mounted() {
+	grep -q " $(msg_sock_dir) " /proc/mounts 2>/dev/null
+}
+
+stage_msg_sock() {
+	sock=$(msg_sock_dir)
+	msg_sock_mounted && return 0
+	mkdir -p "$RT/msg.sock" || die "cannot create $RT/msg.sock" 1
+	# Samba refuses to start unless the directory is exactly 0700.
+	chmod 700 "$RT/msg.sock" || die "cannot chmod $RT/msg.sock" 1
+	if [ -L "$sock" ]; then
+		rm -f "$sock" || die "cannot replace $sock" 1
+	fi
+	if [ -d "$sock" ]; then
+		# stale sockets from a previous instance; it has been stopped already
+		rm -f "$sock"/* 2>/dev/null
+	else
+		mkdir -p "$sock" || die "cannot create $sock" 1
+	fi
+	mount --bind "$RT/msg.sock" "$sock" || die "cannot bind $sock" 1
+}
+
+unstage_msg_sock() {
+	sock=$(msg_sock_dir)
+	msg_sock_mounted || return 0
+	umount "$sock" 2>/dev/null || umount -l "$sock" 2>/dev/null
+	return 0
+}
+
 prepare_dirs() {
-	for d in etc var/lock var/locks var/state var/cache var/private \
-		var/log var/run var/run/ncalrpc; do
-		mkdir -p "$ROOT/$d" || die "cannot create $ROOT/$d" 1
+	mkdir -p "$ROOT/etc" "$ROOT/var/private" ||
+		die "cannot create $ROOT/etc or $ROOT/var/private" 1
+	for d in lock locks state cache log run run/ncalrpc msg.sock; do
+		mkdir -p "$RT/$d" || die "cannot create $RT/$d" 1
 	done
+	stage_msg_sock
 }
 
 bind_address() {
@@ -217,7 +343,7 @@ config_snapshot() {
 	if [ -n "$SNAPSHOT" ]; then
 		echo "$SNAPSHOT"
 	else
-		echo "$ROOT/var/state/config-baseline"
+		echo "$RT/state/config-baseline"
 	fi
 }
 
@@ -273,6 +399,8 @@ config_guard() {
 }
 
 render() {
+	# render() is also sourced standalone by tests, where only ROOT is set.
+	RT=${RT:-${S8_RUNTIME_DIR:-/tmp/samba-runtime}}
 	out=$1
 	addr=$(bind_address)
 	name=$(uci_get samba.@samba[0].name)
@@ -300,15 +428,20 @@ render() {
 		echo "	interfaces = $addr"
 		echo '	bind interfaces only = yes'
 		echo "	smb ports = $PORT"
-		echo "	pid directory = $ROOT/var/run"
-		echo "	lock directory = $ROOT/var/lock"
-		echo "	state directory = $ROOT/var/state"
-		echo "	cache directory = $ROOT/var/cache"
+		echo "	pid directory = $RT/run"
+		echo "	lock directory = $RT/lock"
+		echo "	state directory = $RT/state"
+		echo "	cache directory = $RT/cache"
 		echo "	private dir = $ROOT/var/private"
-		echo "	ncalrpc dir = $ROOT/var/run/ncalrpc"
-		echo "	log file = $ROOT/var/log/samba.log"
+		echo "	ncalrpc dir = $RT/run/ncalrpc"
+		echo "	log file = $RT/log/samba.log"
 		echo '	max log size = 500'
 		echo '	log level = 1'
+		# Samba mirrors every level-0 message to syslog by default; nmbd's
+		# domain-master chatter then writes ~4 lines every 5 minutes into
+		# /tmp/messages, a tmpfs shared with the firmware.  The log file on
+		# the same tmpfs already keeps them.
+		echo '	syslog = 0'
 		echo '	load printers = no'
 		echo '	printable = no'
 		echo '	server min protocol = NT1'
@@ -506,22 +639,71 @@ render() {
 	return 0
 }
 
+# A file that another invocation truncated or mv()d away is caught here,
+# before testparm is asked to judge it.
+render_shape_ok() {
+	f=$1
+	[ -r "$f" ] || return 1
+	[ "$(head -1 "$f" 2>/dev/null)" = "[global]" ] || return 1
+	grep -q '^\[global\]$' "$f" || return 1
+	grep -q '^[[:space:]]*smb ports[[:space:]]*=[[:space:]]*[0-9]' "$f" || return 1
+	return 0
+}
+
+conf_md5() {
+	md5sum "$CONF_SRC/samba" 2>/dev/null | cut -d' ' -f1
+}
+
 cmd_generate() {
 	need_root
 	prepare_dirs
 	config_guard
 	grc=$?
 	[ $grc -eq 0 ] || return $grc
-	out="$ROOT/etc/smb.conf.new"
-	render "$out" || { rm -f "$out"; return 3; }
+
+	# Each invocation owns its temporary file.  smb.conf.new used to be a
+	# fixed path shared by every caller, so a concurrent mv() to smb.conf
+	# removed the file another caller was still validating and testparm
+	# rejected it.  Publish stays an atomic rename on the same ext4 tree.
+	out="$ROOT/etc/smb.conf.new.$$"
+	rm -f "$out" "$out.err" "$out.mounts"
+
+	attempt=0
+	while :; do
+		attempt=$((attempt + 1))
+		before=$(conf_md5)
+		render "$out" || { rm -f "$out"; return 3; }
+		after=$(conf_md5)
+		if { [ -z "$before" ] || [ "$before" = "$after" ]; } &&
+			render_shape_ok "$out"; then
+			break
+		fi
+		rm -f "$out"
+		if [ "$attempt" -ge 3 ]; then
+			echo "adapter: configuration source kept changing during render" >&2
+			log "render aborted: config changed during render ($before -> $after)"
+			return 3
+		fi
+		# /etc/config/samba was rewritten while it was being read; let the
+		# writer finish instead of publishing a mixture of both states.
+		log "render attempt $attempt discarded: config changed during render"
+		sleep 1
+	done
 
 	run_env
 	if ! "$ROOT/bin/testparm" -s --suppress-prompt "$out" \
-		>"$ROOT/var/log/testparm.out" 2>&1; then
-		msg=$(tail -3 "$ROOT/var/log/testparm.out" | tr '\n' ' ')
+		>"$RT/log/testparm.out" 2>&1; then
+		# Keep the exact file that was rejected plus the full testparm
+		# output; the previous code logged tail -3 and deleted the evidence.
+		ts=$(date +%Y%m%d-%H%M%S)
+		rej="$RT/log/rejected"
+		mkdir -p "$rej" 2>/dev/null
+		cp -p "$out" "$rej/smb.conf.$ts.$$" 2>/dev/null
+		cp -p "$RT/log/testparm.out" "$rej/testparm.$ts.$$.out" 2>/dev/null
+		msg=$(tail -3 "$RT/log/testparm.out" | tr '\n' ' ')
 		rm -f "$out"
-		echo "adapter: testparm rejected configuration: $msg" >&2
-		log "testparm rejected: $msg"
+		echo "adapter: testparm rejected configuration: $msg (kept in $rej)" >&2
+		log "testparm rejected: $msg (kept: smb.conf.$ts.$$)"
 		return 3
 	fi
 
@@ -543,6 +725,14 @@ cmd_generate() {
 		return 3
 	fi
 
+	# Skip the publish when nothing changed.  Even identical bytes update the
+	# inode and dirty metadata on the HDD, and the vendor stack re-runs
+	# generate every 30 minutes.
+	if [ -f "$ROOT/etc/smb.conf" ] && cmp -s "$out" "$ROOT/etc/smb.conf"; then
+		rm -f "$out"
+		echo "$ROOT/etc/smb.conf"
+		return 0
+	fi
 	if [ -f "$ROOT/etc/smb.conf" ]; then
 		cp -p "$ROOT/etc/smb.conf" "$ROOT/etc/smb.conf.last-good" || true
 	fi
@@ -618,7 +808,18 @@ cmd_start() {
 	else
 		cmd_generate >/dev/null
 		grc=$?
-		[ $grc -eq 0 ] || return $grc
+		if [ "$grc" -ne 0 ]; then
+			# A rejected regeneration must not take the service down: the
+			# previous smb.conf is only replaced after a successful
+			# validation, so it is still the last accepted configuration.
+			# Only a tree with no usable file at all can fail to start.
+			if [ -r "$ROOT/etc/smb.conf" ] || [ -r "$ROOT/etc/smb.conf.last-good" ]; then
+				log "generate rc=$grc, starting with previous configuration"
+				echo "adapter: generate failed rc=$grc, using previous configuration" >&2
+			else
+				return $grc
+			fi
+		fi
 	fi
 	need_root
 	prepare_dirs
@@ -663,7 +864,7 @@ cmd_start() {
 		umask 077
 		cd "$ROOT" || exit 1
 		nohup "./sbin/$PROC_NAME" -D -s "$ROOT/etc/smb.conf" \
-			-l "$ROOT/var/log" >"$ROOT/var/log/start.out" 2>&1
+			-l "$RT/log" >"$RT/log/start.out" 2>&1
 	) || true
 
 	i=0
@@ -678,7 +879,7 @@ cmd_start() {
 		i=$((i + 1))
 	done
 
-	echo "start failed; see $ROOT/var/log/samba.log" >&2
+	echo "start failed; see $RT/log/samba.log" >&2
 	log "start failed"
 	if pid=$(pid_from_file) && pid_is_ours "$pid"; then
 		kill -TERM "$pid" 2>/dev/null || true
@@ -706,6 +907,7 @@ cmd_stop() {
 			return 5
 		fi
 		diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
+		unstage_msg_sock
 		echo "stopped (no live pidfile)"
 		return 0
 	fi
@@ -720,6 +922,7 @@ cmd_stop() {
 			return 5
 		fi
 		diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
+		unstage_msg_sock
 		echo "stopped (removed stale pidfile for dead pid $pid)"
 		return 0
 	fi
@@ -751,6 +954,7 @@ cmd_stop() {
 	fi
 	log "stopped pid=$pid"
 	diskacl_clear >/dev/null || diskacl_log "clear failed rc=$?"
+	unstage_msg_sock
 	echo "stopped pid=$pid"
 	return 0
 }
@@ -758,14 +962,23 @@ cmd_stop() {
 cmd_reload() {
 	cmd_generate >/dev/null
 	grc=$?
-	[ $grc -eq 0 ] || return $grc
+	if [ "$grc" -ne 0 ]; then
+		# reload-config re-reads smb.conf from disk; that file is still the
+		# last accepted one, so a failed regeneration is not a reason to
+		# skip the reload or to stop the service.
+		if [ -r "$ROOT/etc/smb.conf" ]; then
+			log "reload: generate rc=$grc, reloading previous configuration"
+		else
+			return $grc
+		fi
+	fi
 	if ! pid=$(pid_from_file) || ! pid_is_ours "$pid"; then
 		echo "not running" >&2
 		return 3
 	fi
 	run_env
 	if "$ROOT/bin/smbcontrol" -s "$ROOT/etc/smb.conf" smbd reload-config \
-		>"$ROOT/var/log/smbcontrol.out" 2>&1; then
+		>"$RT/log/smbcontrol.out" 2>&1; then
 		log "reload-config sent to pid=$pid"
 		# macfilter may have changed on disk; rebuild the chain idempotently.
 		# The blacklist-only policy cannot widen into an all-LAN DROP.
@@ -774,7 +987,7 @@ cmd_reload() {
 		return 0
 	fi
 	echo "reload failed; configuration kept, restart required" >&2
-	log "reload failed: $(tail -1 "$ROOT/var/log/smbcontrol.out" 2>/dev/null)"
+	log "reload failed: $(tail -1 "$RT/log/smbcontrol.out" 2>/dev/null)"
 	return 6
 }
 
@@ -853,8 +1066,8 @@ diskacl_load() {
 		# Dry run must not create files inside the installation tree.
 		DISKACL_PARSE=/tmp/diskacl.parse.$$
 	else
-		mkdir -p "$ROOT/var/run" 2>/dev/null || return 1
-		DISKACL_PARSE=$ROOT/var/run/diskacl.parse.$$
+		mkdir -p "$RT/run" 2>/dev/null || return 1
+		DISKACL_PARSE=$RT/run/diskacl.parse.$$
 	fi
 	if ! diskacl_parse >"$DISKACL_PARSE"; then
 		rm -f "$DISKACL_PARSE"
@@ -931,7 +1144,7 @@ ipt_run() {
 		printf '\n'
 		return 0
 	fi
-	"$IPT" "$@" 2>>"$ROOT/var/log/diskacl.err"
+	"$IPT" "$@" 2>>"$RT/log/diskacl.err"
 }
 
 ipt_out() {
@@ -1014,7 +1227,7 @@ guest_apply() {
 
 diskacl_state() {
 	[ "$DISKACL_PRINT" = 0 ] || return 0
-	[ -d "$ROOT/var/state" ] || return 0
+	[ -d "$RT/state" ] || return 0
 	{
 		printf 'mode=%s\n' "$1"
 		printf 'decision=%s\n' "$4"
@@ -1027,7 +1240,7 @@ diskacl_state() {
 		printf 'chain=%s\n' "$DISKACL_CHAIN"
 		printf 'macfilter=%s\n' "$MACFILTER"
 		printf 'updated=%s\n' "$(date +%s)"
-	} >"$ROOT/var/state/diskacl.state" 2>/dev/null || true
+	} >"$RT/state/diskacl.state" 2>/dev/null || true
 }
 
 # Delete every INPUT rule that jumps to a chain.  Only those exact jumps are
@@ -1069,7 +1282,7 @@ legacy_clear() {
 
 diskacl_apply() {
 	[ "$DISKACL_PRINT" = 1 ] ||
-		mkdir -p "$ROOT/var/log" "$ROOT/var/state" "$ROOT/var/run" 2>/dev/null
+		mkdir -p "$RT/log" "$RT/state" "$RT/run" 2>/dev/null
 
 	# Remove the old chain before anything else: it is the only object here
 	# that can block the whole LAN, and it must go even when the new policy
@@ -1171,7 +1384,7 @@ diskacl_apply() {
 
 diskacl_clear() {
 	[ "$DISKACL_PRINT" = 1 ] ||
-		mkdir -p "$ROOT/var/log" "$ROOT/var/state" 2>/dev/null
+		mkdir -p "$RT/log" "$RT/state" 2>/dev/null
 	if ! legacy_clear; then
 		return 1
 	fi
@@ -1221,8 +1434,8 @@ diskacl_status() {
 	fi
 	echo "diskacl_guest=$guest"
 	echo "diskacl_guest_iface=$GUEST_IFACE"
-	if [ -f "$ROOT/var/state/diskacl.state" ]; then
-		sed 's/^/diskacl_/' "$ROOT/var/state/diskacl.state"
+	if [ -f "$RT/state/diskacl.state" ]; then
+		sed 's/^/diskacl_/' "$RT/state/diskacl.state"
 	else
 		echo "diskacl_state=absent"
 	fi
@@ -1276,8 +1489,8 @@ tm_tool() {
 }
 
 tm_procline() {
-	printf './sbin/%s -D -s %s/etc/smb.conf -l %s/var/log' \
-		"$PROC_NAME" "$ROOT" "$ROOT"
+	printf './sbin/%s -D -s %s/etc/smb.conf -l %s/log' \
+		"$PROC_NAME" "$ROOT" "$RT"
 }
 
 tm_call() {
@@ -1420,7 +1633,12 @@ while getopts "r:c:p:b:n:B:PNRh" opt; do
 done
 shift $((OPTIND - 1))
 ACTION=${1:-}
-PIDFILE="$ROOT/var/run/smbd.pid"
+PIDFILE="$RT/run/smbd.pid"
+
+# Serialise every action that renders or publishes the configuration.
+case "$ACTION" in
+generate|start|stop|restart|reload|vendor-stop|vendor-start) lock_take ;;
+esac
 
 case "$ACTION" in
 generate) cmd_generate ;;

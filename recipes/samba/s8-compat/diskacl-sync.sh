@@ -27,6 +27,9 @@ S8DIR=$BASE/versions/v1
 ADAPTER=$S8DIR/xiaomi-smb-adapter.sh
 [ -x "$ADAPTER" ] || ADAPTER=/userdisk/data/.yunshu/live/samba/xiaomi-smb-adapter.sh
 SMBROOT=${S8_SMB_ROOT:-/userdisk/data/.yunshu/live/samba/current}
+# Match the adapter's tmpfs runtime so this once-a-minute job never dirties
+# pages on the internal HDD while the policy is unchanged.
+RT=${S8_RUNTIME_DIR:-/tmp/samba-runtime}
 MACFILTER=${S8_MACFILTER:-/etc/config/macfilter}
 IPT=${S8_IPTABLES:-iptables}
 CHAIN=${S8_DISKACL_CHAIN:-s8-diskacl}
@@ -34,7 +37,7 @@ LEGACY=${S8_LEGACY_CHAIN:-s8-pridisk}
 GUEST_IFACE=${S8_GUEST_IFACE:-br-guest}
 GUEST_PORTS=${S8_DISKACL_TCP_PORTS:-139,445}
 NET_DIR=${S8_NET_DIR:-/sys/class/net}
-STATE=${S8_SYNC_STATE:-$BASE/state}
+STATE=${S8_SYNC_STATE:-$RT/state}
 LOG=$STATE/sync.log
 
 cur=$(readlink "$BASE/current" 2>/dev/null || true)
@@ -78,7 +81,7 @@ fi
 
 # Cheap self-heal when the file itself did not change.
 if [ "$need" -eq 0 ] && [ -n "$sum" ]; then
-	statef=$SMBROOT/var/state/diskacl.state
+	statef=$RT/state/diskacl.state
 	decision=$(sed -n 's/^decision=//p' "$statef" 2>/dev/null)
 	denied=$(sed -n 's/^denied=//p' "$statef" 2>/dev/null)
 	if [ "$decision" = applied ] && [ "${denied:-0}" -gt 0 ] 2>/dev/null; then

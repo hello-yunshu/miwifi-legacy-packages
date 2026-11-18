@@ -19,19 +19,34 @@ set -u
 BASE=/userdisk/data/.yunshu/live/webdav
 ROOT=$BASE/current
 CONF=$BASE/conf/lighttpd.conf
-STATE=$BASE/state
+# Runtime state (pid, error.log, upload tmp, webdav.db, watch log) lives on
+# tmpfs: the 30 s watch loop runs forever and would otherwise keep reading and
+# writing the internal HDD, which prevents noflushd from spinning it down.
+# Only the binaries, config, webroot and bind mounts stay on the data disk.
+RT=${WEBDAV_RUNTIME_DIR:-/tmp/webdav-runtime}
+STATE=$RT/state
 WEBROOT=$BASE/webroot
 LOCAL_ROOT=$WEBROOT/本机储存
 USB_ROOT=$WEBROOT/外接盘
 DATA_ROOT=/userdisk/data
 USB_BASE=/extdisks
 PIDF=$STATE/lighttpd.pid
-LOG=$BASE/webdav.log
+LOG=$RT/webdav.log
 
 BOOT_WAIT=${WEBDAV_BOOT_WAIT:-180}
 WATCH_INTERVAL=${WEBDAV_WATCH_INTERVAL:-30}
 
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$LOG" 2>/dev/null; }
+# /tmp is a ~99 MB tmpfs shared with the whole firmware, so a repeating
+# failure (unplugged USB, failed restart) must not be able to fill it.  Drop
+# the file once it passes WEBDAV_LOG_MAX; the newest messages are kept.
+log() {
+	mkdir -p "$RT" 2>/dev/null
+	if [ -f "$LOG" ]; then
+		sz=$(wc -c <"$LOG" 2>/dev/null)
+		[ "${sz:-0}" -gt "${WEBDAV_LOG_MAX:-262144}" ] && : >"$LOG"
+	fi
+	echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$LOG" 2>/dev/null
+}
 
 data_mounted() { grep -q ' /userdisk/data ' /proc/mounts 2>/dev/null; }
 is_mounted() { grep -q " $1 " /proc/mounts 2>/dev/null; }
@@ -121,10 +136,16 @@ sync_usb() {
 }
 
 prepare() {
-	mkdir -p "$STATE/tmp" "$WEBROOT" "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
+	mkdir -p "$RT" "$STATE/tmp" "$WEBROOT" "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
 	chown nobody:nogroup "$STATE" "$STATE/tmp" 2>/dev/null
 	chmod 750 "$STATE" 2>/dev/null
 	chmod 700 "$STATE/tmp" 2>/dev/null
+	# lighttpd buffers whole upload bodies in server.upload-dirs; on the 99 MB
+	# tmpfs that would cap uploads at ~90 MB and could starve the runtime
+	# living there, so staging sits next to the data instead.
+	mkdir -p "$BASE/state/tmp" 2>/dev/null
+	chown nobody:nogroup "$BASE/state/tmp" 2>/dev/null
+	chmod 700 "$BASE/state/tmp" 2>/dev/null
 	# Read-only for nobody at the two root levels so PUT/MKCOL/DELETE of the
 	# roots themselves fail; children are separate bind mounts with their own modes.
 	chown root:root "$WEBROOT" "$LOCAL_ROOT" "$USB_ROOT" 2>/dev/null
@@ -163,11 +184,25 @@ lighttpd_start() {
 	return 1
 }
 
+# Run the watch loop from a tmpfs copy: ash keeps the script page around for
+# the life of the loop, and reading it from the data disk is a periodic HDD
+# touch that noflushd counts as activity.
+stage_self() {
+	mkdir -p "$RT" 2>/dev/null || return 1
+	[ "$0" = "$RT/run.sh" ] && return 0
+	cmp -s "$0" "$RT/run.sh" 2>/dev/null && return 0
+	cp "$0" "$RT/run.sh.tmp" 2>/dev/null &&
+		mv "$RT/run.sh.tmp" "$RT/run.sh" 2>/dev/null &&
+		chmod 755 "$RT/run.sh" 2>/dev/null ||
+		{ rm -f "$RT/run.sh.tmp"; return 1; }
+}
+
 start_watch() {
 	if [ -f "$STATE/watch.pid" ] && kill -0 "$(cat "$STATE/watch.pid" 2>/dev/null)" 2>/dev/null; then
 		return 0
 	fi
-	nohup sh "$0" watch >>"$LOG" 2>&1 &
+	stage_self || log "watch: cannot stage run.sh on tmpfs"
+	nohup sh "$RT/run.sh" watch >>"$LOG" 2>&1 &
 	echo $! >"$STATE/watch.pid"
 }
 

@@ -21,6 +21,9 @@ fi
 
 S8COMPAT_HOOK=/userdisk/data/.yunshu/live/s8compat/current/hook.sh
 S8ROOT=/userdisk/data/.yunshu/live/samba/current
+# Runtime state (logs, lock, tdb) lives on tmpfs so nmbd's periodic browse log
+# does not wake the internal HDD from its 5-minute spindown.
+S8RT=${S8_RUNTIME_DIR:-/tmp/samba-runtime}
 
 # rc.common shifts its own argv before sourcing this file, so the action is in
 # $action, not in $@.  Pass it explicitly or the vendor script sees no command.
@@ -47,8 +50,9 @@ nmbd_start() {
 		bin=$(readlink -f "$S8ROOT/sbin/nmbd")
 		LD_LIBRARY_PATH=$(dirname "$bin")/../lib:$(dirname "$bin")/../lib/private
 		export LD_LIBRARY_PATH
+		mkdir -p "$S8RT/log/nmbd" 2>/dev/null
 		service_start "$bin" -D -s "$S8ROOT/etc/smb.conf" \
-			-l "$S8ROOT/var/log/nmbd" \
+			-l "$S8RT/log/nmbd" \
 			--option="interfaces=br-lan" \
 			--option="local master=yes" \
 			--option="preferred master=yes" \
@@ -109,6 +113,34 @@ reload() {
 	smbcontrol all reload-config >/dev/null 2>&1
 	s8compat reload
 	return $?
+}
+
+# rc.common defines no restart(), so an unqualified restart is stop; start.
+# The vendor stack (datacenter, indexservice, shareUpdate) calls
+# '/etc/init.d/samba restart' during boot while it rewrites /etc/config/samba;
+# that stopped a healthy instance and, when the immediate start could not
+# regenerate the config, left the share down for minutes.  A running instance
+# is now reconfigured in place; stop+start is only the fallback for an
+# instance that is already gone.
+smb_alive() {
+	s8compat status >/dev/null 2>&1
+}
+
+restart() {
+	if smb_alive; then
+		logger -t s8compat "restart while running: reloading in place"
+		reload
+		rc=$?
+		if smb_alive; then
+			[ $rc -eq 0 ] ||
+				logger -t s8compat "reload rc=$rc but instance still alive; not restarting"
+			return 0
+		fi
+		logger -t s8compat "reload rc=$rc and instance gone; full restart"
+	fi
+	stop
+	sleep 1
+	start
 }
 
 status() {

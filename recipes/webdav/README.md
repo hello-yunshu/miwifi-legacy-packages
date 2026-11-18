@@ -46,13 +46,15 @@ R2D 上的 WebDAV 文件服务，与 Samba 共用同一批目录，但**不共�
   conf/lighttpd.conf                   配置
   conf/users.basic                     凭据（user:password，0600 nobody）
   ui/                                  中文界面（index.html / app.css / app.js / listing-shim.js）
-  state/                               pid、error.log、上传临时目录、webdav.db
-  state/usb.src                        当前绑定的外接盘路径（热插拔比对用）
   webroot/本机储存/                    数据盘可见顶层目录的 bind mount 点
   webroot/外接盘/                      外接盘分区的 bind mount 点
   run.sh                               start|stop|restart|status|watch|heal
   patch-rpath.sh                       改写 ELF 的 DT_RPATH（等长替换）
+/tmp/webdav-runtime/                 运行期状态（tmpfs，重启即空；D-S28-06）
+  state/                               pid、error.log、上传临时目录、webdav.db
+  state/usb.src                        当前绑定的外接盘路径（热插拔比对用）
   webdav.log                           生命周期日志
+  run.sh                               watch 循环的 tmpfs 副本
 /etc/init.d/webdav                     START=99，开机后台等待数据盘后拉起
 /etc/rc.d/S99webdav -> ../init.d/webdav
 ```

@@ -1,0 +1,7 @@
+# SMART self-test (hdd-tune): monthly short, long in Jan/Apr/Jul/Oct at 03:30.
+# Collect in the same spin-up window so the result read costs no extra wake:
+# short months 03:50 (test ends ~03:32), long months 06:00 (test ends ~05:30,
+# still before the 06:20 reboot).
+30 3 1 * * /userdisk/data/.yunshu/live/tools/smart-check.sh start
+50 3 1 2,3,5,6,8,9,11,12 * /userdisk/data/.yunshu/live/tools/smart-check.sh collect
+0 6 1 1,4,7,10 * /userdisk/data/.yunshu/live/tools/smart-check.sh collect
