@@ -167,6 +167,7 @@ FIX=$TMP/macfilter
 RUNSH=${S8_TEST_SH:-sh}
 run_adapter() {
 	env S8_MACFILTER="$FIX" S8_IPTABLES="$BIN/iptables" \
+		S8_RUNTIME_DIR="$ROOT/var" \
 		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
 		"$RUNSH" "$ADAPTER" -r "$ROOT" "$@"
 }
@@ -609,6 +610,7 @@ EOF
 sync_run() {
 	env S8_BASE="$BASE" S8_SMB_ROOT="$ROOT" S8_MACFILTER="$FIX" \
 		S8_IPTABLES="$BIN/iptables" S8_SYNC_STATE="$BASE/state" \
+		S8_RUNTIME_DIR="$ROOT/var" \
 		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
 		"$RUNSH" "$SYNC" >"$OUT" 2>&1
 }
@@ -798,6 +800,7 @@ EOF
 guest_sync() {
 	env S8_BASE="$GBASE" S8_SMB_ROOT="$ROOT" S8_MACFILTER="$FIX" \
 		S8_IPTABLES="$BIN/iptables" S8_SYNC_STATE="$GBASE/state" \
+		S8_RUNTIME_DIR="$ROOT/var" \
 		S8_NET_DIR="$NETDIR" MOCK_STATE="$FWDIR" MOCK_LOG="$CMDLOG" \
 		"$RUNSH" "$SYNC" >"$OUT" 2>&1
 }
