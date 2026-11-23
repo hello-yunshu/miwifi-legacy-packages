@@ -8,6 +8,8 @@
 #   smart-check.sh collect   cron: 1st of month 06:00 -- append results to the
 #                            log and raise a syslog warning when a test failed
 #                            or a defect counter is non-zero
+#   smart-check.sh nand      append the UBI erase counters (NAND wear) to the
+#                            same log; collect calls it in the same window
 #
 # A long test reads every sector (about 2 h on the 1 TB internal disk) and keeps
 # the platter spinning for that time; short takes about 2 min.  The USB disk
@@ -51,7 +53,7 @@ collect_one() {
 
 	printf '=== %s %s\n' "$(date '+%F %T')" "$dev" >>"$LOG"
 	echo "$st" | sed -n '/Self-test log/,$p' | sed -n '3,4p' >>"$LOG"
-	echo "$out" | awk '/Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|UDMA_CRC_Error_Count/ {print}' >>"$LOG"
+	echo "$out" | awk '/Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable|UDMA_CRC_Error_Count|Start_Stop_Count|Power_On_Hours|Power_Cycle_Count|Load_Cycle_Count|Temperature_Celsius|Airflow_Temperature_Cel/ {print}' >>"$LOG"
 
 	bad=$(echo "$out" | awk '$2 ~ /Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable/ && $10 + 0 > 0 {printf "%s=%s ", $2, $10}')
 	fail=$(echo "$st" | awk '/^# 1/ && $0 !~ /Completed without error/ {print; exit}')
@@ -77,6 +79,40 @@ stat_record() {
 		"hdd_stat_v2_${model}=Version:1;Family:${family};Model:${dmodel};${attrs}END;"
 }
 
+# NAND wear record (D-S28-17).  UBI keeps a per-eraseblock erase counter;
+# max_ec is the number of program/erase cycles the most-worn physical
+# eraseblock has seen, i.e. a direct read of P/E consumption.  ubi2 (mtd10
+# "overlay") carries /data, /userdisk and /etc; ubi1 is the read-only rootfs
+# and must stay near zero.
+nand_record() {
+	[ -d /sys/class/ubi/ubi2 ] || return 0
+	printf '=== %s nand\n' "$(date '+%F %T')" >>"$LOG"
+	for u in ubi1 ubi2; do
+		[ -d "/sys/class/ubi/$u" ] || continue
+		printf 'nand %s max_ec=%s bad_peb=%s pebs=%s avail=%s\n' "$u" \
+			"$(cat /sys/class/ubi/$u/max_ec 2>/dev/null)" \
+			"$(cat /sys/class/ubi/$u/bad_peb_count 2>/dev/null)" \
+			"$(cat /sys/class/ubi/$u/total_eraseblocks 2>/dev/null)" \
+			"$(cat /sys/class/ubi/$u/avail_eraseblocks 2>/dev/null)" >>"$LOG"
+	done
+	df -k /data 2>/dev/null |
+		awk 'NR==2 {printf "nand /data used=%dK avail=%dK (%s)\n", $3, $4, $5}' >>"$LOG"
+
+	m=$(cat /sys/class/ubi/ubi2/max_ec 2>/dev/null)
+	case "$m" in '' | *[!0-9]*) ;; *)
+		[ "$m" -ge "${NAND_MAX_EC_WARN:-30000}" ] &&
+			logger -t nand "ubi2 max_ec=$m reached ${NAND_MAX_EC_WARN:-30000}"
+		;;
+	esac
+	b=$(cat /sys/class/ubi/ubi2/bad_peb_count 2>/dev/null)
+	case "$b" in '' | *[!0-9]*) ;; *)
+		[ "$b" -ge "${NAND_BAD_WARN:-8}" ] &&
+			logger -t nand "ubi2 bad_peb_count=$b reached ${NAND_BAD_WARN:-8}"
+		;;
+	esac
+	return 0
+}
+
 case "${1:-}" in
 start)
 	case "$(date +%m)" in
@@ -92,9 +128,13 @@ collect)
 		collect_one "$dev"
 	done
 	stat_record
+	nand_record
+	;;
+nand)
+	nand_record
 	;;
 *)
-	echo "usage: $0 start|short|long|collect" >&2
+	echo "usage: $0 start|short|long|collect|nand" >&2
 	exit 2
 	;;
 esac

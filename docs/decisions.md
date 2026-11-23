@@ -757,4 +757,23 @@
   重写前只差这 3 行）。后果与边界：所有旧提交 SHA 都变了，其他 clone 必须重新
   拉取；GitHub 在 GC 前仍能按旧 SHA 直接取到对象，因此**明文密钥必须视为已泄露**，
   访客 WiFi 口令需轮换（用户自行操作，本仓库不记录新值）。
+- D-S28-17 NAND 磨损实测与只读处置（2026-11-19）：芯片为 4 Gbit SLC 级
+  （page 2 KiB、OOB 64 B、block 128 KiB，`brcmnand`），全片 UBI + UBIFS；
+  ubi1（mtd8 `rootfs0`，1024 PEB）只读根，`max_ec=183`；ubi2（mtd10 `overlay`，
+  1919 PEB）承载 `/data` `/userdisk` `/etc`，`bad_peb_count=1`（预留 76）。
+  用 `dd` 逐块读 mtd10 的 EC 头（只读）得到完整分布：平均 10,652、最大 11,561、
+  最小 7,484，最大/平均 1.085，无热点块；累计约 2,044 万次擦除 ≈ 2.36 TiB LEB
+  写入。年龄按 `/data` 时间戳（6.1 年）到 `/etc` 最早文件（9.1 年）取区间，
+  速率 3.2–5.2 次/天/块，按 60k P/E 剩余 25–38 年、100k 则 47–69 年；已用额度
+  12%–19%，且芯片已超 MLC 典型 3k 次，P/E 不构成近期风险。
+  处置只做监测，并入既有 `recipes/hdd-tune/smart-check.sh`：新增 `nand` 子命令，
+  每月 1 日的 `collect` 顺带调用，在同一转盘窗口把 `max_ec`/坏块/PEB/`/data`
+  占用追加到 `tools/smart.log`（带时间戳头），`max_ec≥30000` 或坏块≥8 时写
+  syslog；不新增 cron，独立的 `nand-check.sh` 与 `nand.log` 已撤销。基线
+  `=== 2026-11-19 01:30:19 nand / ubi2 max_ec=11561 bad_peb=1`。
+  不改 `compr=none`、不迁 `/etc/config`、不删 `/data/usr/log`：残余写入源为
+  日志在 `/tmp`、Samba/webdav 运行时在 tmpfs、`/etc/config/messaging` 约
+  1000 次/天、`syslog-ng.helper` 约每 3 天追回 1 MB，折算均低于 0.01 次/天/块，
+  收益不可测而改动会引入 HDD 依赖或掉配置风险。证据见
+  [2026-11-19-nand-wear](evidence/2026-11-19-nand-wear/README.md)。
 
