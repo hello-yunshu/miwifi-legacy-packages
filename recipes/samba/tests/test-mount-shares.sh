@@ -26,7 +26,7 @@ mkdir -p "$ROOT/etc" || exit 2
 [ "${S8_LIVE:-0}" = 1 ] || mkdir -p "$EXTDISK_ROOT" || exit 2
 
 # render() dependencies.
-bind_address() { echo 192.168.3.2; }
+bind_address() { echo 192.168.1.2; }
 log() { :; }
 uci_key() { printf '%s' "$1" | tr -c 'A-Za-z0-9' '_'; }
 uci_get() {

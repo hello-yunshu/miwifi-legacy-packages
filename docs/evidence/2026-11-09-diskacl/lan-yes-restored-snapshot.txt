@@ -77,4 +77,4 @@ diskacl: applied mode=blacklist allow=32 deny=8
 == sections ==
 9
 == conns ==
-tcp        0      0 192.168.3.2:445         192.168.3.63:60894      ESTABLISHED  1114 1758 
+tcp        0      0 192.168.1.2:445         192.168.1.63:60894      ESTABLISHED  1114 1758 

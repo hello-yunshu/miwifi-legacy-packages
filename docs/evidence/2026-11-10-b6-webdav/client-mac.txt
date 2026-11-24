@@ -1,5 +1,5 @@
 # Mac client test 2026-11-10 07:27:06 CST
-# endpoint http://192.168.3.2:5005/ (digest, user r2d)
+# endpoint http://192.168.1.2:5005/ (digest, user r2d)
 
 ## unauthenticated PROPFIND /
 HTTP 401

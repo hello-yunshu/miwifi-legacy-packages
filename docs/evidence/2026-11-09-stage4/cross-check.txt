@@ -64,12 +64,12 @@ diskacl-sync.sh: OK
 ## 6. nmbd 运行日志（重启后 4.25.1）
 drwx------    3 root     root          4096 Nov  9 18:10 cores
 -rw-r--r--    1 root     root          4628 Nov  9 18:15 log.nmbd
-  Attempting to become domain master browser on workgroup WORKGROUP on subnet 192.168.3.2
+  Attempting to become domain master browser on workgroup WORKGROUP on subnet 192.168.1.2
 [2026/11/09 18:15:00.971087,  0] ../../source3/nmbd/nmbd_become_dmb.c:307(become_domain_master_browser_bcast)
-  become_domain_master_browser_bcast: querying subnet 192.168.3.2 for domain master browser on workgroup WORKGROUP
+  become_domain_master_browser_bcast: querying subnet 192.168.1.2 for domain master browser on workgroup WORKGROUP
 [2026/11/09 18:15:00.973706,  0] ../../source3/nmbd/nmbd_become_dmb.c:237(become_domain_master_query_success)
   become_domain_master_query_success:
-  There is already a domain master browser at IP 192.168.3.1 for workgroup WORKGROUP registered on subnet 192.168.3.2.
+  There is already a domain master browser at IP 192.168.1.1 for workgroup WORKGROUP registered on subnet 192.168.1.2.
 
 ## 7. 发布包成员清单与 MANIFEST/SHA256SUMS（本地解包）
 $ tar -tzf s8-release/miwifi-smb-1.0.7-r2d.tar.gz

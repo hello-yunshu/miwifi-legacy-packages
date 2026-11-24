@@ -64,10 +64,10 @@
 ## 4. 测试环境与前置状态
 
 - 实例根：`/userdisk/data/samba-s2/root`（复用 S2 布局），`lock/state/cache/private` 全在新根；根分区只读，未写入 `/`。
-- 监听：`192.168.3.2:1445`，不启 nmbd，未占用 139/445/137/138。
+- 监听：`192.168.1.2:1445`，不启 nmbd，未占用 139/445/137/138。
 - 原厂只读前态：`samba_multicall` MD5 `5e422d3463f40b4405ef8325ce3603e8`，`/etc/config/samba` MD5 `244eb53e5019b95a408aebe49602561a`（mtime 2018-10-16），smbd/nmbd 监听 139/445/137/138，根分区 81%。
 - 测试期对自有实例配置做的便利项：`server signing = no`、`map to guest = Bad User`、本地 passdb 加 `nobody`、`log level = 5`。这些只用于让测试客户端完成认证，不进入产品建议。
-- 设备 MAC `02:00:5e:00:00:00`；测试 PC（macOS）`192.168.3.176`，MAC `02:00:5e:00:00:01`（trafficd 输出大写）。
+- 设备 MAC `02:00:5e:00:00:00`；测试 PC（macOS）`192.168.1.176`，MAC `02:00:5e:00:00:01`（trafficd 输出大写）。
 
 ## 5. 测试结果
 
@@ -77,7 +77,7 @@
 
 ### 5.2 设备矩阵（14 项，全 PASS）
 
-以设备自连 `192.168.3.2:1445` 为客户端，用 `XIAOMI_ARP_FILE=<测试文件>` + `XIAOMI_TRAFFICD_CMD=none` 精确控制 MAC 来源：
+以设备自连 `192.168.1.2:1445` 为客户端，用 `XIAOMI_ARP_FILE=<测试文件>` + `XIAOMI_TRAFFICD_CMD=none` 精确控制 MAC 来源：
 
 | 用例 | 期望 | 结果 |
 | --- | --- | --- |
@@ -95,16 +95,16 @@
 
 ### 5.3 真实远端客户端（macOS，经 trafficd）
 
-用 Python `smbprotocol` 从 `192.168.3.176` 连 `192.168.3.2:1445` 做 tree connect：
+用 Python `smbprotocol` 从 `192.168.1.176` 连 `192.168.1.2:1445` 做 tree connect：
 
 - 列表为空：`pub` TREE_OK，`full` ACCESS_DENIED。
 - 列表写入 `02:00:5e:00:00:01`：`pub` ACCESS_DENIED，`full` TREE_OK。
 - 服务端日志证明 MAC 由 trafficd 解析并归一为小写：
 
 ```
-xiaomi-mac-policy: Allowed connection from 192.168.3.176 to [pub] (snum 0, mac 02:00:5e:00:00:01, browseable yes, listed no)
-xiaomi-mac-policy: Denied connection from 192.168.3.176 to [full] (snum 1, mac 02:00:5e:00:00:01, browseable no, listed no)
-share_sanity_checks: xiaomi mac policy denied connection from 192.168.3.176 to share full
+xiaomi-mac-policy: Allowed connection from 192.168.1.176 to [pub] (snum 0, mac 02:00:5e:00:00:01, browseable yes, listed no)
+xiaomi-mac-policy: Denied connection from 192.168.1.176 to [full] (snum 1, mac 02:00:5e:00:00:01, browseable no, listed no)
+share_sanity_checks: xiaomi mac policy denied connection from 192.168.1.176 to share full
 ```
 
 - 关闭 ARP 回退（`XIAOMI_ARP_FILE=/tmp/no-such-arp`、`XIAOMI_ARP_INTERFACE=none`）后重复上述两态，结果不变，确认解析来自 trafficd 而非 `/proc/net/arp`。
@@ -118,7 +118,7 @@ share_sanity_checks: xiaomi mac policy denied connection from 192.168.3.176 to s
 
 ## 6. 阻塞与限制
 
-1. **macOS Finder/`mount_smbfs` 走非 445 端口：BLOCKED。** `smbutil view -p`/`mount_smbfs -p` 无端口参数；`//guest@192.168.3.2:1445/share` 的 URL 端口形式能被解析并连到本实例（服务端日志有 `Negotiated protocol SMB3_11`），但客户端在 session setup 后被重置或挂起；原厂占 445 且本轮不允许停原厂，因此无法用 Finder 挂载作为证据。等价的“共享枚举 + 直接访问 + 认证后 tree connect”已用 SMB2/3 客户端覆盖。
+1. **macOS Finder/`mount_smbfs` 走非 445 端口：BLOCKED。** `smbutil view -p`/`mount_smbfs -p` 无端口参数；`//guest@192.168.1.2:1445/share` 的 URL 端口形式能被解析并连到本实例（服务端日志有 `Negotiated protocol SMB3_11`），但客户端在 session setup 后被重置或挂起；原厂占 445 且本轮不允许停原厂，因此无法用 Finder 挂载作为证据。等价的“共享枚举 + 直接访问 + 认证后 tree connect”已用 SMB2/3 客户端覆盖。
 2. **IPv6：未实测。** 本实例只监听 IPv4，`::ffff:` 归一逻辑仅代码审查覆盖；若后续启用 IPv6 监听需补实测。
 3. **SMB1 RAP 枚举：仅代码挂钩。** 设备实例未开 SMB1 客户端用例；SMB2/3 枚举已实测。
 4. **原厂撤销实机对照：BLOCKED。** 需要在原厂运行时改写 `/tmp/loginMac.cfg` 或 `nonLoginMac.cfg`，属于生产列表写操作，本轮不做，只给代码级等价结论。

@@ -4,7 +4,7 @@
 
 ## 约束与范围
 
-- 演练实例固定用 `192.168.3.2:1445`，运行根 `/userdisk/data/s7root`，与 `/etc/config`、`/var/etc`、原厂 TDB/锁/PID 隔离。
+- 演练实例固定用 `192.168.1.2:1445`，运行根 `/userdisk/data/s7root`，与 `/etc/config`、`/var/etc`、原厂 TDB/锁/PID 隔离。
 - 不执行 `init.d/samba`、`shareUpdate`、`updateconfig`、`killall`、`pkill`；停止只按 PID 文件加 `/proc/<pid>/exe` 校验。
 - 版本目录、状态目录、安装器都在 `/userdisk/data`；演练结束整体删除。
 - 本轮 v1/v2 使用**同一份 payload**，演练的是安装布局、切换、回滚与故障路径，不是“两个不同二进制版本”的兼容性；这一点不冒充。
@@ -34,7 +34,7 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 
 ## 真机演练记录
 
-设备：192.168.3.2，2.6.36 armv7l，1445 实例。
+设备：192.168.1.2，2.6.36 armv7l，1445 实例。
 
 | # | 场景 | 操作 | 结果 |
 | --- | --- | --- | --- |
@@ -63,12 +63,12 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 ### 第一次尝试（15:00 之前）：异常并立即回滚
 
 - 接管本身成功：新版 PID 22144，`/proc/<pid>/exe` 指向版本树 `sbin/samba-s5d`，139/445 均由新版监听，12 秒后未被 TaskMonitor 抢回。
-- **客户端验证失败**：macOS `smbutil view //guest@192.168.3.2` 挂起；服务端 `smbstatus` 能看到来自 192.168.3.176/63 的 SMB3_11 会话，设备侧 `smbclient -m SMB3 -L 127.0.0.1` 正常列出 7 个共享。按“异常立即回滚”处理。
+- **客户端验证失败**：macOS `smbutil view //guest@192.168.1.2` 挂起；服务端 `smbstatus` 能看到来自 192.168.1.176/63 的 SMB3_11 会话，设备侧 `smbclient -m SMB3 -L 127.0.0.1` 正常列出 7 个共享。按“异常立即回滚”处理。
 - 回滚：适配器 `stop`（PID 文件 + exe）→ 端口释放 → `/usr/sbin/smbd -D` 拉起原厂，PID 23832，139/445 恢复；macOS `smbutil view` 恢复 2 个共享，`mount_smbfs` 可读。
 
 ### 根因定位：SMB3 多通道协商
 
-在 1445 上用 `smbutil view -N //guest@192.168.3.2:1445` 可稳定复现挂起（客户端 18 秒内不发 TREE_CONNECT，只发 LOGOFF；服务端日志显示 SESSION_SETUP 已成功、AuthZ 为 `nobody`）。逐项排除：
+在 1445 上用 `smbutil view -N //guest@192.168.1.2:1445` 可稳定复现挂起（客户端 18 秒内不发 TREE_CONNECT，只发 LOGOFF；服务端日志显示 SESSION_SETUP 已成功、AuthZ 为 `nobody`）。逐项排除：
 
 | 变量 | 结果 |
 | --- | --- |
@@ -87,7 +87,7 @@ S5 的 `pid_is_ours` 只比较未解析的 `$ROOT/sbin/`。S7 通过符号链接
 | 切换前 | `/usr/sbin/samba_multicall` `5e422d34…`、`/etc/config/samba` `8556a19b…`、`/etc/config/misc` `731ebecdf…`、`/var/etc/smb.conf` `bcad8b90…`；139/445 由 PID 23832 持有，137/138 由 8469/nmbd 持有 |
 | 停原厂 | PID 23832 exe/cmdline 校验通过后 TERM；子进程按同样校验处理；139/445 在 1 秒内释放 |
 | 启新版 | 版本树 pidfile 写入新 PID，exe 为版本树 `sbin/samba-s5d`，139/445 均由新版监听，`start_rc=0` |
-| 客户端 | macOS `smbutil view -N //guest@192.168.3.2` 列出 homes/XiaoMi/XiaoMi-usb0 三个共享；`mount_smbfs` 挂载 `XiaoMi` 成功并读到文件 |
+| 客户端 | macOS `smbutil view -N //guest@192.168.1.2` 列出 homes/XiaoMi/XiaoMi-usb0 三个共享；`mount_smbfs` 挂载 `XiaoMi` 成功并读到文件 |
 | 回滚 | 15:08:47 适配器 `stop`（PID 文件 + exe）→ 端口 0 秒释放 → 原厂 `/usr/sbin/smbd -D`；PID 2282，139/445 恢复；137/138 未受影响 |
 | 哈希复核 | 四个原厂文件 md5 与切换前完全一致（二进制、`samba`、`misc`、`/var/etc/smb.conf`） |
 | 接管窗口 | 原厂 TERM 15:08:36 → 新版停止 15:08:47，约 **11 秒**（含新版运行与 macOS 验证）；端口空窗为秒级，原厂 15:08:51 前恢复监听 |

@@ -1,7 +1,7 @@
 # 2026-11-10 WebDAV 单页界面响应式验证
 
 对象：`recipes/webdav/ui/`（`index.html` + `app.css` + `app.js` + `listing-shim.js`），
-部署后 `http://192.168.3.2:5005/` 与深层目录（listing-shim 接管）。
+部署后 `http://192.168.1.2:5005/` 与深层目录（listing-shim 接管）。
 
 方法：Playwright（`playwright-core` + 缓存的 chromium headless shell，真实浏览器引擎）
 按给定 CSS 视口宽度与 `colorScheme` 打开页面，读取 `documentElement.scrollWidth` /
@@ -74,4 +74,4 @@ md5 一致（`app.css c97daede…`、`app.js 7cb59415…`、`index.html 454a6c65
 
 测量脚本为临时文件（`/tmp/pwshot/`），未入库；生产复现要点：Playwright
 `browser.newContext({ viewport: { width }, colorScheme, userAgent, httpCredentials })`，
-打开 `http://192.168.3.2:5005/`，等待 `.entry` 后读取上述数值。
+打开 `http://192.168.1.2:5005/`，等待 `.entry` 后读取上述数值。

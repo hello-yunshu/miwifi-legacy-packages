@@ -1,6 +1,6 @@
 # `diskacl-status` 来源核查：它不是独立命令，也没有丢失
 
-- 设备：MiWiFi R2D / 192.168.3.2
+- 设备：MiWiFi R2D / 192.168.1.2
 - 触发：2026-11-10 清理轮次里，我用裸命令 `diskacl-status` 与 `sh /userdisk/data/s8compat/versions/v1/diskacl-status` 两次调用失败，据此向用户说“该命令现在不存在”。**这个说法是错的**，本文给出核实结果。
 - 结论：`diskacl-status` 一直是 `xiaomi-smb-adapter.sh` 的**子命令**，从未作为独立命令安装过；不存在“曾经有、后来被覆盖”的退化，也没有需要补的 wrapper。错在我的调用方式与表述。
 

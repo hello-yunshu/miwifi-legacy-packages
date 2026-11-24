@@ -55,7 +55,7 @@ updated=1794163502
 23178 root     27360 S <  ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
 23191 root     26424 S <  {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
 23192 root     26428 S <  {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
-25929 root     27444 S <  {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+25929 root     27444 S <  {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
 == listeners ==
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 77100 
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 420 
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 77100 

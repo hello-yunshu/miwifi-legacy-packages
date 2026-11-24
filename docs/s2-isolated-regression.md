@@ -35,17 +35,17 @@ up 3 days, 17:33, load average: 0.03, 0.03, 0.04
 ### 1.3 端口占用
 
 ```
-tcp  192.168.3.2:139  LISTEN  8471/smbd
-tcp  192.168.3.2:445  LISTEN  8471/smbd
-udp  192.168.3.255:137        8469/nmbd
-udp  192.168.3.2:137          8469/nmbd
+tcp  192.168.1.2:139  LISTEN  8471/smbd
+tcp  192.168.1.2:445  LISTEN  8471/smbd
+udp  192.168.1.255:137        8469/nmbd
+udp  192.168.1.2:137          8469/nmbd
 udp  0.0.0.0:137              8469/nmbd
-udp  192.168.3.255:138        8469/nmbd
-udp  192.168.3.2:138          8469/nmbd
+udp  192.168.1.255:138        8469/nmbd
+udp  192.168.1.2:138          8469/nmbd
 udp  0.0.0.0:138              8469/nmbd
 ```
 
-139/445 只监听 `192.168.3.2`（br-lan），137/138 同时在 `0.0.0.0` 与 br-lan 广播地址上。新实例避让 139/445/137/138。
+139/445 只监听 `192.168.1.2`（br-lan），137/138 同时在 `0.0.0.0` 与 br-lan 广播地址上。新实例避让 139/445/137/138。
 
 ### 1.4 文件系统与空间
 
@@ -113,7 +113,7 @@ MD5: 5e422d3463f40b4405ef8325ce3603e8
 | private | `/userdisk/data/samba-s2/root/var/private` |
 | 日志 | `/userdisk/data/samba-s2/root/var/log`（`-l` 指定，默认 `LOGFILEBASE` 是 `var/`） |
 | ncalrpc 管道目录 | `/userdisk/data/samba-s2/root/var/run/ncalrpc`（编译期默认位置，必须预先存在） |
-| 端口 | TCP 1445（仅 `192.168.3.2`），不启 nmbd |
+| 端口 | TCP 1445（仅 `192.168.1.2`），不启 nmbd |
 
 部署前必须预建 `var/lock`、`var/locks`、`var/cache`、`var/private`、`var/log`、`var/run/ncalrpc`。目录缺失时 smbd 启动会直接失败（`Failed to create pipe directory ... - No such file or directory`），不是可忽略告警。详见 D-S2-10。
 
@@ -207,7 +207,7 @@ PIDDIR      /userdisk/data/samba-s2/root/var/run
 | 分发包 | `samba-s2-root.tar.gz` 14,396,362 B，SHA-256 `0e2dc5b6a5291b9a12afb29349cbe908de043a6f61fc20f69bcc6cd100624ab1` |
 | 传输校验 | 设备侧 MD5 `e71870432fb302ca75f368bfa9c2bed6`，与宿主一致；解包后 4 个主程序 MD5 与构建机逐一相同 |
 | 启动方式 | `nohup ./run-smbd.sh &`，脚本内 `LD_LIBRARY_PATH=<root>/lib:<root>/lib/private`，`smbd -F -s etc/smb.conf` |
-| 监听 | `192.168.3.2:1445`（PID 10406，另起 `smbd-notifyd`/`smbd-cleanupd`） |
+| 监听 | `192.168.1.2:1445`（PID 10406，另起 `smbd-notifyd`/`smbd-cleanupd`） |
 | 原厂并存 | 139/445 仍由原厂 8471 持有，137/138 仍由原厂 8469 持有，未被抢占 |
 
 `LD_LIBRARY_PATH` 必须同时包含 `lib` 与 `lib/private`，实测缺一不可：
@@ -245,7 +245,7 @@ SDK sysroot 里的同版本 libc 是 `0c15e93496faa913c695ee9e09e0e384`，与设
 | 用例 | 命令要点 | 结果 |
 | --- | --- | --- |
 | 配置解析 | `testparm -s etc/smb.conf`（设备原生 libc） | `Loaded services file OK.`，`ROLE_STANDALONE` |
-| 访客列目录 | `smbclient //192.168.3.2/iso -p 1445 -N -m SMB3 -c ls` | 成功 |
+| 访客列目录 | `smbclient //192.168.1.2/iso -p 1445 -N -m SMB3 -c ls` | 成功 |
 | 上传/下载往返 | `put` 后 `get` 到本地 | 内容逐字节一致（`hello-from-s2`，14 B） |
 | 错误密码 | `-U baduser%wrongpass` | 按 `map to guest = Bad User` 回落访客，会话建立成功 |
 | 只读共享写入 | 追加 `[roshare] read only = yes` 后 `put` | `NT_STATUS_ACCESS_DENIED opening remote file \denied.txt` |

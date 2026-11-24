@@ -215,7 +215,7 @@ S01fstab（/userdisk/data 约 16.6 s 挂载）
 | MANIFEST | hook/adapter/wrapper 三项 `md5sum -c` 全部 `OK` |
 | 新版进程 | `samba-s5d` 23809（子进程 23817/23818/23873，随重启变化） |
 | nmbd | 23868，UDP 137/138 |
-| 139/445 | `192.168.3.2:139/445` → 23809 |
+| 139/445 | `192.168.1.2:139/445` → 23809 |
 | TaskMonitor | `taskmonitorServer` 1090、`taskmonitorDaemon` 1092；任务表 95,608 B / 34 条 |
 | `/etc/config/samba` | `244eb53e5019b95a408aebe49602561a`（7 共享，语义与备份一致） |
 | `/etc/config/misc` | `731ebecdfb56528599cd4b09bf0f0f0` |

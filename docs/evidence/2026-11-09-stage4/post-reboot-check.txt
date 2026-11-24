@@ -2,17 +2,17 @@
 -- uptime --
  18:15:09 up 1 min,  load average: 2.79, 0.87, 0.30
 -- listeners --
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 15175/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 0 15175/samba-s5d
 tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 60 6236/sysapihttpd.co
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 180 7152/dropbear
 tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN       0 0 6236/sysapihttpd.co
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 15175/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 120 15175/samba-s5d
 tcp        0      0 :::22                   :::*                    LISTEN       0 0 7152/dropbear
-udp        0      0 192.168.3.255:137       0.0.0.0:*                            1752 0 15631/nmbd
-udp        0      0 192.168.3.2:137         0.0.0.0:*                            280 2232 15631/nmbd
+udp        0      0 192.168.1.255:137       0.0.0.0:*                            1752 0 15631/nmbd
+udp        0      0 192.168.1.2:137         0.0.0.0:*                            280 2232 15631/nmbd
 udp        0      0 0.0.0.0:137             0.0.0.0:*                            1752 0 15631/nmbd
-udp        0      0 192.168.3.255:138       0.0.0.0:*                            452 0 15631/nmbd
-udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 492 15631/nmbd
+udp        0      0 192.168.1.255:138       0.0.0.0:*                            452 0 15631/nmbd
+udp        0      0 192.168.1.2:138         0.0.0.0:*                            0 492 15631/nmbd
 udp        0      0 0.0.0.0:138             0.0.0.0:*                            452 0 15631/nmbd
 -- nmbd --
 pid=15631
@@ -44,7 +44,7 @@ none
 http80=200
 ### post-reboot nmbd/browse
 lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
-Looking up status of 192.168.3.2
+Looking up status of 192.168.1.2
 	XIAOMI_002D     <00> -         B <ACTIVE> 
 	XIAOMI_002D     <03> -         B <ACTIVE> 
 	XIAOMI_002D     <20> -         B <ACTIVE> 

@@ -232,7 +232,7 @@
 +
 +/*
 + * Normalize the peer address to a plain IPv4 string.  IPv4 mapped IPv6
-+ * addresses (::ffff:192.168.3.5) are accepted, everything else is
++ * addresses (::ffff:192.168.1.5) are accepted, everything else is
 + * treated as "no usable address" and therefore as unlisted.
 + */
 +static bool xiaomi_ipv4_string(const char *remote, char out[INET_ADDRSTRLEN])

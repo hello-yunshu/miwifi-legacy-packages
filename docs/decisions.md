@@ -12,7 +12,7 @@
 
 - D-S2-01 运行根选 `/userdisk/data/samba-s2`，不选 `/userdisk` 直挂点。`/userdisk` 是 ubi2_0（ubifs，仅 137.4M 可用，且有擦写寿命），`/userdisk/data` 是 sda1 ext4（446.5G 可用），容量与写入寿命都更适合放安装树、TDB 与日志。原厂 `/etc/config/samba` 的两个共享本就指向 `/userdisk/data`，说明该盘在设备正常运行期内始终在线。
 - D-S2-02 以设备路径为新前缀做一次干净重建，而不是给 S1 产物打 ELF 补丁或 chroot 运行。理由：`/opt` 只读，S1 的 `RPATH` 与 `MODULESDIR` 均为编译期固化（源码中 `get_dyn_MODULESDIR()` 来自编译期 dynconfig，Samba 4.25.1 的参数表里没有可运行期覆盖的 `modules dir`），而模块目录是 smbd 加载 auth/idmap/vfs 模块的必需路径。改字符串长度会破坏 ELF 偏移，chroot 会引入“跑的不是设备原生路径下的 libc”的争议。重建保持源码 tar 散列与 5 个补丁不变，只改 `--prefix`/`--libdir` 与 `-rpath`，代价约 10 分钟（S1 全量编译实测约 7 分钟）。
-- D-S2-03 新实例端口取 TCP 1445，只监听 `192.168.3.2`，不启 nmbd。原厂占 139/445 与 UDP 137/138；不上 1445/1446 之外的相邻端口，避免与未来 NetBIOS 用例混淆。
+- D-S2-03 新实例端口取 TCP 1445，只监听 `192.168.1.2`，不启 nmbd。原厂占 139/445 与 UDP 137/138；不上 1445/1446 之外的相邻端口，避免与未来 NetBIOS 用例混淆。
 - D-S2-04 不写 `/etc/init.d`、不动 `/etc/config/samba`、不建 `/opt`。新实例完全靠 `nohup` 启动并在关闭时删除整棵新根，回滚是单条 `rm -rf`。
 - D-S2-05 冒烟客户端用随包 ARM `smbclient`（与本实例同一套库），目标 `127.0.0.1:1445`，避免依赖构建机或 PC 端 SMB 栈的版本差异。
 - D-S2-06 原厂 PID 清单不作为回滚判据。原厂 smbd 按连接派生，PID 集合在两次只读采集之间已从 4 个变为 5 个（多出 22286）；回滚核对改用“监听端口归属 + 二进制 MD5 + 根分区只读且用量 81%”。
@@ -119,7 +119,7 @@
 - D-S7-16 macOS 在 SMB3 下共享枚举挂起的根因是 Samba 4.25 默认广播 multi-channel：客户端完成 SESSION_SETUP（AuthZ 为 `nobody`）后 18 秒内不发 TREE_CONNECT 只发 LOGOFF；`SMB2_02`/`SMB2_10` 正常，`SMB3_02` 仍挂起，`server multi channel support = no` 后 SMB3_11 恢复。适配器渲染配置固定加入该行并注明原因；不回退到 SMB1，也不通过限制协议上限规避。
 - D-S7-17 第一次真实切换（新版 PID 22144）在服务端自检通过但 macOS 枚举挂起时判定失败，立即回滚：适配器按 PID 文件 + exe 停新版 → `/usr/sbin/smbd -D` 恢复原厂 → 复核 PID/exe/端口/md5，并确认 macOS `smbutil view` 与 `mount_smbfs` 恢复。异常判定以真实客户端行为为准，不以设备侧 `smbclient` 正常代替。
 - D-S7-18 第二次真实切换通过：原厂 TERM 15:08:36、新版停止 15:08:47，接管窗口约 11 秒（含新版运行与 macOS 验证；端口空窗为秒级），原厂 15:08:51 前恢复；期间 macOS 枚举到 homes/XiaoMi/XiaoMi-usb0 并成功挂载读取，回滚后四个原厂 md5 与切换前完全一致，139/445 归 PID 2282、137/138 归 8469。测试树 `/userdisk/data/s7root`、`s7-root.tar.gz`、`samba-s2` 保留；后续 S8 已把 `s7root` 重新激活为新版运行树（审计收尾 PID 23809），根分区可用 20588 KB 未变。
-- D-S7-19 S6 遗留的“Finder/`mount_smbfs` 非 445 BLOCKED”随之关闭：关闭 multi-channel 后，macOS 可用 `smbutil view -N //guest@192.168.3.2:1445` 枚举，并用 `mount_smbfs -N //guest@192.168.3.2:1445/XiaoMi` 挂载读取；根因与 139/445 挂起同源，不是端口语法或客户端不支持非标准端口。
+- D-S7-19 S6 遗留的“Finder/`mount_smbfs` 非 445 BLOCKED”随之关闭：关闭 multi-channel 后，macOS 可用 `smbutil view -N //guest@192.168.1.2:1445` 枚举，并用 `mount_smbfs -N //guest@192.168.1.2:1445/XiaoMi` 挂载读取；根因与 139/445 挂起同源，不是端口语法或客户端不支持非标准端口。
 
 ## S8（TaskMonitor 共存与候选发布准备）
 
@@ -155,7 +155,7 @@
 - D-S8-29 “数据盘未挂载”兜底用 `S8_SMB_ROOT=/userdisk/data/__missing_root` 实测：hook 判定 `usable=false` 后回退 `supervisord start`，原厂 `smbd` 接管 139/445；该路径返回 rc=1（supervisord 自身语义）但端口实际已监听，文档如实记录，不在 wrapper 侧改写。完整卸载前已把 v1 树备份为 `/userdisk/data/s7root-backup/v1-root.tar.gz`，并恢复为 `versions/v1`，使设备 `previous=v1` 真可回退。
 - D-S8-30 开机共享数维度复核：第二次开机 uptime 42.70–156.61 s 设备自连可见共享稳定 6 个；`smb.conf` 在 33.59 s 缺 `[XiaoMi-usb0]`（`f94e2f5c…`→`8038cbb7…`），58.89 s 恢复。**更正**：设备一直插着 WD Elements 1 TB（`/dev/sdb1` 持续挂载 `/extdisks/sdb1`），缺段不是“无 USB/需真实盘”，而是 samba（S96，33.59 s）启动早于 tntfs 挂载（dmesg 49.3 s），UCI 段尚未由原厂 `shareUpdate -a` 生成；挂载后 hotplug reload 才补上。原“第 7 个可见共享需要真实 USB 盘（BLOCKED）”的前提错误，作废。另有两次在 start 后首次 `smbclient -L` 返回空列表、重试即恢复；受控 stop→start 每秒列举 `t=0…14 s` 均稳定 6 个，未复现，按客户端瞬态记录。
 - D-S8-31 wrapper `stop()` 不再吞失败码：改为 `rc=0; s8compat stop || rc=$?; service_stop /usr/sbin/nmbd; return $rc`。实测新版停止后端口被原厂占用时返回 5，而不是假成功 0。
-- D-S8-32 `XiaoMi-usb0` 只读排查结论：盘已挂载（`/dev/sdb1` → `/extdisks/sdb1`，tntfs，931.5 GB/43%，dmesg 10.5 s 识别、49.3 s 挂载）；`/etc/config/samba` 有 `XiaoMi-usb0` 段（`path=/extdisks/sdb1`、`browseable=no`、`guest_ok=yes`、`force_user=root`）；原厂 `/var/etc/smb.conf`（第 62 行）与新版 `current/etc/smb.conf`（第 55 行）都含该共享且字段一致；Mac（`192.168.3.176`，列表 MAC）`smbutil view` 枚举到它，`mount_smbfs -o rdonly` 挂载成功并可读。适配器 `render()`（修复前第 297–365 行；修复后第 220–427 行）按 UCI section 无条件渲染，无挂载/路径存在性过滤；`share_sections()`（第 91–94 行）只读 UCI。故归类为“启动早期 UCI 无段、依赖原厂 `shareUpdate`/hotplug 动态生成”，**不是适配器漏渲染**。设备自连 `192.168.3.2` 被拒是原厂同源 MAC XOR 策略（源 IP 不在列表，只允许 `browseable=yes`），非新版回归。
+- D-S8-32 `XiaoMi-usb0` 只读排查结论：盘已挂载（`/dev/sdb1` → `/extdisks/sdb1`，tntfs，931.5 GB/43%，dmesg 10.5 s 识别、49.3 s 挂载）；`/etc/config/samba` 有 `XiaoMi-usb0` 段（`path=/extdisks/sdb1`、`browseable=no`、`guest_ok=yes`、`force_user=root`）；原厂 `/var/etc/smb.conf`（第 62 行）与新版 `current/etc/smb.conf`（第 55 行）都含该共享且字段一致；Mac（`192.168.1.176`，列表 MAC）`smbutil view` 枚举到它，`mount_smbfs -o rdonly` 挂载成功并可读。适配器 `render()`（修复前第 297–365 行；修复后第 220–427 行）按 UCI section 无条件渲染，无挂载/路径存在性过滤；`share_sections()`（第 91–94 行）只读 UCI。故归类为“启动早期 UCI 无段、依赖原厂 `shareUpdate`/hotplug 动态生成”，**不是适配器漏渲染**。设备自连 `192.168.1.2` 被拒是原厂同源 MAC XOR 策略（源 IP 不在列表，只允许 `browseable=yes`），非新版回归。
 - D-S8-33 适配缺口（已修）：适配器原先不自己识别已有挂载，只被动渲染 UCI，依赖原厂 `shareUpdate -s/-a/-r` 与 hotplug handler。现 `render()`（第 220–427 行）在 UCI section 后增加挂载派生层（第 374–426 行）：从 `/proc/mounts` 取 `/dev/*` + `/extdisks/<dev>` 排序，跳过非 `/dev`、非 `/extdisks`、嵌套、mountpoint 不存在（卸载残留），UCI 同路径优先（尾斜杠归一）；名称取第一个未占用的 `XiaoMi-usb<N>`；字段同 UCI 版；只写生成的 `smb.conf`，不回写 UCI。新增 `s8-compat/90-s8-mounts`（装到 `/etc/hotplug.d/block/90-s8-mounts`）在 `add/remove` 时调 `hook.sh reload`；`install.sh` 安装并校验，`install-release.sh uninstall` 删除。测试注入点为 `S8_MOUNTS_FILE` / `S8_EXTDISK_ROOT`。
 - D-S8-34 挂载派生层验证：离线回归脚本 `recipes/samba/tests/test-mount-shares.sh` 14 个用例 / 31 条断言，本机与设备 busybox 均 0 失败（单盘合成、UCI 优先、无挂载、多盘、占名、非 `/extdisks`、卸载残留、嵌套、tmpfs、缺 mount 表、尾斜杠、幂等、名冲突、注释/空行）。设备部署：adapter `28a812c5…`→`f106c788052402fc4fb7dc2614543fd3`（26800 B），hotplug `051ba4ad…`；`ACTION=add DEVICE=sdb1` 触发 reload rc=0，共享仍 9 段且 `[XiaoMi-usb0]` 仅 1 处、字段与原厂一致，`/etc/config/samba` md5 `244eb53e…` 未变；live 模式（真实 `/proc/mounts` + 空 UCI）合成 `[XiaoMi-usb0] path=/extdisks/sdb1`，1 用例 / 5 断言 0 失败。真实拔插事件（拔出后消失、重插后恢复且不重复）仍 BLOCKED，不用生产盘实验，等独立小容量 U 盘。
 - D-S8-35 版本号递增与重签：1.0.1-r2d 发布后因 D-S8-33/D-S8-34 的适配器与 hotplug 变更导致包字节变化，同版本号不同字节会让回滚辨识、缓存命中与证据引用产生歧义。按现有 `<semver>-r2d` 命名习惯递增为 `1.0.2-r2d`，新 tar SHA-256 `07d5eb5083bf3817e177b9135b0dfe32ddbeae6ed5014326cfeec593a5f037d3`、MD5 `bc10176f3d66aa9a412a4882f94f57e4`；`1.0.1-r2d` 的 `cf449114…` 与 `1.0.0-r2d` 的 `ce4684b2…` 标注作废/被取代，不再作为交付依据。设备按 `verify → upgrade → rollback → install` 实测：`versions/1.0.2-r2d` 新建、`current` 与前缀链接同步、`previous` 在 1.0.1-r2d 与 1.0.2-r2d 间正确切换，最终 `current -> versions/1.0.2-r2d/root`、`previous=1.0.1-r2d`、`samba-s5d` pid 16260 持 139/445。就地升级兼容：`/etc/config/samba` md5 `244eb53e…` 未变、UCI 段未重写、hotplug md5 `051ba4ad…` 无漂移、兼容层仍 `versions/v1`、`MANIFEST.md5` 10 项全 OK。真实热插拔事件投递仍 BLOCKED。
@@ -181,7 +181,7 @@
 
 - D-S10-01 装前快照与回滚门禁：进窗口前落盘 `current`/`versions/`/`state/previous`、链结构、INPUT 六条、crontab、各服务 pid、`/etc/config` 与启动脚本 md5、端口、容量；确认 `state/previous=1.0.6-r2d` 且树内 `sbin/smbd` 可执行后才开始写入。快照见 `docs/evidence/2026-11-09-stage4/pre-install-snapshot.txt`。
 - D-S10-02 B3 nmbd 切换方式：只改 `/etc/init.d/samba` 的 nmbd 启停入口，私有树 `current/sbin/nmbd` 优先、原厂 `/usr/sbin/nmbd -D` 兜底；启动参数补 `-s current/etc/smb.conf`、`-l /tmp/samba-runtime/log/nmbd`（wrapper 负责 `mkdir -p`），并用 `--option` 复刻原厂 `interfaces=br-lan`、`local/preferred/domain master=yes`，避免切换二进制改变浏览语义。日志目录必须在 tmpfs 上，否则 nmbd 每 5 分钟一条的浏览日志会把休眠中的内置盘叫醒，见 D-S28-01。
-- D-S10-03 B3 验证口径：切换后 `137/138` 归 `versions/1.0.7-r2d/root/sbin/nmbd` 单实例；`nmblookup -A 192.168.3.2` 返回 `XIAOMI_002D<00/03/20>` 与 `WORKGROUP<00/1e>` 即视为名称注册与浏览正常；`samba restart` 与整机冷启动后都必须仍是私有路径。回滚 = 恢复 `state/samba.init.pre-stage4.bak` 后 restart。
+- D-S10-03 B3 验证口径：切换后 `137/138` 归 `versions/1.0.7-r2d/root/sbin/nmbd` 单实例；`nmblookup -A 192.168.1.2` 返回 `XIAOMI_002D<00/03/20>` 与 `WORKGROUP<00/1e>` 即视为名称注册与浏览正常；`samba restart` 与整机冷启动后都必须仍是私有路径。回滚 = 恢复 `state/samba.init.pre-stage4.bak` 后 restart。
 - D-S10-04 B1 Dropbear 记 BLOCKED，不部署：备用端口 2222 实例可启动，但密钥认证被 Dropbear 的祖先目录权限检查拒绝。实测 `/etc/dropbear`（700，但父 `/etc` 为 775）与 `/tmp/dbkeys`（700）两种放法都失败，根因是 `/` 属主为 uid 1000、且某级祖先组可写。可行修法是改 `/` 属主或重编放宽检查，前者动只读根、后者超出阶段范围，均不采用。候选实例与临时 host key 已清理，22 端口全程未动。
 - D-S10-05 B2 curl 范围：只切换 `/etc/init.d/miDebug.sh`（显式 `http://`、仅 `-s`）到私有 HTTP-only curl，并保留 `/usr/bin/curl` 兜底。`mitvapp` 不切换：其 `curl localhost:/cgi-bin/...` 依赖旧版 scheme 猜测，8.23.0 报 `Protocol "localhost" not supported`，切换即回归。`/etc/mixbox/scripts/helper.sh` 不切换（`-skL` 的下载目标可能是 HTTPS，HTTP-only 构建会失败）；`/usr/sbin/wifishare.sh`、`/usr/bin/netspeed` 位于只读根分区，无法改调用路径。
 - D-S10-06 B4 MiniDLNA 记 BLOCKED，不部署：App 清单 `status=6`（关闭），当前 8200 无监听；服务由 `supervisord`/`taskmonitorTool` 按 `PROCLINE=/usr/bin/minidlna` 拉起，`reload` 用 `killall -10 minidlna`。把 PROCLINE 改到私有路径会同时改变进程名，启停/重载路径在 App 关闭时无法端到端验证；只部署“看起来就位”的二进制不符合“装完立刻验”。二进制与依赖保留在 `r2d-cand/b4-dlna`，等 App 启用窗口再切。
@@ -241,7 +241,7 @@
 
 ## S16（B6 WebDAV 生产上线，2026-11-10）
 
-- D-S16-01 端口与监听：正式服务 `192.168.3.2:5005`（br-lan 地址），与 dropbear 22、`samba-s5d` 139/445、私有 `nmbd` 137/138 无冲突；只绑 LAN，未做 WAN 端口转发。构建未启用 OpenSSL，因此不做 HTTPS，认证用 HTTP Digest，口令不以明文过网。
+- D-S16-01 端口与监听：正式服务 `192.168.1.2:5005`（br-lan 地址），与 dropbear 22、`samba-s5d` 139/445、私有 `nmbd` 137/138 无冲突；只绑 LAN，未做 WAN 端口转发。构建未启用 OpenSSL，因此不做 HTTPS，认证用 HTTP Digest，口令不以明文过网。
 - D-S16-02 认证与权限：`conf/users.htdigest` 使用 `user:realm:md5`，realm `r2d-webdav`，账号 `r2d`（口令见交接，不写入仓库）。lighttpd 绑定端口后降权到 `nobody:nogroup`，`umask 000` 启动，新建文件 0666、目录 0777，与 Samba 的 `create mask`/`directory mask` 对齐，两边可互相改写。只暴露 `下载/共享/图片/文档` 四个目录（`mount --bind` 进 `webroot/`），`.dev` 等其它目录不在 document-root，实测 `/.dev/LAYOUT.txt` 返回 404；不存在免密或 root 运行。
 - D-S16-03 自启与数据盘竞态：`/etc/init.d/webdav`（`START=99`、`STOP=10`、`USE_PROCD=0`）只后台执行 `run.sh start`，不阻塞开机。`run.sh` 最多等 180 秒，直到 `/proc/mounts` 出现 `/userdisk/data` 且 `current/sbin/lighttpd` 可执行，再 bind mount 四个共享并启动；数据盘没挂上不会启动半个服务。`run.sh start` 另拉起 30 秒周期看护子进程，共享挂载点丢失会重挂，lighttpd 被杀会重启。
 - D-S16-04 版本与依赖：`live/webdav/versions/1.0.0-r2d/root` 由候选 `candidates/b6-webdav/root` 整体复制，`current -> versions/1.0.0-r2d/root`；启动用 `-m current/lib` 显式指定模块目录，不依赖编译期候选路径。未新增顶层兼容链接，`r2d-cand` 保持原样。
@@ -252,7 +252,7 @@
 
 ## S17（WebDAV 403 修复与认证切换，2026-11-10）
 
-- 现象：访达/浏览器访问 `http://192.168.3.2:5005/` 显示 403 Forbidden。
+- 现象：访达/浏览器访问 `http://192.168.1.2:5005/` 显示 403 Forbidden。
 - 分层定位（Mac curl + 服务端访问日志）：
   - `GET /`（带凭据）403，`GET /下载/` 等子目录同样 403；`PROPFIND /` 与四个子目录均 207；`OPTIONS /` 200（`DAV: 1,2,3`）；`.dev` 404；未认证 401。
   - `/userdisk/data`（0777）到 `.dev/live/webdav/webroot` 各级对 `nobody` 的 x 权限齐全，PROPFIND 也能列目录，排除“父目录不可穿行”。
@@ -369,7 +369,7 @@
 - D-S21-01 **WebDAV 第二账号是用户自设账号，不删、不改口令。**
   该账号由用户本人加入认证文件，用途是用户自己的客户端长期访问 WebDAV，
   不属于历史遗留或误配；执行侧不得以“多余账号”“弱口令”为由删除或重置。
-  边界条件：认证为 lighttpd Basic 明文文件，服务只监听 `192.168.3.2:5005`（br-lan），
+  边界条件：认证为 lighttpd Basic 明文文件，服务只监听 `192.168.1.2:5005`（br-lan），
   无 WAN 端口转发、无 TLS；因此凭据暴露面被限制在局域网链路内。本轮不记录、
   不评估、不修改该账号的任何口令特征。后续若引入 TLS 或对外暴露，必须重新评估该账号。
 - D-S21-02 **SMB 侧用 Samba 原生 `veto files` + `dont descend` 封住 `.yunshu`。**
@@ -589,7 +589,7 @@
   block 56（GDT）、218103936（inode bitmap 所在组）、218104064 与 218104144（inode table）、
   218141272（目录块）。目录块解出 inode 106668，父 inode 101135 = `$ROOT/var/private`，
   条目全是 PID 命名的 unix socket；该目录 mtime 05:31:15 对应 05:31:22 的提交，
-  05:19:14 新建的 socket `30645`（正是 `smbd[192.168.3.x]` 子进程）对应 05:19:20 的提交。
+  05:19:14 新建的 socket `30645`（正是 `smbd[192.168.1.x]` 子进程）对应 05:19:20 的提交。
   结论是 Samba 子进程每次起/停都在数据盘的 `private dir/msg.sock` 里建删 socket，改目录块
   + inode table + inode bitmap + GDT + 超级块并提交日志；修复见 D-S28-07。
   ③ 同窗口里 `comm=uci` 的 sda1 写（block 56、222298120/128、222298368/376）不是 uci 在盘上写

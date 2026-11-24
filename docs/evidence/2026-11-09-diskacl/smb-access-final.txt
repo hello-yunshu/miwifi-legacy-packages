@@ -1,6 +1,6 @@
 captured_at=2026-11-09 02:38:57 CST
 source=macOS 27.2, host not in DROP list
-== smbutil view -N //guest@192.168.3.2 ==
+== smbutil view -N //guest@192.168.1.2 ==
 Share                                           Type    Comments
 -------------------------------
 homes                                           Disk    Home Directories

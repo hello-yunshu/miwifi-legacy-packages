@@ -5,15 +5,15 @@
 -- exe --
 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/nmbd
 -- ports --
-udp        0      0 192.168.3.255:137       0.0.0.0:*                            1636 0 26264/nmbd
-udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 2076 26264/nmbd
+udp        0      0 192.168.1.255:137       0.0.0.0:*                            1636 0 26264/nmbd
+udp        0      0 192.168.1.2:137         0.0.0.0:*                            140 2076 26264/nmbd
 udp        0      0 0.0.0.0:137             0.0.0.0:*                            1636 0 26264/nmbd
-udp        0      0 192.168.3.255:138       0.0.0.0:*                            832 0 26264/nmbd
-udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 246 26264/nmbd
+udp        0      0 192.168.1.255:138       0.0.0.0:*                            832 0 26264/nmbd
+udp        0      0 192.168.1.2:138         0.0.0.0:*                            0 246 26264/nmbd
 udp        0      0 0.0.0.0:138             0.0.0.0:*                            832 0 26264/nmbd
 -- smbd --
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 360 13985/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 60 13985/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 360 13985/samba-s5d
 13985 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
 13996 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
 13997 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
@@ -50,7 +50,7 @@ diskacl_macfilter=/etc/config/macfilter
 diskacl_updated=1794212657
 ### nmblookup
 lpcfg_do_global_parameter: WARNING: The "null passwords" option is deprecated
-Looking up status of 192.168.3.2
+Looking up status of 192.168.1.2
 	XIAOMI_002D     <00> -         B <ACTIVE> 
 	XIAOMI_002D     <03> -         B <ACTIVE> 
 	XIAOMI_002D     <20> -         B <ACTIVE> 

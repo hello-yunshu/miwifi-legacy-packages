@@ -35,7 +35,7 @@ set -u
 BASE=${S7_BASE:-/userdisk/data/.yunshu/live/samba}
 ADAPTER=${S7_ADAPTER:-$BASE/xiaomi-smb-adapter.sh}
 PORT=${S7_PORT:-1445}
-BIND=${S7_BIND:-192.168.3.2}
+BIND=${S7_BIND:-192.168.1.2}
 VENDOR_BIN=${S7_VENDOR_BIN:-/usr/sbin/samba_multicall}
 VENDOR_CONF=${S7_VENDOR_CONF:-/etc/config/samba}
 BASELINE=${S7_BASELINE:-$BASE/state/vendor.md5}

@@ -1,11 +1,11 @@
 # 2026-11-10 WebDAV 中文界面
 
 对应代码：[`recipes/webdav/`](../../../recipes/webdav/)（`lighttpd.conf`、`ui/`）。
-生产实例：`192.168.3.2:5005`，docroot `live/webdav/webroot`，仍由降权后的 `nobody:nogroup` 运行。
+生产实例：`192.168.1.2:5005`，docroot `live/webdav/webroot`，仍由降权后的 `nobody:nogroup` 运行。
 
 ## 结论
 
-- `GET http://192.168.3.2:5005/` 返回中文静态单页（`<title>文件浏览</title>`），
+- `GET http://192.168.1.2:5005/` 返回中文静态单页（`<title>文件浏览</title>`），
   根目录只列 `本机储存` / `外接盘`，带目录图标、面包屑、`返回上级`、`共 N 项`。
 - 目录内容由页面同源 `PROPFIND` 读取并渲染；`PROPFIND` / `PUT` / `GET` / `MOVE` /
   `MKCOL` / `DELETE` / `OPTIONS` 仍由 `mod_webdav` 处理，认证仍是原 Basic，端口与
@@ -56,7 +56,7 @@
 ### 界面截图（同机隔离实例，非 5005）
 
 生产页面需要 Basic 口令才能渲染，凭据导出到工作站被安全策略拒绝；因此截图在**同一台
-R2D、同一 lighttpd 二进制、同一份 UI 字节**的隔离实例（`192.168.3.2:18086`，
+R2D、同一 lighttpd 二进制、同一份 UI 字节**的隔离实例（`192.168.1.2:18086`，
 独立 docroot/state，测试账号）上采集。目录结构按生产顶层目录（`下载`/`共享`/`图片`/
 `文档`/`摄像机监控视频`/`数学`/`文件`/`照片视频`）布置，文件为占位数据，避免暴露真实内容。
 
@@ -104,10 +104,10 @@ iPadOS 的 UA 含 `Macintosh`，判断时先排除 `iPhone|iPad|iPod|Android`，
 D=/userdisk/data/.yunshu/live/webdav
 U=$(awk -F: 'NR==1{print $1}' $D/conf/users.basic)
 P=$(awk -F: 'NR==1{print $2}' $D/conf/users.basic)
-curl -s -u "$U:$P" http://192.168.3.2:5005/ | head
+curl -s -u "$U:$P" http://192.168.1.2:5005/ | head
 curl -s -u "$U:$P" -X PROPFIND -H 'Depth: 1' -H 'Content-Type: application/xml' \
   --data '<d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>' \
-  http://192.168.3.2:5005/
+  http://192.168.1.2:5005/
 ```
 
 ## 部署文件 md5

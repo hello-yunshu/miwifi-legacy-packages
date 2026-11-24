@@ -4,16 +4,16 @@ binary: /userdisk/data/.yunshu/live/webdav/current/sbin/lighttpd ok
 pid: 8689
 watch_pid: 8694
 listen:
-tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 1440 
+tcp        0      0 192.168.1.2:5005        0.0.0.0:*               LISTEN       0 1440 
 本机储存:
   下载 mounted
   共享 mounted
 
 ## listening
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 
-tcp        0      0 192.168.3.2:5005        0.0.0.0:*               LISTEN       0 1440 
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 240 
+tcp        0      0 192.168.1.2:5005        0.0.0.0:*               LISTEN       0 1440 
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 6960 
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1080 
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 1080 
 tcp        0      0 :::22                   :::*                    LISTEN       0 0 
 
 ## unauth GET /

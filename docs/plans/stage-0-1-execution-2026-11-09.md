@@ -52,7 +52,7 @@
 | 1. `rollback` 返回 0 并打印目标 | rc=0，`rolled-back-to 1.0.6-r2d` | PASS |
 | 2. 切换后指针 | `current -> versions/1.0.6-r2d/root`，`previous=1.0.7-r2d` | PASS |
 | 3. 1.0.6 树可执行且前缀可解析 | `sbin/smbd`、`bin/testparm` 可执行；`smbd -b` → `/userdisk/data/samba-s2/root/sbin` | PASS |
-| 4. 1.0.6 实际运行 | pid 12734 持 139/445；`diskacl-status`：`chain=present jumps=2 legacy_chain=absent guest=enforced`；`smbutil view -N //guest@192.168.3.2` 见 3 个共享 | PASS |
+| 4. 1.0.6 实际运行 | pid 12734 持 139/445；`diskacl-status`：`chain=present jumps=2 legacy_chain=absent guest=enforced`；`smbutil view -N //guest@192.168.1.2` 见 3 个共享 | PASS |
 | 5. 切回 1.0.7 后复查 | pid 13985 持 139/445；链 8 DROP + RETURN；guest DROP 在原厂 ACCEPT 前；cron 行在；`smbutil` 见 3 个共享 | PASS |
 | 6. 一条 SSH + 本地包 | 全程单密钥会话与本机包完成，无需新入口 | PASS |
 

@@ -1,6 +1,6 @@
 # R2D 清理收尾与第二批评估（2026-11-11）
 
-- 设备：MiWiFi R2D / ROM 2.25.209 / 192.168.3.2，根 `ubifs (ro)`，数据盘 `/dev/sda1` ext4
+- 设备：MiWiFi R2D / ROM 2.25.209 / 192.168.1.2，根 `ubifs (ro)`，数据盘 `/dev/sda1` ext4
 - 范围：清掉无引用残留、收敛归档；对四项“需评估后再动”的对象给结论
 - 保留规则见 [decisions.md S22](../decisions.md)
 
@@ -57,14 +57,14 @@ WebDAV 不经过该层。建议可改，但不是必须；若改，窗口内 `ch
 ### 2.3 nmbd 监听面
 
 现状：私有 nmbd 4.25.1（PID 11692）持有 UDP 137/138；`netstat -lunp` 同时显示
-`0.0.0.0:137/138`、`192.168.3.2:137/138` 与广播地址。`smb.conf` 已是
-`interfaces = 192.168.3.2` + `bind interfaces only = yes`。
+`0.0.0.0:137/138`、`192.168.1.2:137/138` 与广播地址。`smb.conf` 已是
+`interfaces = 192.168.1.2` + `bind interfaces only = yes`。
 
-实测：`nmblookup -A 192.168.3.2` 返回 `XIAOMI_002D<00/03/20>` 与 `WORKGROUP<00/1e>`；
+实测：`nmblookup -A 192.168.1.2` 返回 `XIAOMI_002D<00/03/20>` 与 `WORKGROUP<00/1e>`；
 `nmblookup -A 127.0.0.1` 返回 `No reply from 127.0.0.1`。说明通配 socket 只是 nmbd
 的广播接收实现，应用层仍按 `interfaces` 过滤，非配置漏项。
 
-可达面：`br-lan`（192.168.3.2）与 `lo`；`br-guest` 成员为空（`brctl show` bridge id
+可达面：`br-lan`（192.168.1.2）与 `lo`；`br-guest` 成员为空（`brctl show` bridge id
 `0000…`，无接口），无 WAN 接口。因此当前没有额外网络可达。防火墙现状：`br-lan` 的
 TCP 139/445 与 UDP 137/138 都进 `s8-diskacl`（MAC 黑名单）；`br-guest` 只有
 TCP 139/445 的整段 DROP，UDP 137/138 未单独覆盖。
@@ -94,8 +94,8 @@ server {
 
 | 请求 | 结果 |
 |---|---|
-| `curl -H 'Host: 192.168.3.2' http://127.0.0.1:8080/` | 200（nginx/1.2.2 页面） |
-| `curl -H 'Host: 192.168.3.2:8443' http://127.0.0.1:8080/` | 空回复（curl rc 52） |
+| `curl -H 'Host: 192.168.1.2' http://127.0.0.1:8080/` | 200（nginx/1.2.2 页面） |
+| `curl -H 'Host: 192.168.1.2:8443' http://127.0.0.1:8080/` | 空回复（curl rc 52） |
 | `curl -H 'Host: 127.0.0.1:8080' http://127.0.0.1:8080/` | 空回复（curl rc 52） |
 | `curl -k https://127.0.0.1:8443/` | 502 Bad Gateway（nginx） |
 
@@ -134,10 +134,10 @@ server {
 
 | 项 | 结果 |
 |---|---|
-| `curl -sk https://192.168.3.2:8443/`（Mac） | 200，1770 字节，返回正常页面 |
-| `curl -s http://192.168.3.2/` | 200 |
+| `curl -sk https://192.168.1.2:8443/`（Mac） | 200，1770 字节，返回正常页面 |
+| `curl -s http://192.168.1.2/` | 200 |
 | 8443 证书 sha256（SNI `miwifi.com`） | `1C:BA:D0:…:86:74`，与改动前一致 |
-| `--resolve miwifi.com:8443:192.168.3.2` | 200，SNI 行为不变 |
+| `--resolve miwifi.com:8443:192.168.1.2` | 200，SNI 行为不变 |
 | 回滚演练 | 还原模板后 502，重新套用后 200 |
 | 配置重生成演练 | `rm -rf /tmp/sysapihttpdconf && reload` 后第 713 行仍为 `$host`，8443/80 均 200 |
 

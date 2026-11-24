@@ -12,7 +12,7 @@
 #   85-hdd-tune    -> /etc/hotplug.d/block/85-hdd-tune
 set -eu
 
-host=${1:-root@192.168.3.2}
+host=${1:-root@192.168.1.2}
 here=$(cd "$(dirname "$0")" && pwd)
 tool=/userdisk/data/.yunshu/live/tools/hdd-tune.sh
 smart=/userdisk/data/.yunshu/live/tools/smart-check.sh

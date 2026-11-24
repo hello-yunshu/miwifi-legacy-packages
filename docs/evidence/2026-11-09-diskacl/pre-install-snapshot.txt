@@ -23,7 +23,7 @@ none
 20401 root     27356 S <  ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root/current/var/lo
 20415 root     26420 S <  {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7root
 20416 root     26424 S <  {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7roo
-25222 root     27432 S <  {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7r
+25222 root     27432 S <  {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/data/s7root/current/etc/smb.conf -l /userdisk/data/s7r
 == smb.conf sections ==
 9
 == cron ==

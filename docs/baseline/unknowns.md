@@ -9,7 +9,7 @@
 | 实际可用内存 | `MemTotal 254448 kB`；采集时 `MemFree 106092 kB`，`Cached 70232 kB`，`SwapTotal 262140 kB` 全空闲 | 已验证 |
 | 磁盘与文件系统 | `/` ubifs 107.9M（81% 已用，只读）；`/data`、`/userdisk`、`/etc` 同卷 204.1M；`/userdisk/data` ext4 931.2G；`/extdisks/sdb1` tntfs 931.5G；`/tmp` tmpfs 99.4M | 已验证 |
 | 运行中进程参数 | 4×`smbd -D`、1×`nmbd -D`，均指向 `samba_multicall`，单线程，cwd 分别为 `/extdisks/sdb1`、`/userdisk/data`、`/` | 已验证 |
-| 完整监听端口 | TCP 139/445 仅绑 `192.168.3.2`；UDP 137/138 绑 `0.0.0.0`、`192.168.3.2`、广播地址；无 IPv6 的 SMB 监听 | 已验证 |
+| 完整监听端口 | TCP 139/445 仅绑 `192.168.1.2`；UDP 137/138 绑 `0.0.0.0`、`192.168.1.2`、广播地址；无 IPv6 的 SMB 监听 | 已验证 |
 | 运行库散列 | 14 个文件的 MD5 已记录（设备无 `sha256sum`）；`/proc/<pid>/maps` 交叉确认实际加载库 | 已验证（仅 MD5，SHA-256 设备不具备） |
 | 权限相关配置 | `hosts allow`/`hosts deny` 均为空；`map to guest = Bad User`；`guest ok = Yes`；`smb encrypt = No`；`smbpasswd` 为空 | 已验证（配置态） |
 | `IPC$` | 不在配置与 `testparm` 列表中，程序内含 `IPC$`、`lp_add_ipc`，为内建隐式共享 | 已验证 |

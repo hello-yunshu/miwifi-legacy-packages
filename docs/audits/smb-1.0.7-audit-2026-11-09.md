@@ -21,7 +21,7 @@
 |---|---|---|
 | 1.0.7 版本身份 | 决策记录包含包 SHA-256 `38c0cb1c14bedb88368a3d66172caca1e2430234a2fe534fe6324298e603fbf0`；设备目录、VERSION 与载荷/兼容层 MD5 为 `1.0.7-r2d` | 设备文件身份吻合；安装日志没有记录输入 tar 的 SHA-256，后续安装应把包散列写入安装日志 |
 | Samba payload 是否改变 | 1.0.7 中 `payload/samba-tree.tar.gz` SHA-256 `0101e0a7d786c5b6ca5740720ff03cb6ba48ce0d45dd5473f54318f2e6eb2d58`，沿用 1.0.6；设备 smbd MD5 `52e105576e190ab6b977be419b3144fe` | SMB 4.25.1 服务已部署；1.0.7 更新的是兼容层，不是 smbd |
-| 设备安装与端口 | 安装日志记录停服务、解包、激活 `1.0.7-r2d`、启动成功；139/445 归 `samba-s5d`，绑定 `192.168.3.2` | 安装路径和当前监听证据通过 |
+| 设备安装与端口 | 安装日志记录停服务、解包、激活 `1.0.7-r2d`、启动成功；139/445 归 `samba-s5d`，绑定 `192.168.1.2` | 安装路径和当前监听证据通过 |
 | per-device ACL | LAN TCP 139/445、UDP 137/138 跳转到 `s8-diskacl`；`lan=no` MAC 被 DROP、链尾 RETURN；`yes→no` 重启后约 10 秒生效，`no→yes` cron 同步实测约 22 秒 | 名单内拒绝与恢复有实机证据；未知状态不全局 DROP |
 | 正常客户端 | 不在 DROP 名单的 macOS 主机成功 `smbutil view`、挂载、列目录和卸载 | 共享访问正向路径通过 |
 | `homes` 共享 | UCI `homes=1`；适配器生成 `[homes]`（comment `Home Directories`、`browseable=no`、`read only=no`、`create mode=0750`）；macOS 枚举记录显示 `homes` | 确认为配置启用的 Samba 特殊 home-share，不是磁盘上意外多出的普通目录；是否能连接/读写仍未知 |

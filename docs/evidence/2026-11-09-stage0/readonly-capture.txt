@@ -64,13 +64,13 @@ tcp        0      0 0.0.0.0:8387            0.0.0.0:*               LISTEN      
 tcp        0      0 127.0.0.1:9091          0.0.0.0:*               LISTEN       0 8940 9912/plugincenter
 tcp        0      0 0.0.0.0:8196            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:8197            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
-tcp        0      0 192.168.3.2:1990        0.0.0.0:*               LISTEN       0 52 7620/wps_monitor
+tcp        0      0 192.168.1.2:1990        0.0.0.0:*               LISTEN       0 52 7620/wps_monitor
 tcp        0      0 0.0.0.0:8198            0.0.0.0:*               LISTEN       0 0 5818/mihttpd.conf
 tcp        0      0 0.0.0.0:8999            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:7080            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 127.0.0.1:9096          0.0.0.0:*               LISTEN       0 56940 11985/smartcontroll
 tcp        0      0 0.0.0.0:9097            0.0.0.0:*               LISTEN       0 0 6804/indexservice
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
 tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 1200 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN       0 60 7092/himan
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 31980 6121/dropbear
@@ -80,7 +80,7 @@ tcp        0      0 0.0.0.0:8443            0.0.0.0:*               LISTEN      
 tcp        0      0 127.0.0.1:5916          0.0.0.0:*               LISTEN       0 0 7673/acsd
 tcp        0      0 0.0.0.0:8380            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:8188            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 3780 1687/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 3780 1687/samba-s5d
 tcp        0      0 0.0.0.0:8381            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:8382            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
 tcp        0      0 0.0.0.0:8190            0.0.0.0:*               LISTEN       0 0 6728/sysapihttpd.co
@@ -96,11 +96,11 @@ udp        0      0 0.0.0.0:38000           0.0.0.0:*                           
 udp        0      0 0.0.0.0:38000           0.0.0.0:*                            0 0 6364/eapd
 udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 24387541 7586/eapd
 udp        0      0 0.0.0.0:37000           0.0.0.0:*                            0 24404206 6364/eapd
-udp        0      0 192.168.3.255:137       0.0.0.0:*                            18962 0 2071/nmbd
-udp        0      0 192.168.3.2:137         0.0.0.0:*                            19040 23136 2071/nmbd
+udp        0      0 192.168.1.255:137       0.0.0.0:*                            18962 0 2071/nmbd
+udp        0      0 192.168.1.2:137         0.0.0.0:*                            19040 23136 2071/nmbd
 udp        0      0 0.0.0.0:137             0.0.0.0:*                            18962 360 2071/nmbd
-udp        0      0 192.168.3.255:138       0.0.0.0:*                            41494 0 2071/nmbd
-udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 15696 2071/nmbd
+udp        0      0 192.168.1.255:138       0.0.0.0:*                            41494 0 2071/nmbd
+udp        0      0 192.168.1.2:138         0.0.0.0:*                            0 15696 2071/nmbd
 udp        0      0 0.0.0.0:138             0.0.0.0:*                            41494 0 2071/nmbd
 udp        0      0 127.0.0.1:38032         0.0.0.0:*                            0 0 7565/nas
 udp        0      0 0.0.0.0:3478            0.0.0.0:*                            0 0 6389/stunserver
@@ -113,8 +113,8 @@ udp        0      0 0.0.0.0:43000           0.0.0.0:*                           
 udp        0      0 0.0.0.0:43000           0.0.0.0:*                            0 0 6364/eapd
 
 ===== client_mac_mapping =====
-ssh_client_ip=192.168.3.176
-192.168.3.176    0x1         0x2         02:00:5e:00:00:01     *        br-lan
+ssh_client_ip=192.168.1.176
+192.168.1.176    0x1         0x2         02:00:5e:00:00:01     *        br-lan
 
 ===== target_processes =====
 pid=1687 comm=samba-s5d exe=/userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d

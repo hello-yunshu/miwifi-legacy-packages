@@ -39,16 +39,16 @@ Tue Nov 10 01:40:10 CST 2026
 10216 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
 10207 /userdisk/data/s7root/versions/1.0.7-r2d/root/sbin/samba-s5d
 -- ports --
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 10207/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 0 10207/samba-s5d
 tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 60 5757/sysapihttpd.co
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 240 6137/dropbear
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 60 10207/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 60 10207/samba-s5d
 tcp        0      0 :::22                   :::*                    LISTEN       0 0 6137/dropbear
-udp        0      0 192.168.3.255:137       0.0.0.0:*                            1256 0 11680/nmbd
-udp        0      0 192.168.3.2:137         0.0.0.0:*                            140 1596 11680/nmbd
+udp        0      0 192.168.1.255:137       0.0.0.0:*                            1256 0 11680/nmbd
+udp        0      0 192.168.1.2:137         0.0.0.0:*                            140 1596 11680/nmbd
 udp        0      0 0.0.0.0:137             0.0.0.0:*                            1256 0 11680/nmbd
-udp        0      0 192.168.3.255:138       0.0.0.0:*                            226 0 11680/nmbd
-udp        0      0 192.168.3.2:138         0.0.0.0:*                            0 246 11680/nmbd
+udp        0      0 192.168.1.255:138       0.0.0.0:*                            226 0 11680/nmbd
+udp        0      0 192.168.1.2:138         0.0.0.0:*                            0 246 11680/nmbd
 udp        0      0 0.0.0.0:138             0.0.0.0:*                            226 0 11680/nmbd
 -- s7root --
 versions/1.0.7-r2d/root

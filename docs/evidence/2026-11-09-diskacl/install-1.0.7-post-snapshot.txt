@@ -72,5 +72,5 @@ diskacl_updated=1794165016
   642 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
   643 root     26416 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
 == listeners ==
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 60 
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 0 
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 60 

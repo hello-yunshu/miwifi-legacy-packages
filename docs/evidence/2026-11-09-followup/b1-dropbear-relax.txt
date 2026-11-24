@@ -1,6 +1,6 @@
 # B1 Dropbear 密钥认证（2222 备用实例）上机验证
 
-日期：2026-11-09 21:29–21:31 CST。设备：MiWiFi R2D / 2.25.209（192.168.3.2）。
+日期：2026-11-09 21:29–21:31 CST。设备：MiWiFi R2D / 2.25.209（192.168.1.2）。
 结论：**PASS（备用实例范围）**；22 端口原厂 Dropbear 未改动。
 
 ## 1. 根分区只读判定
@@ -30,7 +30,7 @@ drwxrwxr-x   36 root     root   6176 Oct 16  2018 /etc
 
 ```
 === running instances ===
-tcp  0 0 192.168.3.2:2222  0.0.0.0:* LISTEN 0 120 7220/dropbear
+tcp  0 0 192.168.1.2:2222  0.0.0.0:* LISTEN 0 120 7220/dropbear
 tcp  0 0 0.0.0.0:22        0.0.0.0:* LISTEN 0 2700 7152/dropbear
 === exe ownership ===
 /proc/7220/exe -> /userdisk/data/r2d-cand/b1-dropbear-relax/root/sbin/dropbear
@@ -42,18 +42,18 @@ LOGIN_S_OK
 uid=0(root) gid=0(root) groups=0(root)
 
 # 密码路径（-s）
-root@192.168.3.2: Permission denied (publickey).
+root@192.168.1.2: Permission denied (publickey).
 
 # 未加 -s 时（第一次启动，用于观察密码认证是否被提供）
 debug1: Authentications that can continue: publickey,password
-root@192.168.3.2: Permission denied (publickey,password).
+root@192.168.1.2: Permission denied (publickey,password).
 ```
 
 服务器日志：
 
 ```
-[7157] Nov 09 21:29:47 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.3.176:52627
-[7713] Nov 09 21:30:07 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.3.176:52640
+[7157] Nov 09 21:29:47 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.1.176:52627
+[7713] Nov 09 21:30:07 Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:vpeAZY4LwzZF6bQdhs6OZ1Bbdd0AC/sEd/OTIGoyr28 from 192.168.1.176:52640
 ```
 
 2222 的 host key 指纹（SHA256 `4RT/...`）与 22 的 DSS/RSA key（md5 `16:b7:…` / `7e:09:…`）不同，确认独立。
@@ -61,9 +61,9 @@ root@192.168.3.2: Permission denied (publickey,password).
 ## 4. 放宽门控反证（同一二进制，不设环境变量，端口 2223）
 
 ```
-root@192.168.3.2: Permission denied (publickey).
+root@192.168.1.2: Permission denied (publickey).
 [8387] Nov 09 21:30:15 /userdisk/data/r2d-cand must be owned by user or root, and not writable by group or others
-[8387] Nov 09 21:30:15 Exit before auth from <192.168.3.176:52649>: (user 'root', 0 fails): Exited normally
+[8387] Nov 09 21:30:15 Exit before auth from <192.168.1.176:52649>: (user 'root', 0 fails): Exited normally
 ```
 
 即：不放宽时，父目录 `/userdisk/data`（777）即被判定为不安全；放宽才允许通过。范围由环境变量控制，原厂 22 实例从不设置该变量。

@@ -15,7 +15,7 @@
 | 目标设备 | 小米路由器 R2D，ROM 2.25.209，Linux 2.6.36 / uClibc 0.9.33.2 / ARMv7 soft-float |
 | 设备端安装前缀 | `current -> /userdisk/data/s7root/versions/1.0.7-r2d/root`（2026-11-09 03:09 安装）；兼容层 `s8compat/current -> versions/v1` |
 | 版本标识 | 版本目录内只有 `root/`；包内 `VERSION` 不随载荷安装，设备侧以版本目录名与 `state/1.0.7-r2d.md5`（载荷 tar 的 MD5）识别 |
-| 运行态 | 独立树、独立 PID/锁/状态/日志；`samba-s5d` 监听 `192.168.3.2:139,445`，不覆盖 `/usr/sbin/samba_multicall` |
+| 运行态 | 独立树、独立 PID/锁/状态/日志；`samba-s5d` 监听 `192.168.1.2:139,445`，不覆盖 `/usr/sbin/samba_multicall` |
 | 适配器 | `recipes/samba/xiaomi-smb-adapter.sh`（设备 `versions/v1` 副本 MD5 `00ca962470ad328081dc98fd0219f5af`） |
 | 同步脚本 | `recipes/samba/s8-compat/diskacl-sync.sh`（设备副本 MD5 `2a00da5e6c6288629d7e5c7436d62692`，cron 每分钟） |
 

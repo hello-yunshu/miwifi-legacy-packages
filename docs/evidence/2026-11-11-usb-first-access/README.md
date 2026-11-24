@@ -1,8 +1,8 @@
 # 外接盘首访问延迟：诊断与 SMB/WebDAV 对比（2026-11-11）
 
-- 设备：`root@192.168.3.2`（R2D，固件 2.25.209，Linux 2.6.36，254 MB RAM / 2 核）
+- 设备：`root@192.168.1.2`（R2D，固件 2.25.209，Linux 2.6.36，254 MB RAM / 2 核）
 - 客户端：macOS，Wi-Fi，同一网段；`curl 7.x`、`python3 http.client`
-- 服务：lighttpd 1.4.85 `192.168.3.2:5005`（WebDAV），Samba 4.25.1 `139/445`（`XiaoMi` = `/userdisk/data`，`XiaoMi-usb0` = `/extdisks/sdb1`）
+- 服务：lighttpd 1.4.85 `192.168.1.2:5005`（WebDAV），Samba 4.25.1 `139/445`（`XiaoMi` = `/userdisk/data`，`XiaoMi-usb0` = `/extdisks/sdb1`）
 - 全部命令只读；写操作只在 `__bench-*` / `__bench-smb` 临时目录，测完删除
 
 ## 一、结论
@@ -56,7 +56,7 @@ GET dirlist 200 conn=0.003816 ttfb=0.009947
 
 ### 2.3 设备本地（排除网络）
 
-在设备上 `curl http://192.168.3.2:5005`（目标地址是 `local 192.168.3.2 dev lo`，不经过网卡）：
+在设备上 `curl http://192.168.1.2:5005`（目标地址是 `local 192.168.1.2 dev lo`，不经过网卡）：
 
 ```
 == 1st HEAD after 5s idle x5, usb ==
@@ -172,7 +172,7 @@ SMB 在这块盘上的方差明显更大（`smbd` 的同步写与 NTFS 分配叠
 ### 7.3 结论
 
 - **局域网日常读写**：大文件走 SMB 更快（本机盘写 24–39 vs 15–16 MB/s，读 12–25 vs 9.4 MB/s），Finder 集成也更好；但**大量小文件必须避开 SMB**——200 个 4 KB 文件 SMB 26 s、WebDAV 1 s，差 25 倍，原因是 SMB 每个文件都要建、写、关、带 xattr 多轮往返（建空文件 47 ms、`stat` 13 ms），而 WebDAV 一个 keep-alive 连接里每文件一个请求。
-- **手机与浏览器**：只能选 WebDAV。浏览器和 iOS/Android 文件管理器都不挂 SMB；`http://192.168.3.2:5005/` 直接可看可下，中文界面与深层目录都能用。
+- **手机与浏览器**：只能选 WebDAV。浏览器和 iOS/Android 文件管理器都不挂 SMB；`http://192.168.1.2:5005/` 直接可看可下，中文界面与深层目录都能用。
 - **大文件**：SMB 更快；WebDAV 受 lighttpd 单线程与无 TLS 影响，稳定在 9–16 MB/s。
 - **大量小文件**：WebDAV 完胜。WebDAV 逐文件一个请求，SMB 每个文件十几次往返，在 3–5 ms RTT 的 Wi-Fi 上被放大成每文件 ~130 ms。
 - **大目录列举**：WebDAV 的 `PROPFIND Depth 1` 是一次批量响应（200 项 35 ms），SMB 的 `ls -l` 要逐项 stat（200 项 1.2 s），差 30 倍以上。
@@ -183,7 +183,7 @@ SMB 在这块盘上的方差明显更大（`smbd` 的同步写与 NTFS 分配叠
 
 ```sh
 # 客户端分段计时（两个根各一轮）
-B=http://192.168.3.2:5005; U=<user>; P=<pass>
+B=http://192.168.1.2:5005; U=<user>; P=<pass>
 BODY='<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/></d:prop></d:propfind>'
 FMT='%{http_code} dns=%{time_namelookup} conn=%{time_connect} ttfb=%{time_starttransfer} total=%{time_total}\n'
 curl -s -o /dev/null -u "$U:$P" -X OPTIONS -w "OPTIONS $FMT" "$B/外接盘/"

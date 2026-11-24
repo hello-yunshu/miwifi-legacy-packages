@@ -1,5 +1,5 @@
 RPATH 补丁与 WebDAV 健康核对（2026-11-10，设备侧原始输出）
-设备：R2D / 192.168.3.2，服务：lighttpd 1.4.85 :5005
+设备：R2D / 192.168.1.2，服务：lighttpd 1.4.85 :5005
 
 == 1) 关键 ELF 的 DT_RPATH（.dynamic 的 tag 15，按 sh_link 取 .dynstr）==
 lighttpd:
@@ -45,7 +45,7 @@ ls -la /userdisk/data/.dev/candidates/ -> 仅 b1-dropbear-relax（528 KB）
 /userdisk/data/.dev/live/webdav/run.sh status:
   binary: .../current/sbin/lighttpd ok
   pid: 22483   watch_pid: 22488
-  listen: tcp 192.168.3.2:5005
+  listen: tcp 192.168.1.2:5005
   本机储存: 下载 共享 图片 摄像机监控视频 数学 文件 文档 照片视频 全部 mounted
   外接盘: mounted from /extdisks/sdb1
 未认证 GET /            -> 401

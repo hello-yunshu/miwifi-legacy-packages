@@ -2,7 +2,7 @@
 
 本文档承接 [审计报告](audit-2026-11-08.md)，记录"能关的全关"第二轮的四类工作：干净环境复建、
 可发布产物、剩余可验项实测、以及必须由人提供条件才能推进的清单。所有结论均来自本轮在
-Docker 构建容器 `miwifi-s1` 与实体设备（R2D / 2.25.209 / 192.168.3.2）上的实际执行。
+Docker 构建容器 `miwifi-s1` 与实体设备（R2D / 2.25.209 / 192.168.1.2）上的实际执行。
 
 设备最终状态：版本 `1.0.2-r2d`（`current -> versions/1.0.2-r2d/root`，`previous=1.0.1-r2d`），新版 `samba-s5d`
 持有 139/445，`/etc/init.d/samba status` 正常，兼容层与发布包 MANIFEST 校验通过。
@@ -82,8 +82,8 @@ Docker 构建容器 `miwifi-s1` 与实体设备（R2D / 2.25.209 / 192.168.3.2�
 | 项 | 实测 |
 | --- | --- |
 | 设备 IPv6 地址 | 仅 `br-lan` link-local `fe80::2:5eff:fe00:2d/64`；无全局地址 |
-| 生产监听 | `/proc/net/tcp6` 无 139/445；`netstat` 只有 `192.168.3.2:139/445` |
-| 生产配置 | `interfaces = 192.168.3.2`、`bind interfaces only = yes` |
+| 生产监听 | `/proc/net/tcp6` 无 139/445；`netstat` 只有 `192.168.1.2:139/445` |
+| 生产配置 | `interfaces = 192.168.1.2`、`bind interfaces only = yes` |
 | 新版二进制 IPv6 能力 | 测试实例 `interfaces = ::1`、`smb ports = 1445`：`/proc/net/tcp6` 出现 1445 监听；`smbclient -p 1445 -L ::1 -N` 成功列出共享（rc=0） |
 
 结论：新版 Samba 的 IPv6 栈可用，生产未启用是**配置与网络条件**（只绑定 IPv4 地址、设备无全局 IPv6），
@@ -94,8 +94,8 @@ Docker 构建容器 `miwifi-s1` 与实体设备（R2D / 2.25.209 / 192.168.3.2�
 | 场景 | 结果 |
 | --- | --- |
 | `smbclient -m NT1`（仅指定最大协议） | 失败：`Max protocol NT1 is less than min protocol SMB2_02`（4.25 客户端默认最小 SMB2_02） |
-| `smbclient -m NT1 --option='client min protocol=NT1' -L 192.168.3.2 -N` | 成功：列出 `下载/共享/图片/摄像机监控视频$/文档/IPC$/nobody`，并输出 `Reconnecting with SMB1 for workgroup listing.`（RAP 工作组列举） |
-| SMB1 共享级访问 `//192.168.3.2/下载 -c dir` | 成功返回目录列表（文件时间 2026-05/06） |
+| `smbclient -m NT1 --option='client min protocol=NT1' -L 192.168.1.2 -N` | 成功：列出 `下载/共享/图片/摄像机监控视频$/文档/IPC$/nobody`，并输出 `Reconnecting with SMB1 for workgroup listing.`（RAP 工作组列举） |
+| SMB1 共享级访问 `//192.168.1.2/下载 -c dir` | 成功返回目录列表（文件时间 2026-05/06） |
 
 结论：服务端 `server min protocol = NT1` 生效，SMB1 与 RAP 工作组列举**在本机实测可用**；
 需要客户端显式放宽 `client min protocol`，这是 Samba 4.25 客户端默认值所致，不是服务端问题。
@@ -139,7 +139,7 @@ Docker 构建容器 `miwifi-s1` 与实体设备（R2D / 2.25.209 / 192.168.3.2�
 | --- | --- |
 | 客户端 | 17:22:29 重启；445/139 关闭；17:23:31 恢复（总不可用约 62 秒，含引导与内核） |
 | uptime 18.29s | `/userdisk/data` 已挂载；139/445 无监听 |
-| uptime 41.29s | 首次出现监听：`192.168.3.2:139/445`，持有者 pid 7910（`samba-s5d`，新版） |
+| uptime 41.29s | 首次出现监听：`192.168.1.2:139/445`，持有者 pid 7910（`samba-s5d`，新版） |
 | uptime 44.06s | 原厂 `nmbd`（pid 8910，exe `samba_multicall`）启动，监听 UDP 137/138 |
 | 18s–240s 全部采样 | **没有任何原厂 smbd 持有 139/445**；新版从 41.29s 起持续持有 |
 
@@ -252,12 +252,12 @@ config 'sambashare'
 
 #### 2.7.4 客户端可见性与访问（补充对照）
 
-- 从 Mac（`192.168.3.176`，MAC `02:00:5e:00:00:01` 在 `nonLoginMac.cfg` 列表中）执行
-  `smbutil view -N //guest@192.168.3.2`，枚举到 `homes`、`XiaoMi`、`XiaoMi-usb0`；
-- `mount_smbfs -N -o rdonly //guest@192.168.3.2/XiaoMi-usb0 /tmp/usb0mnt` 成功，`ls` 可读盘内文件，
+- 从 Mac（`192.168.1.176`，MAC `02:00:5e:00:00:01` 在 `nonLoginMac.cfg` 列表中）执行
+  `smbutil view -N //guest@192.168.1.2`，枚举到 `homes`、`XiaoMi`、`XiaoMi-usb0`；
+- `mount_smbfs -N -o rdonly //guest@192.168.1.2/XiaoMi-usb0 /tmp/usb0mnt` 成功，`ls` 可读盘内文件，
   `df` 显示 931 GiB / 43%；
-- 设备自连 `192.168.3.2` 访问 `XiaoMi-usb0` 返回 `NT_STATUS_ACCESS_DENIED`，日志为
-  `share_sanity_checks: xiaomi mac policy denied connection from 192.168.3.2 to share XiaoMi-usb0`。
+- 设备自连 `192.168.1.2` 访问 `XiaoMi-usb0` 返回 `NT_STATUS_ACCESS_DENIED`，日志为
+  `share_sanity_checks: xiaomi mac policy denied connection from 192.168.1.2 to share XiaoMi-usb0`。
   源 IP 是路由器自己，不在任何 MAC 列表，按 XOR 策略只允许 `browseable=yes` 的共享，属预期。
 
 结论：`XiaoMi-usb0` 并非不可用；对“列表命中”的设备可见且可读，对未命中设备按原厂同源 MAC 策略隐藏/拒绝。
@@ -527,9 +527,9 @@ payload 说明：`make install DESTDIR` 输出（含 `sbin/smbd` 与设备一致
   `adapter.log` 在 02:44:40–02:45:01 无 `cleared`/`started`，证明纯 cron 路径。
 * 链回到 **8 DROP + 1 RETURN**，该 MAC 消失；`diskacl.state` `denied=9→8`、`allowed=31→32`。
 * **samba 主进程未重启**：`samba-s5d -D` 仍为 pid 23178（`pidof` 首值 25929 是
-  `{smbd[192.168.3.63]}` 连接子进程，非主进程）。
+  `{smbd[192.168.1.63]}` 连接子进程，非主进程）。
 * 恢复证据：RETURN 命中 `14 pkts / 1858 B`；`netstat` 显示
-  `192.168.3.2:445 ESTABLISHED 192.168.3.63:60894`，对应子进程存在。
+  `192.168.1.2:445 ESTABLISHED 192.168.1.63:60894`，对应子进程存在。
 * 对照：本机 `smbutil view` + `mount_smbfs` 再次成功。
 * 证据：[`lan-yes-restored-snapshot.txt`](evidence/2026-11-09-diskacl/lan-yes-restored-snapshot.txt)、
   [`control-access-after-restore.txt`](evidence/2026-11-09-diskacl/control-access-after-restore.txt)。

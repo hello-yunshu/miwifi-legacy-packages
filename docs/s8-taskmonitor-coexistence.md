@@ -118,7 +118,7 @@ taskmonitorTool -p "$PROCLINE" -b "$PROCFLAG" -i "$MONNAME" [-n N] -t <start|sto
 
 1. **注册与自愈**：新版以 1445 启动后 `tm-register` rc 0，任务表由 92 796 B 增至 95 608 B；`kill -9` 后 **1 s 内**（5 s 检查窗口内）被拉起，新 PID 正常监听 1445，证明 `-D <root>` 与 `-L <root>/lib:<root>/lib/private` 足以让任务以正确工作目录和私有库重启。
 2. **注销与停止**：`tm-unregister` rc 0，任务表回到 92 796 B；随后 `stop` rc 0，等待 8 s 未被拉回，1445 无监听，原厂 139/445 仍在（PID 2282）。
-3. **445 协作接管**：`vendor-stop` 注销原厂条目并确认 139/445 释放 → `start -P -p "139 445"` rc 0，新版 PID 25276 独占 139/445，原厂 smbd 与子进程消失，nmbd 8469 保留。macOS `smbutil view -N //guest@192.168.3.2` 枚举到 XiaoMi、XiaoMi-usb0，`mount_smbfs` 挂载成功并可列目录/卸载。
+3. **445 协作接管**：`vendor-stop` 注销原厂条目并确认 139/445 释放 → `start -P -p "139 445"` rc 0，新版 PID 25276 独占 139/445，原厂 smbd 与子进程消失，nmbd 8469 保留。macOS `smbutil view -N //guest@192.168.1.2` 枚举到 XiaoMi、XiaoMi-usb0，`mount_smbfs` 挂载成功并可列目录/卸载。
 4. **回滚**：`stop`（自动注销）→ `vendor-start` rc 0；原厂 smbd 以新 PID 25767 恢复 139/445，nmbd 仍 8469，UDP 137/138 正常；macOS 再次枚举到 2 个共享。
 5. **哈希与其它服务**：`samba_multicall` `5e422d34…`、`/etc/config/samba` `8556a19b…`、`misc` `731ebec…`、`/var/etc/smb.conf` `bcad8b90…` 全部未变；`taskmonitorServer/Daemon`、`pluginTaskmonitor`、`sysapihttpd` 两组、`messagingagent`、`datacenter`、`netapi`、`indexservice`、`trafficd`、`tunnelserver`、`stunserver` PID 与切换前一致；根分区可用 20 588 KB 不变。
 6. **UCI 漂移守卫**：影子目录模拟 `uci set samba.@sambashare[0].read_only=yes` 后 `generate` 返回 **7**，`smb.conf` md5 保持 `607053…`；清理后对真实源显式接受（`S5_ACCEPT_CONFIG=1`）rc 0，`check` 显示 `config_drift=no`、`isolation=OK`。

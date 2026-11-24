@@ -17,8 +17,8 @@ start rc=0
 previous=1.0.7-r2d
 /userdisk/data/s7root/versions/1.0.6-r2d/root
 == listen
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 0 12734/samba-s5d
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 120 12734/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 0 12734/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 120 12734/samba-s5d
 == smbd
 12734 root     27352 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
 12750 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data

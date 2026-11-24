@@ -74,11 +74,11 @@ Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
  1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
  1699 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
  3683 root     27808 S    {smbd-scavenger} ./sbin/samba-s5d -D -s /userdisk/da
- 4040 root     35576 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
- 7856 root     27612 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 4040 root     35576 S    {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
+ 7856 root     27612 S    {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
 == listen
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 7020 1687/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 420 1687/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 7020 1687/samba-s5d
 == df
 Filesystem                Size      Used Available Use% Mounted on
 /dev/sda1               931.2G    485.2G    446.0G  52% /userdisk/data

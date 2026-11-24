@@ -52,7 +52,7 @@ diskacl_updated=1794165039
  1687 root     27348 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
  1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
  1699 root     26416 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
- 1701 root     27432 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 1701 root     27432 S    {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
  2067 root     25560 R    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
 == adapter log tail ==
 2026-11-09 03:10:37 generated from /etc/config md5=f94e2f5caf29375e075c48d566301e07
@@ -66,8 +66,8 @@ Mon Nov  9 03:10:49 CST 2026
  1687 root     27356 S    ./sbin/samba-s5d -D -s /userdisk/data/s7root/current
  1695 root     26420 S    {smbd-notifyd} ./sbin/samba-s5d -D -s /userdisk/data
  1699 root     26424 S    {smbd-cleanupd} ./sbin/samba-s5d -D -s /userdisk/dat
- 1701 root     27432 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
- 2159 nobody   27460 S    {smbd[192.168.3.} ./sbin/samba-s5d -D -s /userdisk/d
+ 1701 root     27432 S    {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
+ 2159 nobody   27460 S    {smbd[192.168.1.} ./sbin/samba-s5d -D -s /userdisk/d
 == counters ==
     0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 02:00:5E:00:00:09
     0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            MAC 02:00:5E:00:00:0A

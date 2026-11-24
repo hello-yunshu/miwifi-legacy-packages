@@ -10,10 +10,10 @@ pid=19515
 fd9574db00833d0b312fcf3fdb2527ab  /userdisk/data/dropbear-2026.94/sbin/dropbear
 Tue Nov 10 01:40:10 CST 2026
 SSH-2.0-dropbear_2026.94
-tcp        0      0 192.168.3.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
+tcp        0      0 192.168.1.2:139         0.0.0.0:*               LISTEN       0 240 15175/samba-s5d
 tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN       0 600 6236/sysapihttpd.co
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN       0 600 19515/dropbear
-tcp        0      0 192.168.3.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
+tcp        0      0 192.168.1.2:445         0.0.0.0:*               LISTEN       0 1500 15175/samba-s5d
 tcp        0      0 :::22                   :::*                    LISTEN       0 0 19515/dropbear
 19515 ?        00:00:00 dropbear
 20118 ?        00:00:00 dropbear

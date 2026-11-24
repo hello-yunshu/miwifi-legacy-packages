@@ -231,7 +231,7 @@ do_start() {
 		log "start: already running pid=$p"
 	else
 		lighttpd_start || return 1
-		log "start: pid=$(running_pid) bind=192.168.3.2:5005"
+		log "start: pid=$(running_pid) bind=192.168.1.2:5005"
 	fi
 	start_watch
 	return 0

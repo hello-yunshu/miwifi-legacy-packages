@@ -1,6 +1,6 @@
 # S6 实机受控实验
 
-日期：2026-11-08。设备：小米路由器（192.168.3.2，Linux 2.6.36 armv7l，2 核，254448 kB 内存）。本轮只在独立目录部署 4.25.1 并用非标准端口验证，**没有替换或停止原厂 4.0.21 服务**；切换与回滚留给 S7。
+日期：2026-11-08。设备：小米路由器（192.168.1.2，Linux 2.6.36 armv7l，2 核，254448 kB 内存）。本轮只在独立目录部署 4.25.1 并用非标准端口验证，**没有替换或停止原厂 4.0.21 服务**；切换与回滚留给 S7。
 
 ## 结论摘要
 
@@ -13,7 +13,7 @@
 ## 约束与试验边界
 
 - 原厂二进制、`/etc/config/samba`、`/var/etc/smb.conf`、模板不写不改；不调用 `shareUpdate`、`/etc/init.d/samba`、`supervisord`。
-- 新实例只监听 `192.168.3.2:1445`，PID/锁/状态/缓存/日志全部在 `/userdisk/data/samba-s6/root/var` 下。
+- 新实例只监听 `192.168.1.2:1445`，PID/锁/状态/缓存/日志全部在 `/userdisk/data/samba-s6/root/var` 下。
 - 停止只按 PID 文件加 `/proc/<pid>/exe` 校验；全程未用 `pidof smbd` 或进程名通配杀进程。
 - 测试共享为合成目录 `/userdisk/data/s6/share/{rw,ro,cam}`，不把生产共享暴露到 1445；UCI 由 `/etc/config` 只读复制到独立目录后改为测试共享。
 - MAC 策略仅在测试进程上以 `XIAOMI_MAC_FILTER=0` 关闭，用于得到确定客户端结果；默认开启时 macOS 会话被拒绝，说明 S3 策略仍在。
@@ -125,8 +125,8 @@
 | `/etc/config/samba` | `8556a19b6d81d49bfd5ab738e0132b51` | 同左 |
 | `/var/etc/smb.conf` | `bcad8b90869688b7982a50aaa891cf99` | 同左 |
 | `/etc/samba/smb.conf.template` | `95ad7d4146de73a50fb33e823d495b94` | 同左 |
-| 139/445 | 192.168.3.2，PID 1448 | 同左 |
-| 137/138 | 192.168.3.2/广播，PID 8469 | 同左 |
+| 139/445 | 192.168.1.2，PID 1448 | 同左 |
+| 137/138 | 192.168.1.2/广播，PID 8469 | 同左 |
 | `pidof smbd` / PID 文件 | `26994 1448` / `1448` | 同左 |
 | 根分区可用 | 20588 KB | 20588 KB |
 | 1445 监听/测试进程 | 无 | 无 |
@@ -154,5 +154,5 @@
 1. 设备侧备份并记录原厂 md5、PID、监听和 `df`。
 2. `tar` 部署完整树到 `/userdisk/data/samba-s6/root`，建立只用于前缀解析的 `samba-s2` 符号链接。
 3. `cp -a /etc/config` 到独立目录，删除复制出的共享并添加合成共享；不要写回 `/etc/config`。
-4. `xiaomi-smb-adapter.sh -r … -c … -p 1445 -b 192.168.3.2 -n samba-s6d generate|start|status`。
+4. `xiaomi-smb-adapter.sh -r … -c … -p 1445 -b 192.168.1.2 -n samba-s6d generate|start|status`。
 5. 客户端验证后 `-N stop`，按精确路径删除测试目录与临时文件，重新核对 md5、监听和 `df`。
