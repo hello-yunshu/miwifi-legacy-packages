@@ -12,7 +12,7 @@
 | `releases/` 归档 | 保留 1.0.7-r2d 与 1.0.8-r2d 两个包；删除空目录 `release/`；1.0.7 包上移一层 | 0（未删包） | 包未删，原位可用 |
 | `builds/b1-dropbear-relax` | 候选与 live 二进制 md5 同为 `fd9574db…`，B1 已上线并多轮验证，删除 | 524 KB | `recipes/stage2/b1-dropbear-relax.sh` 可重建 |
 | `.dev` 残留 | 设备 `live/webdav/run.sh` 与仓库同步，注释改 `.yunshu`；旧版存 `backups/cleanup-20261111/run.sh.device-before` | 0 | 还原该备份即可 |
-| 两条 `192.168.31.6` DNAT | 归档 `iptables-save.before.txt`、`firewall.uci.before.txt`、`firewall.config.before` 后删除 `firewall.dmz`/`firewall.dmzudp`；`firewall reload` 后 `iptables -t nat -S` 无 31.6 | 0 | 按归档的 UCI 段恢复两条 redirect 后 reload |
+| 两条 `192.168.1.x` DNAT | 归档 `iptables-save.before.txt`、`firewall.uci.before.txt`、`firewall.config.before` 后删除 `firewall.dmz`/`firewall.dmzudp`；`firewall reload` 后 `iptables -t nat -S` 无残留 | 0 | 按归档的 UCI 段恢复两条 redirect 后 reload |
 | `var/state` 0777 → 0755 | `testparm` 权限告警消失（仅剩既有 `null passwords` deprecated）；SMB 枚举、`.yunshu` 隐藏、`下载` put/get/del 实测正常 | 0 | `chmod 777 var/state` |
 | `/tmp` 陈旧文件 | 删除 `5m.bin` 5,132 KB、`webdav-stageC.sh` 8 KB | 5,140 KB（tmpfs/RAM，不是根分区） | 无需回滚 |
 | `backups/s7root-backup` | 14,088 KB，`versions/1.0.7-r2d/root` 仍在，回退链不缺，删除 | 14,088 KB | 不恢复；v1 已被 1.0.x 取代 |
